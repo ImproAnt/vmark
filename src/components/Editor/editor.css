@@ -9,7 +9,7 @@
 .editor-content {
   flex: 1;
   overflow-y: auto;
-  padding: 60px 40px;
+  padding: 2em 40px 40px;
 }
 
 /* Milkdown Editor Styles */
@@ -22,8 +22,21 @@
   color: var(--text-color);
 }
 
+.milkdown > *:first-child,
+.milkdown .editor > *:first-child,
+.milkdown .ProseMirror > *:first-child {
+  margin-top: 0 !important;
+}
+
+.milkdown .ProseMirror {
+  margin: 0;
+  padding: 0;
+}
+
 .milkdown .editor {
   outline: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* Headings */

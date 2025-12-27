@@ -1,0 +1,129 @@
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  align-self: stretch;
+  flex-shrink: 0;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.sidebar-btn:hover {
+  background-color: var(--selection-color);
+  color: var(--text-color);
+}
+
+.sidebar-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Content */
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar-view {
+  padding: 8px;
+}
+
+.sidebar-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Files view */
+.sidebar-file {
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sidebar-file:hover {
+  background-color: var(--selection-color);
+}
+
+.sidebar-file.active {
+  background-color: var(--selection-color);
+}
+
+.sidebar-file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Outline view */
+.outline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.outline-item {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-color);
+  cursor: pointer;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-item:hover {
+  background-color: var(--selection-color);
+}
+
+.outline-level-1 {
+  font-weight: 600;
+}
+
+.outline-level-2 {
+  padding-left: 20px;
+}
+
+.outline-level-3 {
+  padding-left: 32px;
+  font-size: 12px;
+}
+
+.outline-level-4,
+.outline-level-5,
+.outline-level-6 {
+  padding-left: 44px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
