@@ -1,40 +1,65 @@
-import { useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { useEffect, useRef } from "react";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 
 export function useMenuEvents() {
+  const unlistenRefs = useRef<UnlistenFn[]>([]);
+
   useEffect(() => {
-    const unlisten: Promise<() => void>[] = [];
+    const setupListeners = async () => {
+      // Clean up any existing listeners first
+      unlistenRefs.current.forEach((fn) => fn());
+      unlistenRefs.current = [];
 
-    // View menu events
-    unlisten.push(
-      listen("menu:focus-mode", () => {
+      // View menu events
+      const unlistenSourceMode = await listen("menu:source-mode", () => {
+        useEditorStore.getState().toggleSourceMode();
+      });
+      unlistenRefs.current.push(unlistenSourceMode);
+
+      const unlistenFocusMode = await listen("menu:focus-mode", () => {
         useEditorStore.getState().toggleFocusMode();
-      })
-    );
+      });
+      unlistenRefs.current.push(unlistenFocusMode);
 
-    unlisten.push(
-      listen("menu:typewriter-mode", () => {
+      const unlistenTypewriterMode = await listen("menu:typewriter-mode", () => {
         useEditorStore.getState().toggleTypewriterMode();
-      })
-    );
+      });
+      unlistenRefs.current.push(unlistenTypewriterMode);
 
-    unlisten.push(
-      listen("menu:sidebar", () => {
+      const unlistenSidebar = await listen("menu:sidebar", () => {
         useUIStore.getState().toggleSidebar();
-      })
-    );
+      });
+      unlistenRefs.current.push(unlistenSidebar);
 
-    unlisten.push(
-      listen("menu:outline", () => {
+      const unlistenOutline = await listen("menu:outline", () => {
         useUIStore.getState().toggleOutline();
-      })
-    );
+      });
+      unlistenRefs.current.push(unlistenOutline);
 
-    // Cleanup
+      // Zoom events
+      const unlistenZoomIn = await listen("menu:zoom-in", () => {
+        useEditorStore.getState().zoomIn();
+      });
+      unlistenRefs.current.push(unlistenZoomIn);
+
+      const unlistenZoomOut = await listen("menu:zoom-out", () => {
+        useEditorStore.getState().zoomOut();
+      });
+      unlistenRefs.current.push(unlistenZoomOut);
+
+      const unlistenActualSize = await listen("menu:actual-size", () => {
+        useEditorStore.getState().resetZoom();
+      });
+      unlistenRefs.current.push(unlistenActualSize);
+    };
+
+    setupListeners();
+
     return () => {
-      Promise.all(unlisten).then((fns) => fns.forEach((fn) => fn()));
+      unlistenRefs.current.forEach((fn) => fn());
+      unlistenRefs.current = [];
     };
   }, []);
 }

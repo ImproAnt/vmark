@@ -222,3 +222,24 @@
   opacity: var(--blur-image-opacity);
   filter: grayscale(30%);
 }
+
+/* Source code editor */
+.source-editor {
+  width: 100%;
+  height: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: transparent;
+}
+
+.source-editor:focus {
+  outline: none;
+}

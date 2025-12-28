@@ -21,8 +21,11 @@ import { indent } from "@milkdown/kit/plugin/indent";
 import { trailing } from "@milkdown/kit/plugin/trailing";
 import { replaceAll, callCommand } from "@milkdown/kit/utils";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
-import { listen } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEditorStore } from "@/stores/editorStore";
+import { useParagraphCommands } from "@/hooks/useParagraphCommands";
+import { useFormatCommands } from "@/hooks/useFormatCommands";
+import { useTableCommands } from "@/hooks/useTableCommands";
 import "./editor.css";
 
 const DEFAULT_CONTENT = `# Welcome to VMark
@@ -43,13 +46,36 @@ A **-style** markdown editor built with:
 Start writing...
 `;
 
+function SourceEditor() {
+  const content = useEditorStore((state) => state.content);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    useEditorStore.getState().setContent(e.target.value);
+  };
+
+  return (
+    <textarea
+      className="source-editor"
+      value={content}
+      onChange={handleChange}
+      spellCheck={false}
+    />
+  );
+}
+
 function MilkdownEditorInner() {
   const content = useEditorStore((state) => state.content);
   const filePath = useEditorStore((state) => state.filePath);
 
+  // Compute initial content once
+  const initialContent = filePath !== null || content.length > 0
+    ? content
+    : DEFAULT_CONTENT;
+
   // Track if content change is from editor (internal) or external (store)
   const isInternalChange = useRef(false);
-  const lastExternalContent = useRef<string | null>(null);
+  const lastExternalContent = useRef<string>(initialContent);
+  const formatUnlistenRefs = useRef<UnlistenFn[]>([]);
 
   const handleMarkdownUpdate = useCallback((_: unknown, markdown: string) => {
     isInternalChange.current = true;
@@ -59,15 +85,6 @@ function MilkdownEditorInner() {
       isInternalChange.current = false;
     });
   }, []);
-
-  const initialContent = filePath !== null || content.length > 0
-    ? content
-    : DEFAULT_CONTENT;
-
-  // Store initial content reference
-  if (lastExternalContent.current === null) {
-    lastExternalContent.current = initialContent;
-  }
 
   const { get } = useEditor((root) =>
     MilkdownEditor.make()
@@ -105,57 +122,68 @@ function MilkdownEditorInner() {
     editor.action(replaceAll(content));
   }, [content, get]);
 
+  // Handle Paragraph menu events
+  useParagraphCommands(get);
+
+  // Handle extended Format menu events (Image, Clear Format)
+  useFormatCommands(get);
+
+  // Handle Table menu events
+  useTableCommands(get);
+
   // Handle Format menu events
   useEffect(() => {
-    const unlisten: Promise<() => void>[] = [];
+    const setupListeners = async () => {
+      // Clean up any existing listeners first
+      formatUnlistenRefs.current.forEach((fn) => fn());
+      formatUnlistenRefs.current = [];
 
-    unlisten.push(
-      listen("menu:bold", () => {
+      const unlistenBold = await listen("menu:bold", () => {
         const editor = get();
         if (editor) {
           editor.action(callCommand(toggleStrongCommand.key));
         }
-      })
-    );
+      });
+      formatUnlistenRefs.current.push(unlistenBold);
 
-    unlisten.push(
-      listen("menu:italic", () => {
+      const unlistenItalic = await listen("menu:italic", () => {
         const editor = get();
         if (editor) {
           editor.action(callCommand(toggleEmphasisCommand.key));
         }
-      })
-    );
+      });
+      formatUnlistenRefs.current.push(unlistenItalic);
 
-    unlisten.push(
-      listen("menu:strikethrough", () => {
+      const unlistenStrikethrough = await listen("menu:strikethrough", () => {
         const editor = get();
         if (editor) {
           editor.action(callCommand(toggleStrikethroughCommand.key));
         }
-      })
-    );
+      });
+      formatUnlistenRefs.current.push(unlistenStrikethrough);
 
-    unlisten.push(
-      listen("menu:code", () => {
+      const unlistenCode = await listen("menu:code", () => {
         const editor = get();
         if (editor) {
           editor.action(callCommand(toggleInlineCodeCommand.key));
         }
-      })
-    );
+      });
+      formatUnlistenRefs.current.push(unlistenCode);
 
-    unlisten.push(
-      listen("menu:link", () => {
+      const unlistenLink = await listen("menu:link", () => {
         const editor = get();
         if (editor) {
           editor.action(callCommand(toggleLinkCommand.key, { href: "" }));
         }
-      })
-    );
+      });
+      formatUnlistenRefs.current.push(unlistenLink);
+    };
+
+    setupListeners();
 
     return () => {
-      Promise.all(unlisten).then((fns) => fns.forEach((fn) => fn()));
+      formatUnlistenRefs.current.forEach((fn) => fn());
+      formatUnlistenRefs.current = [];
     };
   }, [get]);
 
@@ -163,12 +191,22 @@ function MilkdownEditorInner() {
 }
 
 export function Editor() {
+  const sourceMode = useEditorStore((state) => state.sourceMode);
+  const zoomLevel = useEditorStore((state) => state.zoomLevel);
+
   return (
     <div className="editor-container">
-      <div className="editor-content">
-        <MilkdownProvider>
-          <MilkdownEditorInner />
-        </MilkdownProvider>
+      <div
+        className="editor-content"
+        style={{ fontSize: `${zoomLevel}%` }}
+      >
+        {sourceMode ? (
+          <SourceEditor />
+        ) : (
+          <MilkdownProvider>
+            <MilkdownEditorInner />
+          </MilkdownProvider>
+        )}
       </div>
     </div>
   );
