@@ -8,7 +8,6 @@ interface EditorState {
   focusModeEnabled: boolean;
   typewriterModeEnabled: boolean;
   sourceMode: boolean;
-  zoomLevel: number;
 }
 
 interface EditorActions {
@@ -19,9 +18,6 @@ interface EditorActions {
   toggleFocusMode: () => void;
   toggleTypewriterMode: () => void;
   toggleSourceMode: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-  resetZoom: () => void;
   reset: () => void;
 }
 
@@ -33,7 +29,6 @@ const initialState: EditorState = {
   focusModeEnabled: false,
   typewriterModeEnabled: false,
   sourceMode: false,
-  zoomLevel: 100,
 };
 
 export const useEditorStore = create<EditorState & EditorActions>((set) => ({
@@ -69,14 +64,6 @@ export const useEditorStore = create<EditorState & EditorActions>((set) => ({
 
   toggleSourceMode: () =>
     set((state) => ({ sourceMode: !state.sourceMode })),
-
-  zoomIn: () =>
-    set((state) => ({ zoomLevel: Math.min(state.zoomLevel + 10, 200) })),
-
-  zoomOut: () =>
-    set((state) => ({ zoomLevel: Math.max(state.zoomLevel - 10, 50) })),
-
-  resetZoom: () => set({ zoomLevel: 100 }),
 
   reset: () => set(initialState),
 }));

@@ -192,14 +192,10 @@ function MilkdownEditorInner() {
 
 export function Editor() {
   const sourceMode = useEditorStore((state) => state.sourceMode);
-  const zoomLevel = useEditorStore((state) => state.zoomLevel);
 
   return (
     <div className="editor-container">
-      <div
-        className="editor-content"
-        style={{ fontSize: `${zoomLevel}%` }}
-      >
+      <div className="editor-content">
         {sourceMode ? (
           <SourceEditor />
         ) : (

@@ -64,16 +64,6 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
                 true,
                 Some("Ctrl+CmdOrCtrl+1"),
             )?,
-            &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, "zoom-in", "Zoom In", true, Some("CmdOrCtrl+Plus"))?,
-            &MenuItem::with_id(app, "zoom-out", "Zoom Out", true, Some("CmdOrCtrl+Minus"))?,
-            &MenuItem::with_id(
-                app,
-                "actual-size",
-                "Actual Size",
-                true,
-                Some("CmdOrCtrl+Shift+0"),
-            )?,
         ],
     )?;
 

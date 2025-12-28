@@ -37,22 +37,6 @@ export function useMenuEvents() {
         useUIStore.getState().toggleOutline();
       });
       unlistenRefs.current.push(unlistenOutline);
-
-      // Zoom events
-      const unlistenZoomIn = await listen("menu:zoom-in", () => {
-        useEditorStore.getState().zoomIn();
-      });
-      unlistenRefs.current.push(unlistenZoomIn);
-
-      const unlistenZoomOut = await listen("menu:zoom-out", () => {
-        useEditorStore.getState().zoomOut();
-      });
-      unlistenRefs.current.push(unlistenZoomOut);
-
-      const unlistenActualSize = await listen("menu:actual-size", () => {
-        useEditorStore.getState().resetZoom();
-      });
-      unlistenRefs.current.push(unlistenActualSize);
     };
 
     setupListeners();
