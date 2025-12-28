@@ -4,7 +4,7 @@
  * Handles block-level nodes: headings, code blocks, blockquotes, lists
  */
 
-import { Decoration } from "@milkdown/kit/prose/view";
+import type { Decoration } from "@milkdown/kit/prose/view";
 import type { ResolvedPos } from "@milkdown/kit/prose/model";
 import { addWidgetDecoration } from "./utils";
 

@@ -4,7 +4,7 @@
  * Handles inline marks: bold, italic, code, strikethrough, link
  */
 
-import { Decoration } from "@milkdown/kit/prose/view";
+import type { Decoration } from "@milkdown/kit/prose/view";
 import type { Node, Mark, ResolvedPos } from "@milkdown/kit/prose/model";
 import { addWidgetDecoration } from "./utils";
 
