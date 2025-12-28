@@ -105,6 +105,9 @@ export function SourceEditor() {
 
     viewRef.current = view;
 
+    // Auto-focus on mount
+    view.focus();
+
     return () => {
       view.destroy();
       viewRef.current = null;

@@ -3,6 +3,7 @@ import {
   Editor as MilkdownEditor,
   rootCtx,
   defaultValueCtx,
+  editorViewCtx,
 } from "@milkdown/kit/core";
 import { commonmark } from "@milkdown/kit/preset/commonmark";
 import {
@@ -29,36 +30,14 @@ import { useTableCommands } from "@/hooks/useTableCommands";
 import { SourceEditor } from "./SourceEditor";
 import "./editor.css";
 
-const DEFAULT_CONTENT = `# Welcome to VMark
-
-A **-style** markdown editor built with:
-
-- [Tauri](https://tauri.app) - Desktop framework
-- [Milkdown](https://milkdown.dev) - WYSIWYG editor
-- [React](https://react.dev) - UI framework
-
-## Features
-
-- Seamless WYSIWYG editing
-- Focus mode
-- Typewriter mode
-- File management
-
-Start writing...
-`;
 
 function MilkdownEditorInner() {
   const content = useEditorStore((state) => state.content);
-  const filePath = useEditorStore((state) => state.filePath);
-
-  // Compute initial content once
-  const initialContent = filePath !== null || content.length > 0
-    ? content
-    : DEFAULT_CONTENT;
 
   // Track if content change is from editor (internal) or external (store)
   const isInternalChange = useRef(false);
-  const lastExternalContent = useRef<string>(initialContent);
+  // Use empty string to force sync on mount
+  const lastExternalContent = useRef<string>("");
   const formatUnlistenRefs = useRef<UnlistenFn[]>([]);
 
   const handleMarkdownUpdate = useCallback((_: unknown, markdown: string) => {
@@ -74,7 +53,7 @@ function MilkdownEditorInner() {
     MilkdownEditor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root);
-        ctx.set(defaultValueCtx, initialContent);
+        ctx.set(defaultValueCtx, content);
       })
       .use(commonmark)
       .use(gfm)
@@ -89,6 +68,23 @@ function MilkdownEditorInner() {
         ctx.get(listenerCtx).markdownUpdated(handleMarkdownUpdate);
       })
   );
+
+  // Auto-focus on mount
+  useEffect(() => {
+    const editor = get();
+    if (!editor) return;
+
+    // Delay to ensure editor is fully mounted
+    requestAnimationFrame(() => {
+      editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        view.focus();
+        // Dispatch empty transaction to ensure cursor is visible
+        view.dispatch(view.state.tr);
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Sync external content changes TO the editor
   useEffect(() => {
@@ -188,14 +184,18 @@ function MilkdownEditorInner() {
 
 export function Editor() {
   const sourceMode = useEditorStore((state) => state.sourceMode);
+  const filePath = useEditorStore((state) => state.filePath);
+
+  // Key ensures editor recreates when file changes
+  const fileKey = filePath ?? "new";
 
   return (
     <div className="editor-container">
       <div className="editor-content">
         {sourceMode ? (
-          <SourceEditor />
+          <SourceEditor key={fileKey} />
         ) : (
-          <MilkdownProvider>
+          <MilkdownProvider key={fileKey}>
             <MilkdownEditorInner />
           </MilkdownProvider>
         )}
