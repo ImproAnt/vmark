@@ -34,9 +34,11 @@ import {
   restoreCursorInProseMirror,
 } from "@/utils/cursorSync/prosemirror";
 import { syntaxRevealPlugin } from "@/plugins/syntaxReveal";
+import { alertBlockPlugin } from "@/plugins/alertBlock";
 import { SourceEditor } from "./SourceEditor";
 import "./editor.css";
 import "@/plugins/syntaxReveal/syntax-reveal.css";
+import "@/plugins/alertBlock/alert-block.css";
 
 // Plugin key for cursor tracking
 const cursorSyncPluginKey = new PluginKey("cursorSync");
@@ -92,6 +94,7 @@ function MilkdownEditorInner() {
       })
       .use(commonmark)
       .use(gfm)
+      .use(alertBlockPlugin.flat())
       .use(history)
       .use(clipboard)
       .use(listener)
