@@ -36,21 +36,29 @@ export function useParagraphCommands(getEditor: GetEditor) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const setupListeners = async () => {
       // Clean up any existing listeners first
       unlistenRefs.current.forEach((fn) => fn());
       unlistenRefs.current = [];
 
+      if (cancelled) return;
+
       // Heading commands (Cmd+1 through Cmd+6)
       for (let level = 1; level <= 6; level++) {
+        if (cancelled) break;
         const unlisten = await listen(`menu:heading-${level}`, () => {
           const editor = getEditor();
           if (editor) {
             editor.action(callCommand(wrapInHeadingCommand.key, level));
           }
         });
+        if (cancelled) { unlisten(); return; }
         unlistenRefs.current.push(unlisten);
       }
+
+      if (cancelled) return;
 
       // Paragraph (turn into text)
       const unlistenParagraph = await listen("menu:paragraph", () => {
@@ -59,6 +67,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(turnIntoTextCommand.key));
         }
       });
+      if (cancelled) { unlistenParagraph(); return; }
       unlistenRefs.current.push(unlistenParagraph);
 
       // Increase heading level (H3 -> H2 -> H1, or paragraph -> H6)
@@ -67,15 +76,13 @@ export function useParagraphCommands(getEditor: GetEditor) {
         if (editor) {
           const currentLevel = getCurrentHeadingLevel(editor);
           if (currentLevel === null) {
-            // Not a heading, convert to H6
             editor.action(callCommand(wrapInHeadingCommand.key, 6));
           } else if (currentLevel > 1) {
-            // Decrease level number (increase importance)
             editor.action(callCommand(wrapInHeadingCommand.key, currentLevel - 1));
           }
-          // If already H1, do nothing
         }
       });
+      if (cancelled) { unlistenIncreaseHeading(); return; }
       unlistenRefs.current.push(unlistenIncreaseHeading);
 
       // Decrease heading level (H1 -> H2 -> H3, or H6 -> paragraph)
@@ -84,17 +91,15 @@ export function useParagraphCommands(getEditor: GetEditor) {
         if (editor) {
           const currentLevel = getCurrentHeadingLevel(editor);
           if (currentLevel === null) {
-            // Not a heading, do nothing
             return;
           } else if (currentLevel < 6) {
-            // Increase level number (decrease importance)
             editor.action(callCommand(wrapInHeadingCommand.key, currentLevel + 1));
           } else {
-            // H6 -> paragraph
             editor.action(callCommand(turnIntoTextCommand.key));
           }
         }
       });
+      if (cancelled) { unlistenDecreaseHeading(); return; }
       unlistenRefs.current.push(unlistenDecreaseHeading);
 
       // Quote
@@ -104,6 +109,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(wrapInBlockquoteCommand.key));
         }
       });
+      if (cancelled) { unlistenQuote(); return; }
       unlistenRefs.current.push(unlistenQuote);
 
       // Code Fences
@@ -113,6 +119,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(createCodeBlockCommand.key));
         }
       });
+      if (cancelled) { unlistenCodeFences(); return; }
       unlistenRefs.current.push(unlistenCodeFences);
 
       // Ordered List
@@ -122,6 +129,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(wrapInOrderedListCommand.key));
         }
       });
+      if (cancelled) { unlistenOrderedList(); return; }
       unlistenRefs.current.push(unlistenOrderedList);
 
       // Unordered List
@@ -131,6 +139,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(wrapInBulletListCommand.key));
         }
       });
+      if (cancelled) { unlistenUnorderedList(); return; }
       unlistenRefs.current.push(unlistenUnorderedList);
 
       // Task List
@@ -140,6 +149,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(wrapInBulletListCommand.key));
         }
       });
+      if (cancelled) { unlistenTaskList(); return; }
       unlistenRefs.current.push(unlistenTaskList);
 
       // Indent (sink list item)
@@ -149,6 +159,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(sinkListItemCommand.key));
         }
       });
+      if (cancelled) { unlistenIndent(); return; }
       unlistenRefs.current.push(unlistenIndent);
 
       // Outdent (lift list item)
@@ -158,6 +169,7 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(liftListItemCommand.key));
         }
       });
+      if (cancelled) { unlistenOutdent(); return; }
       unlistenRefs.current.push(unlistenOutdent);
 
       // Horizontal Line
@@ -167,14 +179,18 @@ export function useParagraphCommands(getEditor: GetEditor) {
           editor.action(callCommand(insertHrCommand.key));
         }
       });
+      if (cancelled) { unlistenHorizontalLine(); return; }
       unlistenRefs.current.push(unlistenHorizontalLine);
     };
 
     setupListeners();
 
     return () => {
-      unlistenRefs.current.forEach((fn) => fn());
+      cancelled = true;
+      const fns = unlistenRefs.current;
       unlistenRefs.current = [];
+      fns.forEach((fn) => fn());
     };
-  }, [getEditor]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }

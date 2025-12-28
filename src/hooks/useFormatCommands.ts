@@ -13,10 +13,14 @@ export function useFormatCommands(getEditor: GetEditor) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const setupListeners = async () => {
       // Clean up any existing listeners first
       unlistenRefs.current.forEach((fn) => fn());
       unlistenRefs.current = [];
+
+      if (cancelled) return;
 
       // Insert Image
       const unlistenImage = await listen("menu:image", async () => {
@@ -46,6 +50,7 @@ export function useFormatCommands(getEditor: GetEditor) {
           console.error("Failed to open image:", error);
         }
       });
+      if (cancelled) { unlistenImage(); return; }
       unlistenRefs.current.push(unlistenImage);
 
       // Clear Format
@@ -78,14 +83,18 @@ export function useFormatCommands(getEditor: GetEditor) {
           });
         }
       });
+      if (cancelled) { unlistenClearFormat(); return; }
       unlistenRefs.current.push(unlistenClearFormat);
     };
 
     setupListeners();
 
     return () => {
-      unlistenRefs.current.forEach((fn) => fn());
+      cancelled = true;
+      const fns = unlistenRefs.current;
       unlistenRefs.current = [];
+      fns.forEach((fn) => fn());
     };
-  }, [getEditor]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }

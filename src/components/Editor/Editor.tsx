@@ -48,13 +48,24 @@ Start writing...
 
 function SourceEditor() {
   const content = useEditorStore((state) => state.content);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     useEditorStore.getState().setContent(e.target.value);
   };
 
+  // Auto-resize textarea to fit content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [content]);
+
   return (
     <textarea
+      ref={textareaRef}
       className="source-editor"
       value={content}
       onChange={handleChange}
@@ -133,10 +144,14 @@ function MilkdownEditorInner() {
 
   // Handle Format menu events
   useEffect(() => {
+    let cancelled = false;
+
     const setupListeners = async () => {
       // Clean up any existing listeners first
       formatUnlistenRefs.current.forEach((fn) => fn());
       formatUnlistenRefs.current = [];
+
+      if (cancelled) return;
 
       const unlistenBold = await listen("menu:bold", () => {
         const editor = get();
@@ -144,6 +159,7 @@ function MilkdownEditorInner() {
           editor.action(callCommand(toggleStrongCommand.key));
         }
       });
+      if (cancelled) { unlistenBold(); return; }
       formatUnlistenRefs.current.push(unlistenBold);
 
       const unlistenItalic = await listen("menu:italic", () => {
@@ -152,6 +168,7 @@ function MilkdownEditorInner() {
           editor.action(callCommand(toggleEmphasisCommand.key));
         }
       });
+      if (cancelled) { unlistenItalic(); return; }
       formatUnlistenRefs.current.push(unlistenItalic);
 
       const unlistenStrikethrough = await listen("menu:strikethrough", () => {
@@ -160,6 +177,7 @@ function MilkdownEditorInner() {
           editor.action(callCommand(toggleStrikethroughCommand.key));
         }
       });
+      if (cancelled) { unlistenStrikethrough(); return; }
       formatUnlistenRefs.current.push(unlistenStrikethrough);
 
       const unlistenCode = await listen("menu:code", () => {
@@ -168,6 +186,7 @@ function MilkdownEditorInner() {
           editor.action(callCommand(toggleInlineCodeCommand.key));
         }
       });
+      if (cancelled) { unlistenCode(); return; }
       formatUnlistenRefs.current.push(unlistenCode);
 
       const unlistenLink = await listen("menu:link", () => {
@@ -176,16 +195,20 @@ function MilkdownEditorInner() {
           editor.action(callCommand(toggleLinkCommand.key, { href: "" }));
         }
       });
+      if (cancelled) { unlistenLink(); return; }
       formatUnlistenRefs.current.push(unlistenLink);
     };
 
     setupListeners();
 
     return () => {
-      formatUnlistenRefs.current.forEach((fn) => fn());
+      cancelled = true;
+      const fns = formatUnlistenRefs.current;
       formatUnlistenRefs.current = [];
+      fns.forEach((fn) => fn());
     };
-  }, [get]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return <Milkdown />;
 }

@@ -11,16 +11,15 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 2em 40px 40px;
+  padding: 30px 10% 100px;
 }
 
-/* Milkdown Editor Styles */
+/* Milkdown Editor Styles - GitHub Theme */
 .milkdown {
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
   font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 18px;
+  line-height: 1.8;
   color: var(--text-color);
 }
 
@@ -33,6 +32,7 @@
 .milkdown .ProseMirror {
   margin: 0;
   padding: 0;
+  outline: none;
 }
 
 .milkdown .editor {
@@ -48,47 +48,69 @@
 
 .milkdown .ProseMirror p,
 .milkdown .ProseMirror li {
-  line-height: 1.6;
+  line-height: 1.8;
 }
 
 /* Headings */
+.milkdown h1,
+.milkdown h2,
+.milkdown h3,
+.milkdown h4,
+.milkdown h5,
+.milkdown h6 {
+  position: relative;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  line-height: 1.6;
+  cursor: text;
+}
+
 .milkdown h1 {
-  font-size: 2em;
-  font-weight: 600;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  font-size: 2.25em;
+  line-height: 1.5;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--border-color);
 }
 
 .milkdown h2 {
-  font-size: 1.5em;
-  font-weight: 600;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  font-size: 1.75em;
+  line-height: 1.45;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--border-color);
 }
 
 .milkdown h3 {
-  font-size: 1.25em;
-  font-weight: 600;
-  margin-top: 1.25em;
-  margin-bottom: 0.5em;
+  font-size: 1.5em;
+  line-height: 1.4;
 }
 
-.milkdown h4,
-.milkdown h5,
+.milkdown h4 {
+  font-size: 1.25em;
+}
+
+.milkdown h5 {
+  font-size: 1em;
+}
+
 .milkdown h6 {
   font-size: 1em;
-  font-weight: 600;
-  margin-top: 1em;
-  margin-bottom: 0.5em;
+  color: var(--meta-content-color);
+}
+
+/* Code in headings inherits font size */
+.milkdown h1 code,
+.milkdown h2 code,
+.milkdown h3 code,
+.milkdown h4 code,
+.milkdown h5 code,
+.milkdown h6 code {
+  font-size: inherit;
 }
 
 /* Paragraphs */
 .milkdown p {
-  margin: 0.75em 0;
+  margin: 0.8em 0;
 }
 
 /* Links */
@@ -104,8 +126,23 @@
 /* Lists */
 .milkdown ul,
 .milkdown ol {
-  margin: 0.75em 0;
-  padding-left: 2em;
+  margin: 0.8em 0;
+  padding-left: 30px;
+}
+
+.milkdown ul:first-child,
+.milkdown ol:first-child {
+  margin-top: 0;
+}
+
+.milkdown ul:last-child,
+.milkdown ol:last-child {
+  margin-bottom: 0;
+}
+
+.milkdown li > ul,
+.milkdown li > ol {
+  margin: 0;
 }
 
 .milkdown li {
@@ -120,70 +157,108 @@
   list-style-type: decimal;
 }
 
-/* Code */
+/* Code - inline */
 .milkdown code {
   font-family: var(--font-mono);
   font-size: 0.9em;
   background-color: var(--code-bg-color);
   color: var(--code-text-color);
-  padding: 0.2em 0.4em;
+  border: 1px solid var(--code-border-color);
   border-radius: 3px;
+  padding: 2px 4px 0 4px;
 }
 
+/* Code blocks */
 .milkdown pre {
   font-family: var(--font-mono);
   font-size: 0.9em;
   background-color: var(--code-bg-color);
   color: var(--code-text-color);
   padding: 1em;
-  border-radius: 6px;
+  padding-top: 8px;
+  padding-bottom: 6px;
+  border-radius: 3px;
   overflow-x: auto;
-  margin: 1em 0;
+  margin: 15px 0;
 }
 
 .milkdown pre code {
   background: none;
+  border: none;
   padding: 0;
 }
 
 /* Blockquotes */
 .milkdown blockquote {
-  border-left: 4px solid var(--primary-color);
-  margin: 1em 0;
-  padding-left: 1em;
+  border-left: 4px solid var(--table-border-color);
+  margin: 0.8em 0;
+  padding: 0 15px;
   color: var(--meta-content-color);
+}
+
+.milkdown blockquote blockquote {
+  padding-right: 0;
 }
 
 /* Horizontal rule */
 .milkdown hr {
-  border: none;
-  border-top: 1px solid var(--border-color);
-  margin: 2em 0;
+  height: 2px;
+  padding: 0;
+  margin: 16px 0;
+  background-color: #e7e7e7;
+  border: 0 none;
+  overflow: hidden;
+  box-sizing: content-box;
 }
 
 /* Tables */
 .milkdown table {
+  padding: 0;
+  word-break: initial;
   border-collapse: collapse;
   width: 100%;
-  margin: 1em 0;
+  margin: 0.8em 0;
 }
 
-.milkdown th,
-.milkdown td {
-  border: 1px solid var(--border-color);
-  padding: 0.5em 1em;
-  text-align: left;
+.milkdown table tr {
+  border: 1px solid var(--table-border-color);
+  margin: 0;
+  padding: 0;
+}
+
+.milkdown table tr:nth-child(2n),
+.milkdown thead {
+  background-color: var(--bg-secondary);
 }
 
 .milkdown th {
-  background-color: var(--sidebar-bg);
-  font-weight: 600;
+  font-weight: bold;
+  border: 1px solid var(--table-border-color);
+  border-bottom: 0;
+  margin: 0;
+  padding: 6px 13px;
+}
+
+.milkdown td {
+  border: 1px solid var(--table-border-color);
+  margin: 0;
+  padding: 6px 13px;
+}
+
+.milkdown th:first-child,
+.milkdown td:first-child {
+  margin-top: 0;
+}
+
+.milkdown th:last-child,
+.milkdown td:last-child {
+  margin-bottom: 0;
 }
 
 /* Task lists */
 .milkdown .task-list-item {
   list-style-type: none;
-  margin-left: -1.5em;
+  margin-left: -1.3em;
 }
 
 .milkdown .task-list-item input[type="checkbox"] {
@@ -195,15 +270,18 @@
   max-width: 100%;
   height: auto;
   border-radius: 4px;
+  border: 1px solid var(--border-color);
 }
 
 /* Strong and emphasis */
 .milkdown strong {
-  font-weight: 600;
+  font-weight: bold;
+  color: var(--strong-color);
 }
 
 .milkdown em {
   font-style: italic;
+  color: var(--emphasis-color);
 }
 
 /* Strikethrough */
@@ -212,7 +290,7 @@
   color: var(--meta-content-color);
 }
 
-/* Focus mode styles (to be implemented) */
+/* Focus mode styles */
 .focus-mode .milkdown > *:not(.md-focus) {
   color: var(--blur-text-color);
   transition: color 0.2s ease;
@@ -223,23 +301,39 @@
   filter: grayscale(30%);
 }
 
-/* Source code editor */
+.on-focus-mode .milkdown blockquote {
+  border-left-color: rgba(85, 85, 85, 0.12);
+}
+
+/* Source code editor - matches .milkdown spacing */
 .source-editor {
   width: 100%;
-  height: 100%;
-  max-width: 800px;
-  margin: 0 auto;
+  min-height: 100%;
   padding: 0;
   border: none;
   outline: none;
   resize: none;
   font-family: var(--font-mono);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.8;
   color: var(--text-color);
   background-color: transparent;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .source-editor:focus {
   outline: none;
+}
+
+/* Print styles */
+@media print {
+  .milkdown {
+    font-size: 13px;
+  }
+
+  .milkdown pre {
+    page-break-inside: avoid;
+    word-wrap: break-word;
+  }
 }

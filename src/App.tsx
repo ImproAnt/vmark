@@ -59,7 +59,7 @@ function App() {
           <div
             data-tauri-drag-region
             style={{
-              height: 20,
+              height: "2em",
               flexShrink: 0,
             }}
           />

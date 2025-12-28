@@ -30,10 +30,14 @@ export function useTableCommands(getEditor: GetEditor) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const setupListeners = async () => {
       // Clean up any existing listeners first
       unlistenRefs.current.forEach((fn) => fn());
       unlistenRefs.current = [];
+
+      if (cancelled) return;
 
       // Insert Table
       const unlistenInsertTable = await listen("menu:insert-table", () => {
@@ -44,6 +48,7 @@ export function useTableCommands(getEditor: GetEditor) {
           });
         }
       });
+      if (cancelled) { unlistenInsertTable(); return; }
       unlistenRefs.current.push(unlistenInsertTable);
 
       // Add Row Before
@@ -53,6 +58,7 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(addRowBeforeCommand.key));
         }
       });
+      if (cancelled) { unlistenAddRowBefore(); return; }
       unlistenRefs.current.push(unlistenAddRowBefore);
 
       // Add Row After
@@ -62,6 +68,7 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(addRowAfterCommand.key));
         }
       });
+      if (cancelled) { unlistenAddRowAfter(); return; }
       unlistenRefs.current.push(unlistenAddRowAfter);
 
       // Add Column Before
@@ -71,6 +78,7 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(addColBeforeCommand.key));
         }
       });
+      if (cancelled) { unlistenAddColBefore(); return; }
       unlistenRefs.current.push(unlistenAddColBefore);
 
       // Add Column After
@@ -80,6 +88,7 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(addColAfterCommand.key));
         }
       });
+      if (cancelled) { unlistenAddColAfter(); return; }
       unlistenRefs.current.push(unlistenAddColAfter);
 
       // Delete Selected Cells
@@ -89,6 +98,7 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(deleteSelectedCellsCommand.key));
         }
       });
+      if (cancelled) { unlistenDeleteCells(); return; }
       unlistenRefs.current.push(unlistenDeleteCells);
 
       // Align Left
@@ -98,6 +108,7 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(setAlignCommand.key, "left"));
         }
       });
+      if (cancelled) { unlistenAlignLeft(); return; }
       unlistenRefs.current.push(unlistenAlignLeft);
 
       // Align Center
@@ -107,6 +118,7 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(setAlignCommand.key, "center"));
         }
       });
+      if (cancelled) { unlistenAlignCenter(); return; }
       unlistenRefs.current.push(unlistenAlignCenter);
 
       // Align Right
@@ -116,14 +128,18 @@ export function useTableCommands(getEditor: GetEditor) {
           editor.action(callCommand(setAlignCommand.key, "right"));
         }
       });
+      if (cancelled) { unlistenAlignRight(); return; }
       unlistenRefs.current.push(unlistenAlignRight);
     };
 
     setupListeners();
 
     return () => {
-      unlistenRefs.current.forEach((fn) => fn());
+      cancelled = true;
+      const fns = unlistenRefs.current;
       unlistenRefs.current = [];
+      fns.forEach((fn) => fn());
     };
-  }, [getEditor]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }

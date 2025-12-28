@@ -1,6 +1,6 @@
-import { useEffect, useCallback } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { useEffect, useCallback, useRef } from "react";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { open, save, ask } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { useEditorStore } from "@/stores/editorStore";
 
@@ -18,10 +18,26 @@ async function saveToPath(path: string, content: string): Promise<boolean> {
 
 export function useFileOperations() {
   const handleNew = useCallback(async () => {
+    const { isDirty } = useEditorStore.getState();
+    if (isDirty) {
+      const confirmed = await ask("You have unsaved changes. Discard them?", {
+        title: "Unsaved Changes",
+        kind: "warning",
+      });
+      if (!confirmed) return;
+    }
     useEditorStore.getState().reset();
   }, []);
 
   const handleOpen = useCallback(async () => {
+    const { isDirty } = useEditorStore.getState();
+    if (isDirty) {
+      const confirmed = await ask("You have unsaved changes. Discard them?", {
+        title: "Unsaved Changes",
+        kind: "warning",
+      });
+      if (!confirmed) return;
+    }
     try {
       const path = await open({
         filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
@@ -65,20 +81,57 @@ export function useFileOperations() {
   }, []);
 
   const handleClose = useCallback(async () => {
+    const { isDirty } = useEditorStore.getState();
+    if (isDirty) {
+      const confirmed = await ask("You have unsaved changes. Discard them?", {
+        title: "Unsaved Changes",
+        kind: "warning",
+      });
+      if (!confirmed) return;
+    }
     useEditorStore.getState().reset();
   }, []);
 
-  useEffect(() => {
-    const unlisten: Promise<() => void>[] = [];
+  const unlistenRefs = useRef<UnlistenFn[]>([]);
 
-    unlisten.push(listen("menu:new", handleNew));
-    unlisten.push(listen("menu:open", handleOpen));
-    unlisten.push(listen("menu:save", handleSave));
-    unlisten.push(listen("menu:save-as", handleSaveAs));
-    unlisten.push(listen("menu:close", handleClose));
+  useEffect(() => {
+    let cancelled = false;
+
+    const setupListeners = async () => {
+      // Clean up any existing listeners first
+      unlistenRefs.current.forEach((fn) => fn());
+      unlistenRefs.current = [];
+
+      if (cancelled) return;
+
+      const unlistenNew = await listen("menu:new", handleNew);
+      if (cancelled) { unlistenNew(); return; }
+      unlistenRefs.current.push(unlistenNew);
+
+      const unlistenOpen = await listen("menu:open", handleOpen);
+      if (cancelled) { unlistenOpen(); return; }
+      unlistenRefs.current.push(unlistenOpen);
+
+      const unlistenSave = await listen("menu:save", handleSave);
+      if (cancelled) { unlistenSave(); return; }
+      unlistenRefs.current.push(unlistenSave);
+
+      const unlistenSaveAs = await listen("menu:save-as", handleSaveAs);
+      if (cancelled) { unlistenSaveAs(); return; }
+      unlistenRefs.current.push(unlistenSaveAs);
+
+      const unlistenClose = await listen("menu:close", handleClose);
+      if (cancelled) { unlistenClose(); return; }
+      unlistenRefs.current.push(unlistenClose);
+    };
+
+    setupListeners();
 
     return () => {
-      Promise.all(unlisten).then((fns) => fns.forEach((fn) => fn()));
+      cancelled = true;
+      const fns = unlistenRefs.current;
+      unlistenRefs.current = [];
+      fns.forEach((fn) => fn());
     };
   }, [handleNew, handleOpen, handleSave, handleSaveAs, handleClose]);
 }
