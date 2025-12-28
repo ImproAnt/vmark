@@ -33,8 +33,10 @@ import {
   getCursorInfoFromProseMirror,
   restoreCursorInProseMirror,
 } from "@/utils/cursorSync/prosemirror";
+import { syntaxRevealPlugin } from "@/plugins/syntaxReveal";
 import { SourceEditor } from "./SourceEditor";
 import "./editor.css";
+import "@/plugins/syntaxReveal/syntax-reveal.css";
 
 // Plugin key for cursor tracking
 const cursorSyncPluginKey = new PluginKey("cursorSync");
@@ -97,6 +99,7 @@ function MilkdownEditorInner() {
       .use(indent)
       .use(trailing)
       .use(cursorSyncPlugin)
+      .use(syntaxRevealPlugin)
       .config((ctx) => {
         // Configure listener AFTER the plugin is loaded
         ctx.get(listenerCtx).markdownUpdated(handleMarkdownUpdate);
