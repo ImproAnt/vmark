@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -52,6 +53,28 @@ export function useMenuEvents() {
       });
       if (cancelled) { unlistenWordWrap(); return; }
       unlistenRefs.current.push(unlistenWordWrap);
+
+      const unlistenPreferences = await listen("menu:preferences", async () => {
+        // Check if settings window already exists
+        const existing = await WebviewWindow.getByLabel("settings");
+        if (existing) {
+          await existing.setFocus();
+          return;
+        }
+        // Create new settings window
+        new WebviewWindow("settings", {
+          url: "/settings",
+          title: "Settings",
+          width: 700,
+          height: 500,
+          center: true,
+          resizable: false,
+          hiddenTitle: true,
+          titleBarStyle: "overlay",
+        });
+      });
+      if (cancelled) { unlistenPreferences(); return; }
+      unlistenRefs.current.push(unlistenPreferences);
     };
 
     setupListeners();

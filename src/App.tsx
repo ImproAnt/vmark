@@ -1,12 +1,14 @@
+import { Routes, Route } from "react-router-dom";
 import { Editor } from "@/components/Editor";
 import { Sidebar } from "@/components/Sidebar";
 import { StatusBar } from "@/components/StatusBar";
+import { SettingsPage } from "@/pages/Settings";
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useMenuEvents } from "@/hooks/useMenuEvents";
 import { useFileOperations } from "@/hooks/useFileOperations";
 
-function App() {
+function MainLayout() {
   const focusModeEnabled = useEditorStore((state) => state.focusModeEnabled);
   const typewriterModeEnabled = useEditorStore(
     (state) => state.typewriterModeEnabled
@@ -68,6 +70,15 @@ function App() {
         <StatusBar />
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<MainLayout />} />
+      <Route path="/settings" element={<SettingsPage />} />
+    </Routes>
   );
 }
 

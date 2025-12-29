@@ -30,6 +30,14 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &PredefinedMenuItem::copy(app, Some("Copy"))?,
             &PredefinedMenuItem::paste(app, Some("Paste"))?,
             &PredefinedMenuItem::select_all(app, Some("Select All"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(
+                app,
+                "preferences",
+                "Preferences...",
+                true,
+                Some("CmdOrCtrl+,"),
+            )?,
         ],
     )?;
 
