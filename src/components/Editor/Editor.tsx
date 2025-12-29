@@ -29,6 +29,7 @@ import { useParagraphCommands } from "@/hooks/useParagraphCommands";
 import { useFormatCommands } from "@/hooks/useFormatCommands";
 import { useTableCommands } from "@/hooks/useTableCommands";
 import { useCJKFormatCommands } from "@/hooks/useCJKFormatCommands";
+import { useImageDrop } from "@/hooks/useImageDrop";
 import { restoreCursorInProseMirror } from "@/utils/cursorSync/prosemirror";
 import { overrideKeymapPlugin, cursorSyncPlugin } from "@/plugins/editorPlugins";
 import { syntaxRevealPlugin } from "@/plugins/syntaxReveal";
@@ -173,6 +174,9 @@ function MilkdownEditorInner() {
 
   // Handle CJK Format menu events
   useCJKFormatCommands(get);
+
+  // Handle Tauri file drop events for images
+  useImageDrop(get);
 
   // Handle Format menu events
   useEffect(() => {

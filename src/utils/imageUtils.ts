@@ -7,6 +7,7 @@
 
 import { mkdir, exists, copyFile, writeFile } from "@tauri-apps/plugin-fs";
 import { dirname, join } from "@tauri-apps/api/path";
+import type { EditorView } from "@milkdown/kit/prose/view";
 
 const ASSETS_FOLDER = "assets/images";
 
@@ -21,6 +22,13 @@ export const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bm
 export function isImageFile(filename: string): boolean {
   const ext = filename.split(".").pop()?.toLowerCase();
   return IMAGE_EXTENSIONS.includes(ext || "");
+}
+
+/**
+ * Extract filename from a path (handles both / and \ separators).
+ */
+export function getFilename(path: string): string {
+  return path.split(/[/\\]/).pop() || "image.png";
 }
 
 /**
@@ -92,11 +100,35 @@ export async function copyImageToAssets(
   documentPath: string
 ): Promise<string> {
   const assetsPath = await ensureAssetsFolder(documentPath);
-  const originalName = sourcePath.split("/").pop() || "image.png";
+  const originalName = getFilename(sourcePath);
   const filename = generateUniqueFilename(originalName);
   const destPath = await join(assetsPath, filename);
 
   await copyFile(sourcePath, destPath);
 
   return `./${ASSETS_FOLDER}/${filename}`;
+}
+
+/**
+ * Insert an image node into the ProseMirror editor.
+ * Used by both paste handler and drag-drop handler.
+ */
+export function insertImageNode(
+  view: EditorView,
+  src: string,
+  pos?: number
+): void {
+  const { state } = view;
+  const imageType = state.schema.nodes.image;
+  if (!imageType) return;
+
+  const imageNode = imageType.create({
+    src,
+    alt: "",
+    title: "",
+  });
+
+  const insertPos = pos ?? state.selection.from;
+  const tr = state.tr.insert(insertPos, imageNode);
+  view.dispatch(tr);
 }
