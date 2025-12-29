@@ -31,7 +31,7 @@ import { useTableCommands } from "@/hooks/useTableCommands";
 import { useCJKFormatCommands } from "@/hooks/useCJKFormatCommands";
 import { useImageDrop } from "@/hooks/useImageDrop";
 import { restoreCursorInProseMirror } from "@/utils/cursorSync/prosemirror";
-import { overrideKeymapPlugin, cursorSyncPlugin } from "@/plugins/editorPlugins";
+import { overrideKeymapPlugin, cursorSyncPlugin, blankDocFocusPlugin } from "@/plugins/editorPlugins";
 import { syntaxRevealPlugin } from "@/plugins/syntaxReveal";
 import { alertBlockPlugin } from "@/plugins/alertBlock";
 import { detailsBlockPlugin } from "@/plugins/detailsBlock";
@@ -88,6 +88,7 @@ function MilkdownEditorInner() {
       .use(indent)
       .use(trailing)
       .use(cursorSyncPlugin)
+      .use(blankDocFocusPlugin)
       .use(syntaxRevealPlugin)
       .use(focusModePlugin)
       .use(typewriterModePlugin)
@@ -177,6 +178,62 @@ function MilkdownEditorInner() {
 
   // Handle Tauri file drop events for images
   useImageDrop(get);
+
+  // Keep focus in blank documents - refocus when editor loses focus
+  useEffect(() => {
+    const editor = get();
+    if (!editor) return;
+
+    let blurTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const handleBlur = () => {
+      // Small delay to allow intentional focus changes (e.g., to dialogs)
+      blurTimeout = setTimeout(() => {
+        const currentEditor = get();
+        if (!currentEditor) return;
+
+        currentEditor.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const { doc } = view.state;
+
+          // Only refocus if document is blank (single empty paragraph)
+          if (doc.childCount !== 1) return;
+          const firstChild = doc.firstChild;
+          if (!firstChild || !firstChild.isTextblock || firstChild.content.size > 0) return;
+
+          // Check if focus went to a dialog or input - don't steal focus back
+          const activeElement = document.activeElement;
+          if (activeElement?.tagName === "INPUT" ||
+              activeElement?.tagName === "TEXTAREA" ||
+              activeElement?.closest("[role='dialog']")) {
+            return;
+          }
+
+          // Refocus editor
+          view.focus();
+          const selection = Selection.near(view.state.doc.resolve(1));
+          view.dispatch(view.state.tr.setSelection(selection));
+        });
+      }, 10);
+    };
+
+    // Get the ProseMirror DOM element and add blur listener
+    editor.action((ctx) => {
+      const view = ctx.get(editorViewCtx);
+      view.dom.addEventListener("blur", handleBlur);
+    });
+
+    return () => {
+      if (blurTimeout) clearTimeout(blurTimeout);
+      const currentEditor = get();
+      if (currentEditor) {
+        currentEditor.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          view.dom.removeEventListener("blur", handleBlur);
+        });
+      }
+    };
+  }, [get]);
 
   // Handle Format menu events
   useEffect(() => {
