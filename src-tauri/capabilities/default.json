@@ -11,16 +11,39 @@
     "core:window:allow-set-focus",
     "core:window:allow-close",
     "opener:default",
-    "fs:default",
-    "fs:allow-read-text-file",
-    "fs:allow-write-text-file",
-    "fs:allow-exists",
-    "fs:allow-mkdir",
-    "fs:allow-read-dir",
     "dialog:default",
     "clipboard-manager:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
-    "mcp-bridge:default"
+    "clipboard-manager:allow-read-image",
+    "mcp-bridge:default",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-copy-file",
+      "allow": [{ "path": "**" }]
+    }
   ]
 }

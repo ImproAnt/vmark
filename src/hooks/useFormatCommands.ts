@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, message } from "@tauri-apps/plugin-dialog";
 import { callCommand } from "@milkdown/kit/utils";
 import { insertImageCommand } from "@milkdown/kit/preset/commonmark";
 import { editorViewCtx } from "@milkdown/kit/core";
 import type { Editor } from "@milkdown/kit/core";
 import type { Node, Mark } from "@milkdown/kit/prose/model";
+import { useEditorStore } from "@/stores/editorStore";
+import { copyImageToAssets } from "@/utils/imageUtils";
 
 type GetEditor = () => Editor | undefined;
 
@@ -22,10 +24,10 @@ export function useFormatCommands(getEditor: GetEditor) {
 
       if (cancelled) return;
 
-      // Insert Image
+      // Insert Image - copies to assets folder
       const unlistenImage = await listen("menu:image", async () => {
         try {
-          const path = await open({
+          const sourcePath = await open({
             filters: [
               {
                 name: "Images",
@@ -34,20 +36,35 @@ export function useFormatCommands(getEditor: GetEditor) {
             ],
           });
 
-          if (path) {
-            const editor = getEditor();
-            if (editor) {
-              editor.action(
-                callCommand(insertImageCommand.key, {
-                  src: path as string,
-                  alt: "",
-                  title: "",
-                })
-              );
-            }
+          if (!sourcePath) return;
+
+          const { filePath } = useEditorStore.getState();
+          const editor = getEditor();
+          if (!editor) return;
+
+          if (!filePath) {
+            // Document unsaved - show warning
+            await message(
+              "Please save the document first to copy images to assets folder.",
+              { title: "Unsaved Document", kind: "warning" }
+            );
+            return;
           }
+
+          // Copy to assets folder and get relative path (portable)
+          const relativePath = await copyImageToAssets(sourcePath as string, filePath);
+
+          // Insert with relative path - imageViewPlugin will resolve for rendering
+          editor.action(
+            callCommand(insertImageCommand.key, {
+              src: relativePath,
+              alt: "",
+              title: "",
+            })
+          );
         } catch (error) {
-          console.error("Failed to open image:", error);
+          console.error("Failed to insert image:", error);
+          await message("Failed to insert image.", { kind: "error" });
         }
       });
       if (cancelled) { unlistenImage(); return; }

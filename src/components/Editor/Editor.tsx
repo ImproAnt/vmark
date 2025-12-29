@@ -37,6 +37,8 @@ import { detailsBlockPlugin } from "@/plugins/detailsBlock";
 import { focusModePlugin } from "@/plugins/focusMode";
 import { typewriterModePlugin } from "@/plugins/typewriterMode";
 import { searchPlugin } from "@/plugins/search/searchPlugin";
+import { imageHandlerPlugin } from "@/plugins/imageHandler";
+import { imageViewPlugin } from "@/plugins/imageView";
 import { SourceEditor } from "./SourceEditor";
 import "./editor.css";
 import "@/plugins/syntaxReveal/syntax-reveal.css";
@@ -78,6 +80,8 @@ function MilkdownEditorInner() {
       .use(detailsBlockPlugin.flat())
       .use(history)
       .use(clipboard)
+      .use(imageHandlerPlugin)
+      .use(imageViewPlugin)
       .use(listener)
       .use(cursor)
       .use(indent)
