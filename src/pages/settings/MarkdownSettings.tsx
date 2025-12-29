@@ -79,6 +79,18 @@ export function MarkdownSettings() {
         Configure whitespace and line break behavior for markdown editing.
       </p>
 
+      <SettingsGroup title="Editing">
+        <SettingRow
+          label="Reveal inline syntax"
+          description="Show markdown markers (**, *, `) when cursor is in formatted text"
+        >
+          <Toggle
+            checked={markdown.revealInlineSyntax}
+            onChange={(v) => updateSetting("revealInlineSyntax", v)}
+          />
+        </SettingRow>
+      </SettingsGroup>
+
       <SettingsGroup title="Whitespace & Line Breaks" className="">
         <SettingRow
           label="Preserve consecutive line breaks"

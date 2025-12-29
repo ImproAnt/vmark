@@ -82,6 +82,7 @@ export interface CJKFormattingSettings {
 export interface MarkdownSettings {
   preserveLineBreaks: boolean; // Don't collapse blank lines
   showBrTags: boolean; // Display <br> tags visibly
+  revealInlineSyntax: boolean; // Show markdown markers when cursor in formatted text
 }
 
 interface SettingsState {
@@ -145,6 +146,7 @@ const initialState: SettingsState = {
   markdown: {
     preserveLineBreaks: false,
     showBrTags: false,
+    revealInlineSyntax: false,
   },
 };
 
