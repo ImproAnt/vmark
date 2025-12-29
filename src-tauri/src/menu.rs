@@ -1,6 +1,49 @@
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu};
+use tauri::AppHandle;
+
+pub const RECENT_FILES_SUBMENU_ID: &str = "recent-files-submenu";
 
 pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    // App menu (macOS only - shows as app name in menu bar)
+    #[cfg(target_os = "macos")]
+    let app_menu = Submenu::with_items(
+        app,
+        "VMark",
+        true,
+        &[
+            &PredefinedMenuItem::about(app, Some("About VMark"), None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(
+                app,
+                "preferences",
+                "Settings...",
+                true,
+                Some("CmdOrCtrl+,"),
+            )?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::services(app, Some("Services"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::hide(app, Some("Hide VMark"))?,
+            &PredefinedMenuItem::hide_others(app, Some("Hide Others"))?,
+            &PredefinedMenuItem::show_all(app, Some("Show All"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::quit(app, Some("Quit VMark"))?,
+        ],
+    )?;
+
+    // Open Recent submenu (initially empty)
+    let recent_submenu = Submenu::with_id_and_items(
+        app,
+        RECENT_FILES_SUBMENU_ID,
+        "Open Recent",
+        true,
+        &[
+            &MenuItem::with_id(app, "no-recent", "No Recent Files", false, None::<&str>)?,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "clear-recent", "Clear Recent Files", true, None::<&str>)?,
+        ],
+    )?;
+
     // File menu
     let file_menu = Submenu::with_items(
         app,
@@ -9,6 +52,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         &[
             &MenuItem::with_id(app, "new", "New", true, Some("CmdOrCtrl+N"))?,
             &MenuItem::with_id(app, "open", "Open...", true, Some("CmdOrCtrl+O"))?,
+            &recent_submenu,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?,
             &MenuItem::with_id(app, "save-as", "Save As...", true, Some("CmdOrCtrl+Shift+S"))?,
@@ -79,14 +123,6 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             )?,
             &PredefinedMenuItem::separator(app)?,
             &history_submenu,
-            &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(
-                app,
-                "preferences",
-                "Preferences...",
-                true,
-                Some("CmdOrCtrl+,"),
-            )?,
         ],
     )?;
 
@@ -322,6 +358,21 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
+    #[cfg(target_os = "macos")]
+    return Menu::with_items(
+        app,
+        &[
+            &app_menu,
+            &file_menu,
+            &edit_menu,
+            &paragraph_menu,
+            &format_menu,
+            &view_menu,
+            &help_menu,
+        ],
+    );
+
+    #[cfg(not(target_os = "macos"))]
     Menu::with_items(
         app,
         &[
@@ -333,4 +384,68 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &help_menu,
         ],
     )
+}
+
+/// Update the Open Recent submenu with the given list of file paths
+pub fn update_recent_files_menu(app: &AppHandle, files: Vec<String>) -> tauri::Result<()> {
+    // Get the menu
+    let Some(menu) = app.menu() else {
+        return Ok(());
+    };
+
+    // Find the recent files submenu - it's nested inside File menu
+    // Need to search through all submenus
+    let mut submenu_opt = None;
+    for item in menu.items()? {
+        if let MenuItemKind::Submenu(sub) = item {
+            // Check if this submenu contains our target
+            if let Some(found) = sub.get(RECENT_FILES_SUBMENU_ID) {
+                if let MenuItemKind::Submenu(recent) = found {
+                    submenu_opt = Some(recent);
+                    break;
+                }
+            }
+        }
+    }
+
+    let Some(submenu) = submenu_opt else {
+        return Ok(());
+    };
+
+    // Remove all existing items
+    while let Some(item) = submenu.items()?.first() {
+        submenu.remove(item)?;
+    }
+
+    // Add file items
+    if files.is_empty() {
+        let no_recent = MenuItem::with_id(app, "no-recent", "No Recent Files", false, None::<&str>)?;
+        submenu.append(&no_recent)?;
+    } else {
+        for (index, path) in files.iter().enumerate() {
+            // Extract filename from path
+            let filename = std::path::Path::new(path)
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or(path);
+
+            let item_id = format!("recent-file-{}", index);
+            let item = MenuItem::with_id(app, &item_id, filename, true, None::<&str>)?;
+            submenu.append(&item)?;
+        }
+    }
+
+    // Add separator and clear option
+    let separator = PredefinedMenuItem::separator(app)?;
+    submenu.append(&separator)?;
+
+    let clear_item = MenuItem::with_id(app, "clear-recent", "Clear Recent Files", !files.is_empty(), None::<&str>)?;
+    submenu.append(&clear_item)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_recent_files(app: AppHandle, files: Vec<String>) -> Result<(), String> {
+    update_recent_files_menu(&app, files).map_err(|e| e.to_string())
 }

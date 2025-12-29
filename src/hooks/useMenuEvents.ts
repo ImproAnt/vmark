@@ -2,8 +2,10 @@ import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { ask } from "@tauri-apps/plugin-dialog";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
+import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { clearAllHistory } from "@/utils/historyUtils";
 
 export function useMenuEvents() {
@@ -106,6 +108,62 @@ export function useMenuEvents() {
       });
       if (cancelled) { unlistenClearHistory(); return; }
       unlistenRefs.current.push(unlistenClearHistory);
+
+      // Clear Recent Files
+      const unlistenClearRecent = await listen("menu:clear-recent", async () => {
+        const { files } = useRecentFilesStore.getState();
+        if (files.length === 0) return;
+
+        const confirmed = await ask(
+          "Clear the list of recently opened files?",
+          {
+            title: "Clear Recent Files",
+            kind: "warning",
+          }
+        );
+        if (confirmed) {
+          useRecentFilesStore.getState().clearAll();
+        }
+      });
+      if (cancelled) { unlistenClearRecent(); return; }
+      unlistenRefs.current.push(unlistenClearRecent);
+
+      // Open Recent File from menu
+      const unlistenOpenRecent = await listen<number>("menu:open-recent-file", async (event) => {
+        const index = event.payload;
+        const { files } = useRecentFilesStore.getState();
+
+        if (index < 0 || index >= files.length) return;
+
+        const file = files[index];
+
+        // Check for unsaved changes
+        const { isDirty } = useEditorStore.getState();
+        if (isDirty) {
+          const confirmed = await ask("You have unsaved changes. Discard them?", {
+            title: "Unsaved Changes",
+            kind: "warning",
+          });
+          if (!confirmed) return;
+        }
+
+        try {
+          const content = await readTextFile(file.path);
+          useEditorStore.getState().loadContent(content, file.path);
+          useRecentFilesStore.getState().addFile(file.path); // Move to top
+        } catch (error) {
+          console.error("Failed to open recent file:", error);
+          const remove = await ask(
+            "This file could not be opened. It may have been moved or deleted.\n\nRemove from recent files?",
+            { title: "File Not Found", kind: "warning" }
+          );
+          if (remove) {
+            useRecentFilesStore.getState().removeFile(file.path);
+          }
+        }
+      });
+      if (cancelled) { unlistenOpenRecent(); return; }
+      unlistenRefs.current.push(unlistenOpenRecent);
     };
 
     setupListeners();

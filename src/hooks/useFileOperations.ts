@@ -4,6 +4,7 @@ import { open, save, ask } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { useEditorStore } from "@/stores/editorStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { createSnapshot } from "@/utils/historyUtils";
 
 async function saveToPath(
@@ -15,6 +16,9 @@ async function saveToPath(
     await writeTextFile(path, content);
     useEditorStore.getState().setFilePath(path);
     useEditorStore.getState().markSaved();
+
+    // Add to recent files
+    useRecentFilesStore.getState().addFile(path);
 
     // Create history snapshot if enabled
     const { general } = useSettingsStore.getState();
@@ -66,6 +70,7 @@ export function useFileOperations() {
       if (path) {
         const content = await readTextFile(path);
         useEditorStore.getState().loadContent(content, path);
+        useRecentFilesStore.getState().addFile(path);
       }
     } catch (error) {
       console.error("Failed to open file:", error);

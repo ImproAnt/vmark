@@ -12,6 +12,7 @@ import { useSearchCommands } from "@/hooks/useSearchCommands";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettingsSync } from "@/hooks/useSettingsSync";
+import { useRecentFilesSync } from "@/hooks/useRecentFilesSync";
 
 function MainLayout() {
   const focusModeEnabled = useEditorStore((state) => state.focusModeEnabled);
@@ -27,6 +28,7 @@ function MainLayout() {
   useSettingsSync(); // Sync settings across windows
   useTheme();
   useAutoSave(); // Auto-save when dirty
+  useRecentFilesSync(); // Sync recent files to native menu
 
   const classNames = [
     "app-layout",
