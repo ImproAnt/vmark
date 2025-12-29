@@ -1,0 +1,73 @@
+/**
+ * Focus Mode Styles
+ *
+ * Dims all blocks except the one with .md-focus class.
+ * Inspired by the focus mode implementation.
+ */
+
+/* Transition for smooth dimming effect */
+.focus-mode .milkdown .editor > * {
+  transition: color 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+}
+
+/* Dim all top-level blocks that don't have focus */
+.focus-mode .milkdown .editor > *:not(.md-focus) {
+  color: var(--blur-text-color);
+}
+
+/* Dim images in non-focused blocks */
+.focus-mode .milkdown .editor > *:not(.md-focus) img {
+  opacity: var(--blur-image-opacity);
+  filter: grayscale(30%);
+}
+
+/* Dim code blocks */
+.focus-mode .milkdown .editor > pre:not(.md-focus) {
+  opacity: 0.4;
+}
+
+/* Nested code blocks in non-focused parents */
+.focus-mode .milkdown .editor > *:not(.md-focus) pre {
+  opacity: 0.6;
+}
+
+/* Dim blockquote borders */
+.focus-mode .milkdown .editor > blockquote:not(.md-focus) {
+  border-left-color: var(--blur-text-color);
+}
+
+/* Dim horizontal rules */
+.focus-mode .milkdown .editor > hr:not(.md-focus) {
+  opacity: 0.3;
+}
+
+/* Dim tables */
+.focus-mode .milkdown .editor > *:not(.md-focus) table,
+.focus-mode .milkdown .editor > table:not(.md-focus) {
+  opacity: 0.5;
+}
+
+/* Dim alert blocks */
+.focus-mode .milkdown .editor > .alert-block:not(.md-focus) {
+  opacity: 0.4;
+}
+
+/* Dim details blocks */
+.focus-mode .milkdown .editor > .details-block:not(.md-focus) {
+  opacity: 0.4;
+}
+
+/* Focused block stays fully visible */
+.focus-mode .milkdown .editor > .md-focus {
+  color: inherit;
+  opacity: 1;
+}
+
+.focus-mode .milkdown .editor > .md-focus img {
+  opacity: 1;
+  filter: none;
+}
+
+.focus-mode .milkdown .editor > .md-focus pre {
+  opacity: 1;
+}

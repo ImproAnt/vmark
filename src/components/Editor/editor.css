@@ -290,20 +290,7 @@
   color: var(--meta-content-color);
 }
 
-/* Focus mode styles */
-.focus-mode .milkdown > *:not(.md-focus) {
-  color: var(--blur-text-color);
-  transition: color 0.2s ease;
-}
-
-.focus-mode .milkdown > *:not(.md-focus) img {
-  opacity: var(--blur-image-opacity);
-  filter: grayscale(30%);
-}
-
-.on-focus-mode .milkdown blockquote {
-  border-left-color: rgba(85, 85, 85, 0.12);
-}
+/* Focus mode styles moved to src/plugins/focusMode/focus-mode.css */
 
 /* Source editor (CodeMirror) - matches .milkdown styling */
 .source-editor {

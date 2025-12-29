@@ -1,0 +1,15 @@
+/**
+ * Typewriter Mode Styles
+ *
+ * Adds padding to allow scrolling cursor to center of viewport
+ */
+
+/* Add padding so content can scroll to center the cursor */
+.typewriter-mode .milkdown .editor {
+  padding-bottom: 50vh;
+}
+
+/* Ensure the editor container allows smooth scrolling */
+.typewriter-mode .editor-content {
+  scroll-behavior: smooth;
+}
