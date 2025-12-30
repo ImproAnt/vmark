@@ -105,3 +105,7 @@ export function isMermaidSyntax(content: string): boolean {
       trimmed.startsWith(`%%{`) // mermaid directives
   );
 }
+
+// Re-export block components
+export { mermaidBlockSchema, mermaidBlockId } from "./mermaid-block-schema";
+export { mermaidBlockView } from "./mermaid-block-view";

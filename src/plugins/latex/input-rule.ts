@@ -3,15 +3,15 @@
  *
  * Triggers:
  * - $E=mc^2$ → creates inline math node
- * - $$ (at line start) → creates code block with language "latex"
+ * - $$ (at line start) → creates math block node
  */
 
-import { codeBlockSchema } from "@milkdown/kit/preset/commonmark";
 import { nodeRule } from "@milkdown/kit/prose";
 import { textblockTypeInputRule } from "@milkdown/kit/prose/inputrules";
 import { $inputRule } from "@milkdown/kit/utils";
 
 import { mathInlineSchema } from "./inline-latex";
+import { mathBlockSchema } from "./math-block-schema";
 
 /**
  * Input rule for inline math.
@@ -29,10 +29,8 @@ export const mathInlineInputRule = $inputRule((ctx) =>
 
 /**
  * Input rule for creating block math.
- * Typing "$$ " at the start of a line creates a code block with language latex.
+ * Typing "$$ " at the start of a line creates a math block node.
  */
 export const mathBlockInputRule = $inputRule((ctx) =>
-  textblockTypeInputRule(/^\$\$\s$/, codeBlockSchema.type(ctx), () => ({
-    language: "latex",
-  }))
+  textblockTypeInputRule(/^\$\$\s$/, mathBlockSchema.type(ctx))
 );

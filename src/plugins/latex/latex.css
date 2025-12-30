@@ -35,7 +35,7 @@
   font-size: 0.9em;
 }
 
-/* Block math preview in code blocks */
+/* Block math preview in code blocks (legacy) */
 .code-block-preview.latex-preview {
   padding: 1rem;
   text-align: center;
@@ -44,4 +44,69 @@
 
 .code-block-preview.latex-preview .katex-display {
   margin: 0;
+}
+
+/* Block math node - block style */
+.math-block {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.015);
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.math-block:hover {
+  background-color: rgba(0, 0, 0, 0.025);
+}
+
+.math-block.editing {
+  cursor: default;
+}
+
+.math-block.ProseMirror-selectednode {
+  outline: 2px solid var(--primary-color, #0a84ff);
+  outline-offset: 2px;
+}
+
+.math-block-preview {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.math-block-preview .katex-display {
+  margin: 0;
+}
+
+.math-block-placeholder {
+  color: var(--text-secondary, #656d76);
+  font-style: italic;
+}
+
+.math-block-editor {
+  display: none;
+  width: 100%;
+  min-height: 60px;
+  padding: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+  border: none;
+  background: transparent;
+  color: var(--text-color, inherit);
+  resize: none;
+  outline: none;
+  text-align: left;
+}
+
+.math-block.editing .math-block-editor {
+  display: block;
+}
+
+.math-block.editing .math-block-preview {
+  display: none;
 }

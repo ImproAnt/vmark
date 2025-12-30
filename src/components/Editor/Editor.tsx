@@ -50,12 +50,16 @@ import { imageHandlerPlugin } from "@/plugins/imageHandler";
 import { imageViewPlugin } from "@/plugins/imageView";
 import {
   remarkMathPlugin,
-  remarkMathBlockPlugin,
   mathInlineSchema,
   mathInlineInputRule,
   mathBlockInputRule,
-  blockLatexSchema,
+  mathBlockSchema,
+  mathBlockView,
 } from "@/plugins/latex";
+import {
+  mermaidBlockSchema,
+  mermaidBlockView,
+} from "@/plugins/mermaid";
 import { codePreviewPlugin } from "@/plugins/codePreview";
 import { slashMenu, configureSlashMenu } from "@/plugins/triggerMenu";
 import { SourceEditor } from "./SourceEditor";
@@ -67,6 +71,8 @@ import "@/plugins/focusMode/focus-mode.css";
 import "@/plugins/typewriterMode/typewriter-mode.css";
 import "@/plugins/search/search.css";
 import "@/plugins/codePreview/code-preview.css";
+import "@/plugins/latex/latex.css";
+import "@/plugins/mermaid/mermaid.css";
 import "katex/dist/katex.min.css";
 
 
@@ -116,11 +122,13 @@ function MilkdownEditorInner() {
       .use(typewriterModePlugin)
       .use(searchPlugin)
       .use(remarkMathPlugin)
-      .use(remarkMathBlockPlugin)
       .use(mathInlineSchema)
       .use(mathInlineInputRule)
+      .use(mathBlockSchema)
+      .use(mathBlockView)
       .use(mathBlockInputRule)
-      .use(blockLatexSchema)
+      .use(mermaidBlockSchema)
+      .use(mermaidBlockView)
       .use(codePreviewPlugin)
       .use(slashMenu)
       .config((ctx) => {

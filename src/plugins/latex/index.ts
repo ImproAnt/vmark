@@ -40,5 +40,7 @@ export function renderLatex(
 // Re-export individual components for advanced usage
 export { mathInlineSchema, mathInlineId } from "./inline-latex";
 export { blockLatexSchema } from "./block-latex";
+export { mathBlockSchema, mathBlockId } from "./math-block-schema";
+export { mathBlockView } from "./math-block-view";
 export { mathInlineInputRule, mathBlockInputRule } from "./input-rule";
-export { remarkMathPlugin, remarkMathBlockPlugin } from "./remark";
+export { remarkMathPlugin } from "./remark";

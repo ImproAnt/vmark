@@ -6,7 +6,6 @@
 
 import type { Ctx } from "@milkdown/kit/ctx";
 import { editorViewCtx } from "@milkdown/kit/core";
-import { TextSelection } from "@milkdown/kit/prose/state";
 import type { Node } from "@milkdown/kit/prose/model";
 import { callCommand } from "@milkdown/kit/utils";
 import {
@@ -20,6 +19,8 @@ import {
   liftListItemCommand,
 } from "@milkdown/kit/preset/commonmark";
 import { insertTableCommand } from "@milkdown/kit/preset/gfm";
+import { mathBlockSchema } from "@/plugins/latex/math-block-schema";
+import { mermaidBlockSchema } from "@/plugins/mermaid/mermaid-block-schema";
 import { createTriggerMenu } from "../factory";
 import type { TriggerMenuItem } from "../types";
 
@@ -358,9 +359,10 @@ const slashMenuItems: TriggerMenuItem[] = [
           normalizeToParagraph(ctx);
           const view = ctx.get(editorViewCtx);
           const { state } = view;
-          const tr = state.tr.insertText("$$\n\n$$");
-          const pos = state.selection.from + 3;
-          view.dispatch(tr.setSelection(TextSelection.create(tr.doc, pos)));
+          const mathBlockType = mathBlockSchema.type(ctx);
+          const node = mathBlockType.create();
+          const tr = state.tr.replaceSelectionWith(node);
+          view.dispatch(tr);
         },
       },
       {
@@ -371,8 +373,10 @@ const slashMenuItems: TriggerMenuItem[] = [
           normalizeToParagraph(ctx);
           const view = ctx.get(editorViewCtx);
           const { state } = view;
-          const content = "```mermaid\nflowchart TD\n    A[Start] --> B[End]\n```";
-          const tr = state.tr.insertText(content);
+          const mermaidBlockType = mermaidBlockSchema.type(ctx);
+          const defaultContent = "flowchart TD\n    A[Start] --> B[End]";
+          const node = mermaidBlockType.create({}, state.schema.text(defaultContent));
+          const tr = state.tr.replaceSelectionWith(node);
           view.dispatch(tr);
         },
       },

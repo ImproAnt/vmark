@@ -38,3 +38,73 @@
   padding: 1rem;
   text-align: center;
 }
+
+/* Mermaid block node - block style */
+.mermaid-block {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.015);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.mermaid-block:hover {
+  background-color: rgba(0, 0, 0, 0.025);
+}
+
+.mermaid-block.editing {
+  cursor: default;
+}
+
+.mermaid-block.ProseMirror-selectednode {
+  outline: 2px solid var(--primary-color, #0a84ff);
+  outline-offset: 2px;
+}
+
+.mermaid-block-preview {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+
+.mermaid-block-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-block-placeholder {
+  color: var(--text-secondary, #656d76);
+  font-style: italic;
+}
+
+.mermaid-block-loading {
+  color: var(--text-secondary, #656d76);
+  font-style: italic;
+}
+
+.mermaid-block-editor {
+  display: none;
+  width: 100%;
+  min-height: 100px;
+  padding: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+  border: none;
+  background: transparent;
+  color: var(--text-color, inherit);
+  resize: none;
+  outline: none;
+  text-align: left;
+}
+
+.mermaid-block.editing .mermaid-block-editor {
+  display: block;
+}
+
+.mermaid-block.editing .mermaid-block-preview {
+  display: none;
+}
