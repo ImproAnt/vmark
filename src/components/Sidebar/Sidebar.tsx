@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
-  FolderOpen,
+  ListTree,
   TableOfContents,
   History,
   PanelRightOpen,
@@ -245,7 +245,7 @@ export function Sidebar() {
   const getViewIcon = () => {
     switch (viewMode) {
       case "files":
-        return <FolderOpen size={16} />;
+        return <ListTree size={16} />;
       case "outline":
         return <TableOfContents size={16} />;
       case "history":
@@ -277,9 +277,17 @@ export function Sidebar() {
 
   return (
     <div className="sidebar" style={{ width: "100%", height: "100%" }}>
-      {/* Spacer for traffic lights area (drag handled by overlay in App.tsx) */}
-      <div style={{ height: 52, flexShrink: 0 }} />
-      <div className="sidebar-header">
+      {/* Traffic lights area with close button - aligned to traffic lights */}
+      <div style={{ height: 52, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingTop: 14, paddingRight: 8 }}>
+        <button
+          className="sidebar-btn"
+          onClick={() => useUIStore.getState().toggleSidebar()}
+          title="Close Sidebar"
+        >
+          <PanelRightOpen size={16} />
+        </button>
+      </div>
+      <div className="sidebar-header" style={{ marginTop: -16 }}>
         <button
           className="sidebar-btn"
           onClick={handleToggleView}
@@ -288,13 +296,6 @@ export function Sidebar() {
           {getViewIcon()}
         </button>
         <span className="sidebar-title">{getViewTitle()}</span>
-        <button
-          className="sidebar-btn"
-          onClick={() => useUIStore.getState().toggleSidebar()}
-          title="Close Sidebar"
-        >
-          <PanelRightOpen size={16} />
-        </button>
       </div>
 
       <div className="sidebar-content">
