@@ -41,6 +41,15 @@ import { typewriterModePlugin } from "@/plugins/typewriterMode";
 import { searchPlugin } from "@/plugins/search/searchPlugin";
 import { imageHandlerPlugin } from "@/plugins/imageHandler";
 import { imageViewPlugin } from "@/plugins/imageView";
+import {
+  remarkMathPlugin,
+  remarkMathBlockPlugin,
+  mathInlineSchema,
+  mathInlineInputRule,
+  mathBlockInputRule,
+  blockLatexSchema,
+} from "@/plugins/latex";
+import { codePreviewPlugin } from "@/plugins/codePreview";
 import { SourceEditor } from "./SourceEditor";
 import "./editor.css";
 import "@/plugins/syntaxReveal/syntax-reveal.css";
@@ -49,6 +58,8 @@ import "@/plugins/detailsBlock/details-block.css";
 import "@/plugins/focusMode/focus-mode.css";
 import "@/plugins/typewriterMode/typewriter-mode.css";
 import "@/plugins/search/search.css";
+import "@/plugins/codePreview/code-preview.css";
+import "katex/dist/katex.min.css";
 
 
 function MilkdownEditorInner() {
@@ -94,6 +105,13 @@ function MilkdownEditorInner() {
       .use(focusModePlugin)
       .use(typewriterModePlugin)
       .use(searchPlugin)
+      .use(remarkMathPlugin)
+      .use(remarkMathBlockPlugin)
+      .use(mathInlineSchema)
+      .use(mathInlineInputRule)
+      .use(mathBlockInputRule)
+      .use(blockLatexSchema)
+      .use(codePreviewPlugin)
       .config((ctx) => {
         // Configure listener AFTER the plugin is loaded
         ctx.get(listenerCtx).markdownUpdated(handleMarkdownUpdate);

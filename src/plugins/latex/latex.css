@@ -1,0 +1,47 @@
+/**
+ * LaTeX Plugin Styles
+ *
+ * Includes custom styles for math nodes.
+ * Note: katex.css must be imported separately.
+ */
+
+/* Inline math node */
+.math-inline {
+  display: inline-block;
+  padding: 0 0.15em;
+  vertical-align: baseline;
+}
+
+.math-inline:hover {
+  background-color: var(--color-selection, rgba(0, 122, 255, 0.1));
+  border-radius: 3px;
+}
+
+/* Selected inline math */
+.ProseMirror-selectednode .math-inline,
+.math-inline.ProseMirror-selectednode {
+  background-color: var(--color-selection, rgba(0, 122, 255, 0.2));
+  border-radius: 3px;
+  outline: 2px solid var(--color-primary, #0a84ff);
+}
+
+/* Math rendering errors */
+.math-error {
+  color: #cf222e;
+  background-color: #ffebe9;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+/* Block math preview in code blocks */
+.code-block-preview.latex-preview {
+  padding: 1rem;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.code-block-preview.latex-preview .katex-display {
+  margin: 0;
+}
