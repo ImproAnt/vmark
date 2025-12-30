@@ -8,6 +8,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
+import { getFileName } from "@/utils/pathUtils";
 
 export interface RecentFile {
   path: string;
@@ -41,7 +42,7 @@ export const useRecentFilesStore = create<RecentFilesState>()(
 
       addFile: (path: string) => {
         const { files, maxFiles } = get();
-        const name = path.split("/").pop() || path;
+        const name = getFileName(path) || path;
 
         // Remove if already exists (will be re-added at top)
         const filtered = files.filter((f) => f.path !== path);

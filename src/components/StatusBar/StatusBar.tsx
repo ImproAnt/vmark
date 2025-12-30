@@ -9,6 +9,7 @@ import {
   useDocumentLastAutoSave,
 } from "@/hooks/useDocumentState";
 import { formatRelativeTime, formatExactTime } from "@/utils/dateUtils";
+import { getFileName } from "@/utils/pathUtils";
 import "./StatusBar.css";
 
 function countWords(text: string): number {
@@ -58,7 +59,7 @@ export function StatusBar() {
 
   const wordCount = useMemo(() => countWords(content), [content]);
   const charCount = useMemo(() => countCharacters(content), [content]);
-  const fileName = filePath ? filePath.split("/").pop() : "Untitled";
+  const fileName = filePath ? getFileName(filePath) : "Untitled";
 
   return (
     <div className="status-bar-container">

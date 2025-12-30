@@ -12,13 +12,7 @@ import { dirname, join } from "@tauri-apps/api/path";
 import type { NodeView } from "@milkdown/kit/prose/view";
 import type { Node } from "@milkdown/kit/prose/model";
 import { useEditorStore } from "@/stores/editorStore";
-
-/**
- * Check if a path is relative (starts with ./ or assets/).
- */
-function isRelativePath(src: string): boolean {
-  return src.startsWith("./") || src.startsWith("assets/");
-}
+import { isRelativePath, validateImagePath } from "./security";
 
 /**
  * Convert relative path to asset URL for webview rendering.
@@ -26,6 +20,12 @@ function isRelativePath(src: string): boolean {
 async function resolveImageSrc(src: string): Promise<string> {
   if (!isRelativePath(src)) {
     return src; // Already absolute or external URL
+  }
+
+  // Validate path to prevent traversal attacks
+  if (!validateImagePath(src)) {
+    console.warn("[ImageView] Rejected invalid image path:", src);
+    return ""; // Return empty to prevent loading
   }
 
   const { filePath } = useEditorStore.getState();

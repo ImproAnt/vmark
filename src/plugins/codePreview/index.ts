@@ -11,6 +11,7 @@ import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
 import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
 import { renderLatex } from "../latex";
 import { renderMermaid } from "../mermaid";
+import { sanitizeKatex, sanitizeSvg } from "@/utils/sanitize";
 
 export const codePreviewPluginKey = new PluginKey("codePreview");
 
@@ -26,7 +27,10 @@ function createPreviewElement(
 ): HTMLElement {
   const wrapper = document.createElement("div");
   wrapper.className = `code-block-preview ${language}-preview`;
-  wrapper.innerHTML = rendered;
+  // Sanitize HTML based on content type
+  const sanitized =
+    language === "mermaid" ? sanitizeSvg(rendered) : sanitizeKatex(rendered);
+  wrapper.innerHTML = sanitized;
   return wrapper;
 }
 
@@ -99,7 +103,7 @@ export const codePreviewPlugin = $prose(() => {
                   if (svg) {
                     renderCache.set(cacheKey, svg);
                     placeholder.className = "code-block-preview mermaid-preview";
-                    placeholder.innerHTML = svg;
+                    placeholder.innerHTML = sanitizeSvg(svg);
                   } else {
                     placeholder.className = "code-block-preview mermaid-error";
                     placeholder.textContent = "Failed to render diagram";

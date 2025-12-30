@@ -22,6 +22,7 @@ import {
   type Snapshot,
 } from "@/utils/historyUtils";
 import { formatSnapshotTime, groupByDay } from "@/utils/dateUtils";
+import { getFileName } from "@/utils/pathUtils";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import "./Sidebar.css";
 
@@ -53,7 +54,7 @@ function extractHeadings(content: string): HeadingItem[] {
 function FilesView() {
   const filePath = useDocumentFilePath();
   const isDirty = useDocumentIsDirty();
-  const fileName = filePath ? filePath.split("/").pop() : null;
+  const fileName = filePath ? getFileName(filePath) : null;
 
   return (
     <div className="sidebar-view files-view">

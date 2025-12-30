@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useDocumentFilePath, useDocumentIsDirty } from "./useDocumentState";
+import { getFileName } from "@/utils/pathUtils";
 
 /**
  * Update window title based on document state.
@@ -15,11 +16,7 @@ export function useWindowTitle() {
       const window = getCurrentWebviewWindow();
 
       // Extract filename from path or use "Untitled"
-      let filename = "Untitled";
-      if (filePath) {
-        const parts = filePath.split("/");
-        filename = parts[parts.length - 1] || "Untitled";
-      }
+      const filename = filePath ? getFileName(filePath) || "Untitled" : "Untitled";
 
       // Add dirty indicator
       const dirtyIndicator = isDirty ? "• " : "";

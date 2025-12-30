@@ -14,6 +14,7 @@ import {
   remove,
 } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
+import { getFileName } from "./pathUtils";
 
 // Types
 
@@ -108,7 +109,7 @@ function generatePreview(content: string): string {
  * Get the document name from a path
  */
 function getDocumentName(documentPath: string): string {
-  return documentPath.split("/").pop() || "Untitled";
+  return getFileName(documentPath) || "Untitled";
 }
 
 // Core functions

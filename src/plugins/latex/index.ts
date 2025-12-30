@@ -10,6 +10,7 @@
 
 import type { KatexOptions } from "katex";
 import katex from "katex";
+import { escapeHtml } from "@/utils/sanitize";
 
 export interface LatexConfig {
   katexOptions?: KatexOptions;
@@ -29,7 +30,7 @@ export function renderLatex(
       displayMode: true,
     });
   } catch {
-    return `<pre class="math-error">${content}</pre>`;
+    return `<pre class="math-error">${escapeHtml(content)}</pre>`;
   }
 }
 

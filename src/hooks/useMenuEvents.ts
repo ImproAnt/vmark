@@ -10,6 +10,7 @@ import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { clearAllHistory } from "@/utils/historyUtils";
 import { exportToHtml, exportToPdf, savePdf, copyAsHtml } from "@/utils/exportUtils";
 import { isWindowFocused } from "@/utils/windowFocus";
+import { getFileNameWithoutExtension } from "@/utils/pathUtils";
 
 // Re-entry guards for menu operations (prevents duplicate dialogs)
 const isClearingHistoryRef = { current: false };
@@ -216,7 +217,7 @@ export function useMenuEvents() {
           const doc = useDocumentStore.getState().getDocument(windowLabel);
           if (!doc) return;
           const defaultName = doc.filePath
-            ? doc.filePath.split("/").pop()?.replace(/\.[^.]+$/, "") || "document"
+            ? getFileNameWithoutExtension(doc.filePath) || "document"
             : "document";
           await exportToHtml(doc.content, defaultName);
         } catch (error) {
@@ -238,7 +239,7 @@ export function useMenuEvents() {
           const doc = useDocumentStore.getState().getDocument(windowLabel);
           if (!doc) return;
           const defaultName = doc.filePath
-            ? doc.filePath.split("/").pop()?.replace(/\.[^.]+$/, "") || "document"
+            ? getFileNameWithoutExtension(doc.filePath) || "document"
             : "document";
           await savePdf(doc.content, defaultName);
         } catch (error) {
@@ -260,7 +261,7 @@ export function useMenuEvents() {
           const doc = useDocumentStore.getState().getDocument(windowLabel);
           if (!doc) return;
           const title = doc.filePath
-            ? doc.filePath.split("/").pop()?.replace(/\.[^.]+$/, "") || "Document"
+            ? getFileNameWithoutExtension(doc.filePath) || "Document"
             : "Document";
           await exportToPdf(doc.content, title);
         } catch (error) {
