@@ -25,6 +25,12 @@ import { replaceAll, callCommand } from "@milkdown/kit/utils";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEditorStore } from "@/stores/editorStore";
+import {
+  useDocumentContent,
+  useDocumentId,
+  useDocumentCursorInfo,
+  useDocumentActions,
+} from "@/hooks/useDocumentState";
 import { useParagraphCommands } from "@/hooks/useParagraphCommands";
 import { useFormatCommands } from "@/hooks/useFormatCommands";
 import { useTableCommands } from "@/hooks/useTableCommands";
@@ -64,7 +70,9 @@ import "katex/dist/katex.min.css";
 
 
 function MilkdownEditorInner() {
-  const content = useEditorStore((state) => state.content);
+  const content = useDocumentContent();
+  const cursorInfo = useDocumentCursorInfo();
+  const { setContent } = useDocumentActions();
 
   // Track if content change is from editor (internal) or external (store)
   const isInternalChange = useRef(false);
@@ -74,12 +82,12 @@ function MilkdownEditorInner() {
 
   const handleMarkdownUpdate = useCallback((_: unknown, markdown: string) => {
     isInternalChange.current = true;
-    useEditorStore.getState().setContent(markdown);
+    setContent(markdown);
     // Reset flag after state update propagates
     requestAnimationFrame(() => {
       isInternalChange.current = false;
     });
-  }, []);
+  }, [setContent]);
 
   const { get } = useEditor((root) =>
     MilkdownEditor.make()
@@ -139,7 +147,7 @@ function MilkdownEditorInner() {
           view.focus();
 
           // Restore cursor position from previous mode if available
-          const cursorInfo = useEditorStore.getState().cursorInfo;
+          // Note: cursorInfo is captured from closure at mount time
           if (cursorInfo) {
             restoreCursorInProseMirror(view, cursorInfo);
           } else {
@@ -329,7 +337,7 @@ function MilkdownEditorInner() {
 
 export function Editor() {
   const sourceMode = useEditorStore((state) => state.sourceMode);
-  const documentId = useEditorStore((state) => state.documentId);
+  const documentId = useDocumentId();
 
   // Key ensures editor recreates when document changes (new file, open file, etc.)
   const editorKey = `doc-${documentId}`;

@@ -2,6 +2,12 @@ import { useMemo, useState, useEffect } from "react";
 import { Code2, Type, PanelLeft, Save } from "lucide-react";
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
+import {
+  useDocumentContent,
+  useDocumentFilePath,
+  useDocumentIsDirty,
+  useDocumentLastAutoSave,
+} from "@/hooks/useDocumentState";
 import { formatRelativeTime, formatExactTime } from "@/utils/dateUtils";
 import "./StatusBar.css";
 
@@ -17,11 +23,11 @@ function countCharacters(text: string): number {
 }
 
 export function StatusBar() {
-  const content = useEditorStore((state) => state.content);
-  const filePath = useEditorStore((state) => state.filePath);
-  const isDirty = useEditorStore((state) => state.isDirty);
+  const content = useDocumentContent();
+  const filePath = useDocumentFilePath();
+  const isDirty = useDocumentIsDirty();
+  const lastAutoSave = useDocumentLastAutoSave();
   const sourceMode = useEditorStore((state) => state.sourceMode);
-  const lastAutoSave = useEditorStore((state) => state.lastAutoSave);
   const sidebarVisible = useUIStore((state) => state.sidebarVisible);
 
   const [showAutoSave, setShowAutoSave] = useState(false);

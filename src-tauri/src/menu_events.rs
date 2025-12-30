@@ -11,6 +11,13 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         }
     }
 
+    // CRITICAL: Handle "new" and "new-window" the same way - create window directly
+    if id == "new" || id == "new-window" {
+        let _ = crate::window_manager::create_document_window(app, None);
+        return;
+    }
+
+    // All other menu events are emitted to the frontend
     let event_name = format!("menu:{id}");
     let _ = app.emit(&event_name, ());
 }

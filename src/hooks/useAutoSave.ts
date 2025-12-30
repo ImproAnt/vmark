@@ -8,11 +8,13 @@
 
 import { useEffect, useRef } from "react";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
-import { useEditorStore } from "@/stores/editorStore";
+import { useWindowLabel } from "@/contexts/WindowContext";
+import { useDocumentStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { createSnapshot } from "@/utils/historyUtils";
 
 export function useAutoSave() {
+  const windowLabel = useWindowLabel();
   const autoSaveEnabled = useSettingsStore((s) => s.general.autoSaveEnabled);
   const autoSaveInterval = useSettingsStore((s) => s.general.autoSaveInterval);
   const lastSaveRef = useRef<number>(0);
@@ -23,10 +25,10 @@ export function useAutoSave() {
     const intervalMs = autoSaveInterval * 1000;
 
     const checkAndSave = async () => {
-      const { isDirty, filePath, content } = useEditorStore.getState();
+      const doc = useDocumentStore.getState().getDocument(windowLabel);
 
-      // Skip if not dirty or no file path (untitled)
-      if (!isDirty || !filePath) return;
+      // Skip if no document, not dirty, or no file path (untitled)
+      if (!doc || !doc.isDirty || !doc.filePath) return;
 
       // Debounce: Prevent saves within 5 seconds of each other.
       // This guards against rapid successive saves when the interval
@@ -36,16 +38,16 @@ export function useAutoSave() {
       if (now - lastSaveRef.current < DEBOUNCE_MS) return;
 
       try {
-        await writeTextFile(filePath, content);
-        useEditorStore.getState().markAutoSaved();
+        await writeTextFile(doc.filePath, doc.content);
+        useDocumentStore.getState().markAutoSaved(windowLabel);
         lastSaveRef.current = now;
-        console.log("[AutoSave] Saved:", filePath);
+        console.log("[AutoSave] Saved:", doc.filePath);
 
         // Create history snapshot if enabled
         const { general } = useSettingsStore.getState();
         if (general.historyEnabled) {
           try {
-            await createSnapshot(filePath, content, "auto", {
+            await createSnapshot(doc.filePath, doc.content, "auto", {
               maxSnapshots: general.historyMaxSnapshots,
               maxAgeDays: general.historyMaxAgeDays,
             });
@@ -61,5 +63,5 @@ export function useAutoSave() {
     const interval = setInterval(checkAndSave, intervalMs);
 
     return () => clearInterval(interval);
-  }, [autoSaveEnabled, autoSaveInterval]);
+  }, [windowLabel, autoSaveEnabled, autoSaveInterval]);
 }

@@ -7,9 +7,14 @@ import {
   RotateCcw,
   FileText,
 } from "lucide-react";
-import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import {
+  useDocumentContent,
+  useDocumentFilePath,
+  useDocumentIsDirty,
+  useDocumentActions,
+} from "@/hooks/useDocumentState";
 import { ask } from "@tauri-apps/plugin-dialog";
 import {
   getSnapshots,
@@ -46,8 +51,8 @@ function extractHeadings(content: string): HeadingItem[] {
 }
 
 function FilesView() {
-  const filePath = useEditorStore((state) => state.filePath);
-  const isDirty = useEditorStore((state) => state.isDirty);
+  const filePath = useDocumentFilePath();
+  const isDirty = useDocumentIsDirty();
   const fileName = filePath ? filePath.split("/").pop() : null;
 
   return (
@@ -72,7 +77,7 @@ function FilesView() {
 }
 
 function OutlineView() {
-  const content = useEditorStore((state) => state.content);
+  const content = useDocumentContent();
   const headings = useMemo(() => extractHeadings(content), [content]);
 
   return (
@@ -97,8 +102,9 @@ function OutlineView() {
 
 
 function HistoryView() {
-  const filePath = useEditorStore((state) => state.filePath);
-  const content = useEditorStore((state) => state.content);
+  const filePath = useDocumentFilePath();
+  const content = useDocumentContent();
+  const { loadContent } = useDocumentActions();
   const historyEnabled = useSettingsStore((state) => state.general.historyEnabled);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,7 +172,7 @@ function HistoryView() {
         // Write to file
         await writeTextFile(filePath, restoredContent);
         // Update editor
-        useEditorStore.getState().loadContent(restoredContent, filePath);
+        loadContent(restoredContent, filePath);
         // Refresh snapshots
         const snaps = await getSnapshots(filePath);
         setSnapshots(snaps);
@@ -287,8 +293,8 @@ export function Sidebar() {
 
   return (
     <div className="sidebar" style={{ width: "100%", height: "100%" }}>
-      {/* Drag region for traffic lights area */}
-      <div data-tauri-drag-region style={{ height: 32, flexShrink: 0, cursor: "grab" }} />
+      {/* Spacer for traffic lights area (drag handled by overlay in App.tsx) */}
+      <div style={{ height: 52, flexShrink: 0 }} />
       <div className="sidebar-header">
         <button
           className="sidebar-btn"

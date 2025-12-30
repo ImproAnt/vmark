@@ -2,21 +2,22 @@ import { useEffect, useCallback, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open, save, ask } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import { getAllWebviewWindows } from "@tauri-apps/api/webviewWindow";
-import { useEditorStore } from "@/stores/editorStore";
+import { useWindowLabel } from "@/contexts/WindowContext";
+import { useDocumentStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { createSnapshot } from "@/utils/historyUtils";
 
 async function saveToPath(
+  windowLabel: string,
   path: string,
   content: string,
   saveType: "manual" | "auto" = "manual"
 ): Promise<boolean> {
   try {
     await writeTextFile(path, content);
-    useEditorStore.getState().setFilePath(path);
-    useEditorStore.getState().markSaved();
+    useDocumentStore.getState().setFilePath(windowLabel, path);
+    useDocumentStore.getState().markSaved(windowLabel);
 
     // Add to recent files
     useRecentFilesStore.getState().addFile(path);
@@ -43,21 +44,11 @@ async function saveToPath(
 }
 
 export function useFileOperations() {
-  const handleNew = useCallback(async () => {
-    const { isDirty } = useEditorStore.getState();
-    if (isDirty) {
-      const confirmed = await ask("You have unsaved changes. Discard them?", {
-        title: "Unsaved Changes",
-        kind: "warning",
-      });
-      if (!confirmed) return;
-    }
-    useEditorStore.getState().reset();
-  }, []);
+  const windowLabel = useWindowLabel();
 
   const handleOpen = useCallback(async () => {
-    const { isDirty } = useEditorStore.getState();
-    if (isDirty) {
+    const doc = useDocumentStore.getState().getDocument(windowLabel);
+    if (doc?.isDirty) {
       const confirmed = await ask("You have unsaved changes. Discard them?", {
         title: "Unsaved Changes",
         kind: "warning",
@@ -70,62 +61,43 @@ export function useFileOperations() {
       });
       if (path) {
         const content = await readTextFile(path);
-        useEditorStore.getState().loadContent(content, path);
+        useDocumentStore.getState().loadContent(windowLabel, content, path);
         useRecentFilesStore.getState().addFile(path);
       }
     } catch (error) {
       console.error("Failed to open file:", error);
     }
-  }, []);
+  }, [windowLabel]);
 
   const handleSave = useCallback(async () => {
-    const { content, filePath } = useEditorStore.getState();
-    if (filePath) {
-      await saveToPath(filePath, content, "manual");
+    const doc = useDocumentStore.getState().getDocument(windowLabel);
+    if (!doc) return;
+
+    if (doc.filePath) {
+      await saveToPath(windowLabel, doc.filePath, doc.content, "manual");
     } else {
       const path = await save({
         filters: [{ name: "Markdown", extensions: ["md"] }],
       });
       if (path) {
-        await saveToPath(path, content, "manual");
+        await saveToPath(windowLabel, path, doc.content, "manual");
       }
     }
-  }, []);
+  }, [windowLabel]);
 
   const handleSaveAs = useCallback(async () => {
+    const doc = useDocumentStore.getState().getDocument(windowLabel);
+    if (!doc) return;
+
     const path = await save({
       filters: [{ name: "Markdown", extensions: ["md"] }],
     });
     if (path) {
-      const { content } = useEditorStore.getState();
-      await saveToPath(path, content);
+      await saveToPath(windowLabel, path, doc.content, "manual");
     }
-  }, []);
+  }, [windowLabel]);
 
-  const handleClose = useCallback(async () => {
-    // Check if a secondary window is focused - close it instead
-    const allWindows = await getAllWebviewWindows();
-    for (const win of allWindows) {
-      if (win.label !== "main") {
-        const isFocused = await win.isFocused();
-        if (isFocused) {
-          await win.close();
-          return;
-        }
-      }
-    }
-
-    // For main window, close the document (not the window)
-    const { isDirty } = useEditorStore.getState();
-    if (isDirty) {
-      const confirmed = await ask("You have unsaved changes. Discard them?", {
-        title: "Unsaved Changes",
-        kind: "warning",
-      });
-      if (!confirmed) return;
-    }
-    useEditorStore.getState().reset();
-  }, []);
+  // menu:close now handled by useWindowClose hook via Rust window event
 
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
@@ -139,9 +111,7 @@ export function useFileOperations() {
 
       if (cancelled) return;
 
-      const unlistenNew = await listen("menu:new", handleNew);
-      if (cancelled) { unlistenNew(); return; }
-      unlistenRefs.current.push(unlistenNew);
+      // Note: menu:new is now handled directly in Rust (creates new window)
 
       const unlistenOpen = await listen("menu:open", handleOpen);
       if (cancelled) { unlistenOpen(); return; }
@@ -154,10 +124,6 @@ export function useFileOperations() {
       const unlistenSaveAs = await listen("menu:save-as", handleSaveAs);
       if (cancelled) { unlistenSaveAs(); return; }
       unlistenRefs.current.push(unlistenSaveAs);
-
-      const unlistenClose = await listen("menu:close", handleClose);
-      if (cancelled) { unlistenClose(); return; }
-      unlistenRefs.current.push(unlistenClose);
     };
 
     setupListeners();
@@ -168,5 +134,5 @@ export function useFileOperations() {
       unlistenRefs.current = [];
       fns.forEach((fn) => fn());
     };
-  }, [handleNew, handleOpen, handleSave, handleSaveAs, handleClose]);
+  }, [handleOpen, handleSave, handleSaveAs]);
 }

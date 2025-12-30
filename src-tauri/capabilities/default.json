@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
-  "windows": ["main", "settings"],
+  "description": "Capability for all windows",
+  "windows": ["main", "settings", "doc-*", "print-preview"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
@@ -10,6 +10,7 @@
     "core:webview:allow-get-all-webviews",
     "core:window:allow-set-focus",
     "core:window:allow-close",
+    "core:window:allow-set-title",
     "opener:default",
     "dialog:default",
     "clipboard-manager:default",

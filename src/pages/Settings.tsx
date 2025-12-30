@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Palette, Settings, FolderOpen, Zap, Languages, FileText } from "lucide-react";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
   useSettingsStore,
   themes,
@@ -8,6 +10,26 @@ import {
 import { useTheme } from "@/hooks/useTheme";
 import { CJKFormattingSettings } from "./settings/CJKFormattingSettings";
 import { MarkdownSettings } from "./settings/MarkdownSettings";
+
+// Hook to handle Cmd+W for settings window
+function useSettingsClose() {
+  useEffect(() => {
+    const currentWindow = getCurrentWebviewWindow();
+
+    const handleClose = async () => {
+      const isFocused = await currentWindow.isFocused();
+      if (isFocused) {
+        await currentWindow.close();
+      }
+    };
+
+    const unlistenPromise = listen("menu:close", handleClose);
+
+    return () => {
+      unlistenPromise.then((fn) => fn());
+    };
+  }, []);
+}
 
 type Section = "appearance" | "formatting" | "markdown" | "general" | "files" | "advanced";
 
@@ -392,6 +414,8 @@ export function SettingsPage() {
 
   // Apply theme to this window
   useTheme();
+  // Handle Cmd+W to close settings
+  useSettingsClose();
 
   const navItems = [
     { id: "appearance" as const, icon: <Palette className="w-4 h-4" />, label: "Appearance" },
