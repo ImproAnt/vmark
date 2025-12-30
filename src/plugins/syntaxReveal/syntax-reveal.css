@@ -2,7 +2,7 @@
  * Syntax Reveal Plugin Styles
  *
  * Styles for syntax markers shown when cursor is inside formatted content.
- * Inline marks only: bold, italic, code, strikethrough, link
+ * Supports: marks (bold, italic, code, strikethrough, link) and inline nodes (math, image)
  */
 
 /* Base syntax marker style */
@@ -45,11 +45,28 @@
   font-size: 0.85em;
 }
 
+/* Math markers */
+.syntax-marker-math-open,
+.syntax-marker-math-close {
+  color: var(--primary-color, #4183c4);
+}
+
 /* Dark mode */
 .dark-theme .syntax-marker {
   color: var(--md-char-color, #6e7681);
 }
 
-.dark-theme .syntax-marker-link-open {
+/* Image markers */
+.syntax-marker-image-open,
+.syntax-marker-image-close {
+  color: var(--primary-color, #4183c4);
+  font-size: 0.85em;
+}
+
+.dark-theme .syntax-marker-link-open,
+.dark-theme .syntax-marker-math-open,
+.dark-theme .syntax-marker-math-close,
+.dark-theme .syntax-marker-image-open,
+.dark-theme .syntax-marker-image-close {
   color: var(--primary-color, #58a6ff);
 }

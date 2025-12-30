@@ -5,7 +5,8 @@
  * Uses ProseMirror decorations to display syntax without modifying document.
  *
  * Supports:
- * - Marks: bold (**), italic (*), code (`), strikethrough (~~), link ([])
+ * - Marks: bold (**), italic (*), code (`), strikethrough (~~), link ([](url))
+ * - Inline nodes: math ($...$), image (![](url))
  */
 
 import { $prose } from "@milkdown/kit/utils";
@@ -13,6 +14,8 @@ import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
 import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { addMarkSyntaxDecorations } from "./marks";
+import { addInlineNodeSyntaxDecorations } from "./nodes";
+import { createKeyHandlers } from "./keyHandlers";
 
 // Plugin key for external access
 export const syntaxRevealPluginKey = new PluginKey("syntaxReveal");
@@ -21,10 +24,14 @@ export const syntaxRevealPluginKey = new PluginKey("syntaxReveal");
  * Create the syntax reveal plugin
  */
 export const syntaxRevealPlugin = $prose(() => {
+  const keyHandlers = createKeyHandlers();
+
   return new Plugin({
     key: syntaxRevealPluginKey,
 
     props: {
+      handleKeyDown: keyHandlers.handleKeyDown,
+
       decorations(state) {
         // Check if syntax reveal is enabled in settings
         const { revealInlineSyntax } = useSettingsStore.getState().markdown;
@@ -43,8 +50,11 @@ export const syntaxRevealPlugin = $prose(() => {
         const decorations: Decoration[] = [];
         const pos = $from.pos;
 
-        // Add mark-based syntax decorations (bold, italic, etc.)
+        // Add mark-based syntax decorations (bold, italic, link, etc.)
         addMarkSyntaxDecorations(decorations, pos, $from);
+
+        // Add inline node syntax decorations (math, image)
+        addInlineNodeSyntaxDecorations(decorations, pos, $from);
 
         if (decorations.length === 0) {
           return DecorationSet.empty;

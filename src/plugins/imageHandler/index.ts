@@ -94,3 +94,6 @@ export const imageHandlerPlugin = $prose(() => {
 });
 
 export default imageHandlerPlugin;
+
+// Re-export input rule
+export { imageInputRule } from "./input-rule";
