@@ -11,7 +11,9 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { dirname, join } from "@tauri-apps/api/path";
 import type { NodeView } from "@milkdown/kit/prose/view";
 import type { Node } from "@milkdown/kit/prose/model";
-import { useEditorStore } from "@/stores/editorStore";
+import { useDocumentStore } from "@/stores/documentStore";
+import { useImageContextMenuStore } from "@/stores/imageContextMenuStore";
+import { getWindowLabel } from "@/utils/windowFocus";
 import { isRelativePath, validateImagePath } from "./security";
 
 /**
@@ -28,7 +30,9 @@ async function resolveImageSrc(src: string): Promise<string> {
     return ""; // Return empty to prevent loading
   }
 
-  const { filePath } = useEditorStore.getState();
+  const windowLabel = getWindowLabel();
+  const doc = useDocumentStore.getState().getDocument(windowLabel);
+  const filePath = doc?.filePath;
   if (!filePath) {
     return src; // No document path, can't resolve
   }
@@ -51,8 +55,13 @@ async function resolveImageSrc(src: string): Promise<string> {
 class ImageNodeView implements NodeView {
   dom: HTMLElement;
   private img: HTMLImageElement;
+  private originalSrc: string;
+  private getPos: () => number | undefined;
 
-  constructor(node: Node) {
+  constructor(node: Node, getPos: () => number | undefined) {
+    this.getPos = getPos;
+    this.originalSrc = node.attrs.src || "";
+
     // Create wrapper div
     this.dom = document.createElement("span");
     this.dom.className = "image-wrapper";
@@ -65,8 +74,23 @@ class ImageNodeView implements NodeView {
     // Set initial src and resolve if needed
     this.updateSrc(node.attrs.src);
 
+    // Add context menu handler
+    this.img.addEventListener("contextmenu", this.handleContextMenu);
+
     this.dom.appendChild(this.img);
   }
+
+  private handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    const pos = this.getPos();
+    if (pos === undefined) return;
+
+    useImageContextMenuStore.getState().openMenu({
+      position: { x: e.clientX, y: e.clientY },
+      imageSrc: this.originalSrc,
+      imageNodePos: pos,
+    });
+  };
 
   private updateSrc(src: string): void {
     if (isRelativePath(src)) {
@@ -91,8 +115,8 @@ class ImageNodeView implements NodeView {
     this.img.alt = node.attrs.alt || "";
     this.img.title = node.attrs.title || "";
 
-    if (this.img.dataset.originalSrc !== node.attrs.src) {
-      this.img.dataset.originalSrc = node.attrs.src;
+    if (this.originalSrc !== node.attrs.src) {
+      this.originalSrc = node.attrs.src || "";
       this.updateSrc(node.attrs.src);
     }
 
@@ -100,7 +124,7 @@ class ImageNodeView implements NodeView {
   }
 
   destroy(): void {
-    // Cleanup if needed
+    this.img.removeEventListener("contextmenu", this.handleContextMenu);
   }
 }
 
@@ -108,7 +132,7 @@ class ImageNodeView implements NodeView {
  * Milkdown plugin for custom image rendering.
  */
 export const imageViewPlugin = $view(imageSchema.node, () => {
-  return (node): NodeView => new ImageNodeView(node);
+  return (node, _view, getPos): NodeView => new ImageNodeView(node, getPos);
 });
 
 export default imageViewPlugin;
