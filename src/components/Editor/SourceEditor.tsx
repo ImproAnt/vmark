@@ -26,7 +26,7 @@ import {
   getCursorInfoFromCodeMirror,
   restoreCursorInCodeMirror,
 } from "@/utils/cursorSync/codemirror";
-import { sourceEditorTheme, createBrHidingPlugin } from "@/plugins/codemirror";
+import { sourceEditorTheme, createBrHidingPlugin, createListBlankLinePlugin } from "@/plugins/codemirror";
 
 // Compartment for dynamic line wrapping
 const lineWrapCompartment = new Compartment();
@@ -83,6 +83,8 @@ export function SourceEditor() {
         lineWrapCompartment.of(initialWordWrap ? EditorView.lineWrapping : []),
         // BR visibility (dynamic via compartment) - hide when showBrTags is false
         brVisibilityCompartment.of(createBrHidingPlugin(!initialShowBrTags)),
+        // Hide blank lines between list items
+        createListBlankLinePlugin(),
         // Multi-cursor support
         drawSelection(),
         dropCursor(),

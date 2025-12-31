@@ -371,6 +371,11 @@
   display: none;
 }
 
+/* Hide blank lines between list items */
+.source-editor .cm-list-blank-hidden {
+  display: none;
+}
+
 /* Print styles */
 @media print {
   .milkdown {

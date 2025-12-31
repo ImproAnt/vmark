@@ -6,3 +6,4 @@
 
 export { sourceEditorTheme } from "./theme";
 export { createBrHidingPlugin } from "./brHidingPlugin";
+export { createListBlankLinePlugin } from "./listBlankLinePlugin";
