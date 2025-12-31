@@ -4,6 +4,7 @@ import { Editor } from "@/components/Editor";
 import { Sidebar } from "@/components/Sidebar";
 import { StatusBar } from "@/components/StatusBar";
 import { FindBar } from "@/components/FindBar";
+import { TitleBar } from "@/components/TitleBar";
 import { SettingsPage } from "@/pages/Settings";
 import { PrintPreviewPage } from "@/pages/PrintPreview";
 import { WindowProvider, useIsDocumentWindow } from "@/contexts/WindowContext";
@@ -107,18 +108,8 @@ function MainLayout() {
       {/* Window lifecycle hooks for document windows */}
       {isDocumentWindow && <DocumentWindowHooks />}
 
-      {/* Drag region overlay - absolute positioned at top for consistent drag behavior */}
-      <div
-        data-tauri-drag-region
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 52,
-          zIndex: 100,
-        }}
-      />
+      {/* Title bar with drag region and filename display */}
+      <TitleBar />
 
       {sidebarVisible && (
         <aside
@@ -141,7 +132,7 @@ function MainLayout() {
         }}
       >
         {/* Spacer for title bar area */}
-        <div style={{ height: 52, flexShrink: 0 }} />
+        <div style={{ height: 40, flexShrink: 0 }} />
         <div style={{ flex: 1, minHeight: 0, marginBottom: 40 }}>
           <Editor />
         </div>

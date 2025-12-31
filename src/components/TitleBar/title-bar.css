@@ -1,0 +1,71 @@
+.title-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 4px;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+.title-bar-content {
+  /* Center the content, accounting for traffic lights on macOS (~70px) */
+  margin-left: 70px;
+  margin-right: 70px;
+}
+
+.title-bar-filename {
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.title-bar-filename.unsaved {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.dirty-indicator {
+  color: var(--primary-color);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.title-bar-input {
+  font-size: 13px;
+  color: var(--text-color);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 40%, transparent);
+  border-radius: 0;
+  padding: 2px 6px;
+  min-width: 120px;
+  max-width: 300px;
+  text-align: center;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
+}
+
+.title-bar-input:focus {
+  border-bottom-color: color-mix(in srgb, var(--text-secondary) 60%, transparent);
+  outline: none;
+  box-shadow: none;
+}
+
+.title-bar-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
