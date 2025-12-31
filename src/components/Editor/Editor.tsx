@@ -40,6 +40,7 @@ import { useCJKFormatCommands } from "@/hooks/useCJKFormatCommands";
 import { useSelectionCommands } from "@/hooks/useSelectionCommands";
 import { useImageDrop } from "@/hooks/useImageDrop";
 import { useImageContextMenu } from "@/hooks/useImageContextMenu";
+import { useOutlineSync } from "@/hooks/useOutlineSync";
 import { ImageContextMenu } from "./ImageContextMenu";
 import { restoreCursorInProseMirror } from "@/utils/cursorSync/prosemirror";
 import { overrideKeymapPlugin, cursorSyncPlugin, blankDocFocusPlugin } from "@/plugins/editorPlugins";
@@ -298,6 +299,9 @@ function MilkdownEditorInner() {
 
   // Handle image context menu actions
   const handleImageContextMenuAction = useImageContextMenu(get);
+
+  // Sync outline sidebar with cursor position
+  useOutlineSync(get);
 
   // Keep editor focused - refocus when editor loses focus (-style)
   useEffect(() => {

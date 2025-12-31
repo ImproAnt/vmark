@@ -37,6 +37,12 @@ export function useDocumentLastAutoSave(): number | null {
 export function useDocumentActions() {
   const windowLabel = useWindowLabel();
 
+  // Get fresh content (useful in async callbacks where hook value may be stale)
+  const getContent = useCallback(
+    () => useDocumentStore.getState().documents[windowLabel]?.content ?? "",
+    [windowLabel]
+  );
+
   const setContent = useCallback(
     (content: string) => {
       useDocumentStore.getState().setContent(windowLabel, content);
@@ -74,6 +80,7 @@ export function useDocumentActions() {
   );
 
   return {
+    getContent,
     setContent,
     loadContent,
     setFilePath,

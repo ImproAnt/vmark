@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ListTree, TableOfContents, History, RotateCcw } from "lucide-react";
-import { useUIStore } from "@/stores/uiStore";
+import { ListTree, TableOfContents, History, RotateCcw, ChevronRight, ChevronDown } from "lucide-react";
+import { emit } from "@tauri-apps/api/event";
+import { useUIStore, type SidebarViewMode } from "@/stores/uiStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import {
   useDocumentContent,
@@ -18,10 +19,24 @@ import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { FileExplorer } from "./FileExplorer";
 import "./Sidebar.css";
 
+// Constants
+const TRAFFIC_LIGHTS_SPACER_PX = 38;
+
+// View mode configuration - single source of truth
+const VIEW_CONFIG: Record<SidebarViewMode, {
+  icon: typeof ListTree;
+  title: string;
+  next: SidebarViewMode;
+}> = {
+  files: { icon: ListTree, title: "FILES", next: "outline" },
+  outline: { icon: TableOfContents, title: "OUTLINE", next: "history" },
+  history: { icon: History, title: "HISTORY", next: "files" },
+};
+
 interface HeadingItem {
   level: number;
   text: string;
-  id: string;
+  line: number; // 0-based line number in content
 }
 
 function extractHeadings(content: string): HeadingItem[] {
@@ -35,7 +50,7 @@ function extractHeadings(content: string): HeadingItem[] {
       headings.push({
         level: match[1].length,
         text: match[2].trim(),
-        id: `heading-${i}`,
+        line: i,
       });
     }
   }
@@ -48,21 +63,140 @@ function FilesView() {
   return <FileExplorer currentFilePath={filePath} />;
 }
 
-function OutlineView() {
-  const content = useDocumentContent();
-  const headings = useMemo(() => extractHeadings(content), [content]);
+// Build tree structure from flat headings list
+interface HeadingNode extends HeadingItem {
+  children: HeadingNode[];
+  index: number; // Original index in flat list
+}
+
+function buildHeadingTree(headings: HeadingItem[]): HeadingNode[] {
+  const root: HeadingNode[] = [];
+  const stack: HeadingNode[] = [];
+
+  headings.forEach((heading, index) => {
+    const node: HeadingNode = { ...heading, children: [], index };
+
+    // Pop stack until we find a parent with smaller level
+    while (stack.length > 0 && stack[stack.length - 1].level >= heading.level) {
+      stack.pop();
+    }
+
+    if (stack.length === 0) {
+      root.push(node);
+    } else {
+      stack[stack.length - 1].children.push(node);
+    }
+
+    stack.push(node);
+  });
+
+  return root;
+}
+
+function OutlineItem({
+  node,
+  activeIndex,
+  collapsedSet,
+  onToggle,
+  onClick,
+}: {
+  node: HeadingNode;
+  activeIndex: number;
+  collapsedSet: Set<number>;
+  onToggle: (index: number) => void;
+  onClick: (headingIndex: number) => void;
+}) {
+  const hasChildren = node.children.length > 0;
+  const isCollapsed = collapsedSet.has(node.index);
+  const isActive = node.index === activeIndex;
 
   return (
-    <div className="sidebar-view">
+    <li className="outline-tree-item">
+      <div
+        className={`outline-item outline-level-${node.level} ${isActive ? "active" : ""}`}
+        onClick={() => onClick(node.index)}
+      >
+        {hasChildren ? (
+          <button
+            className="outline-toggle"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(node.index);
+            }}
+          >
+            {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+          </button>
+        ) : (
+          <span className="outline-toggle-spacer" />
+        )}
+        <span className="outline-text">{node.text}</span>
+      </div>
+      {hasChildren && !isCollapsed && (
+        <ul className="outline-children">
+          {node.children.map((child) => (
+            <OutlineItem
+              key={child.index}
+              node={child}
+              activeIndex={activeIndex}
+              collapsedSet={collapsedSet}
+              onToggle={onToggle}
+              onClick={onClick}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function OutlineView() {
+  const content = useDocumentContent();
+  const activeHeadingIndex = useUIStore((state) => state.activeHeadingLine);
+  const headings = useMemo(() => extractHeadings(content), [content]);
+  const tree = useMemo(() => buildHeadingTree(headings), [headings]);
+  // activeHeadingLine now stores the heading index directly
+  const activeIndex = activeHeadingIndex ?? -1;
+
+  // Track collapsed state locally
+  const [collapsedSet, setCollapsedSet] = useState<Set<number>>(new Set());
+
+  // Reset collapsed state when headings change (indices become invalid)
+  useEffect(() => {
+    setCollapsedSet(new Set());
+  }, [headings]);
+
+  const handleToggle = (index: number) => {
+    setCollapsedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const handleClick = (headingIndex: number) => {
+    // Emit event to scroll editor to this heading
+    emit("outline:scroll-to-heading", { headingIndex });
+    // Update active heading immediately for responsive UI
+    useUIStore.getState().setActiveHeadingLine(headingIndex);
+  };
+
+  return (
+    <div className="sidebar-view outline-view">
       {headings.length > 0 ? (
-        <ul className="outline-list">
-          {headings.map((heading) => (
-            <li
-              key={heading.id}
-              className={`outline-item outline-level-${heading.level}`}
-            >
-              {heading.text}
-            </li>
+        <ul className="outline-tree">
+          {tree.map((node) => (
+            <OutlineItem
+              key={node.index}
+              node={node}
+              activeIndex={activeIndex}
+              collapsedSet={collapsedSet}
+              onToggle={handleToggle}
+              onClick={handleClick}
+            />
           ))}
         </ul>
       ) : (
@@ -75,8 +209,7 @@ function OutlineView() {
 
 function HistoryView() {
   const filePath = useDocumentFilePath();
-  const content = useDocumentContent();
-  const { loadContent } = useDocumentActions();
+  const { getContent, loadContent } = useDocumentActions();
   const historyEnabled = useSettingsStore((state) => state.general.historyEnabled);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -133,11 +266,13 @@ function HistoryView() {
 
       if (!confirmed) return;
 
+      // Get fresh content to capture any edits made while dialog was open
+      const currentContent = getContent();
       const { general } = useSettingsStore.getState();
       const restoredContent = await revertToSnapshot(
         filePath,
         snapshot.id,
-        content,
+        currentContent,
         {
           maxSnapshots: general.historyMaxSnapshots,
           maxAgeDays: general.historyMaxAgeDays,
@@ -227,61 +362,28 @@ function HistoryView() {
 
 export function Sidebar() {
   const viewMode = useUIStore((state) => state.sidebarViewMode);
+  const config = VIEW_CONFIG[viewMode];
+  const Icon = config.icon;
+  const nextTitle = VIEW_CONFIG[config.next].title;
 
   const handleToggleView = () => {
     const { sidebarViewMode, setSidebarViewMode } = useUIStore.getState();
-    // Cycle through: files -> outline -> history -> files
-    if (sidebarViewMode === "files") setSidebarViewMode("outline");
-    else if (sidebarViewMode === "outline") setSidebarViewMode("history");
-    else setSidebarViewMode("files");
-  };
-
-  const getViewIcon = () => {
-    switch (viewMode) {
-      case "files":
-        return <ListTree size={16} />;
-      case "outline":
-        return <TableOfContents size={16} />;
-      case "history":
-        return <History size={16} />;
-    }
-  };
-
-  const getViewTitle = () => {
-    switch (viewMode) {
-      case "files":
-        return "FILES";
-      case "outline":
-        return "OUTLINE";
-      case "history":
-        return "HISTORY";
-    }
-  };
-
-  const getNextViewName = () => {
-    switch (viewMode) {
-      case "files":
-        return "Outline";
-      case "outline":
-        return "History";
-      case "history":
-        return "Files";
-    }
+    setSidebarViewMode(VIEW_CONFIG[sidebarViewMode].next);
   };
 
   return (
     <div className="sidebar" style={{ width: "100%", height: "100%" }}>
       {/* Spacer for traffic lights area */}
-      <div style={{ height: 38, flexShrink: 0 }} />
+      <div style={{ height: TRAFFIC_LIGHTS_SPACER_PX, flexShrink: 0 }} />
       <div className="sidebar-header">
         <button
           className="sidebar-btn"
           onClick={handleToggleView}
-          title={`Show ${getNextViewName()}`}
+          title={`Show ${nextTitle.charAt(0) + nextTitle.slice(1).toLowerCase()}`}
         >
-          {getViewIcon()}
+          <Icon size={16} />
         </button>
-        <span className="sidebar-title">{getViewTitle()}</span>
+        <span className="sidebar-title">{config.title}</span>
       </div>
 
       <div className="sidebar-content">

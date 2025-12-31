@@ -147,45 +147,90 @@
 }
 
 /* Outline view */
-.outline-list {
+.outline-view {
+  padding: 0 4px 8px;
+}
+
+.outline-tree,
+.outline-children {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+.outline-children {
+  padding-left: 12px;
+}
+
+.outline-tree-item {
+  margin: 0;
+}
+
 .outline-item {
-  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
   font-size: 13px;
   color: var(--text-color);
   cursor: pointer;
   border-radius: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: 4px;
 }
 
 .outline-item:hover {
   background-color: var(--selection-color);
 }
 
-.outline-level-1 {
+.outline-item.active {
+  background-color: var(--selection-color);
+}
+
+.outline-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.outline-toggle:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-color);
+}
+
+.outline-toggle-spacer {
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.outline-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-level-1 .outline-text {
   font-weight: 600;
 }
 
-.outline-level-2 {
-  padding-left: 20px;
-}
-
-.outline-level-3 {
-  padding-left: 32px;
+.outline-level-3 .outline-text,
+.outline-level-4 .outline-text,
+.outline-level-5 .outline-text,
+.outline-level-6 .outline-text {
   font-size: 12px;
 }
 
-.outline-level-4,
-.outline-level-5,
-.outline-level-6 {
-  padding-left: 44px;
-  font-size: 12px;
+.outline-level-4 .outline-text,
+.outline-level-5 .outline-text,
+.outline-level-6 .outline-text {
   color: var(--text-secondary);
 }
 

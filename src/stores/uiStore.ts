@@ -1,12 +1,13 @@
 import { create } from "zustand";
 
-type SidebarViewMode = "files" | "outline" | "history";
+export type SidebarViewMode = "files" | "outline" | "history";
 
 interface UIState {
   settingsOpen: boolean;
   sidebarVisible: boolean;
   outlineVisible: boolean;
   sidebarViewMode: SidebarViewMode;
+  activeHeadingLine: number | null; // Current heading line for outline highlight
 }
 
 interface UIActions {
@@ -16,6 +17,7 @@ interface UIActions {
   toggleOutline: () => void;
   setSidebarViewMode: (mode: SidebarViewMode) => void;
   showSidebarWithView: (mode: SidebarViewMode) => void;
+  setActiveHeadingLine: (line: number | null) => void;
 }
 
 export const useUIStore = create<UIState & UIActions>((set) => ({
@@ -23,6 +25,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   sidebarVisible: false,
   outlineVisible: false,
   sidebarViewMode: "outline",
+  activeHeadingLine: null,
 
   openSettings: () => set({ settingsOpen: true }),
   closeSettings: () => set({ settingsOpen: false }),
@@ -30,4 +33,5 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   toggleOutline: () => set((state) => ({ outlineVisible: !state.outlineVisible })),
   setSidebarViewMode: (mode) => set({ sidebarViewMode: mode }),
   showSidebarWithView: (mode) => set({ sidebarVisible: true, sidebarViewMode: mode }),
+  setActiveHeadingLine: (line) => set({ activeHeadingLine: line }),
 }));
