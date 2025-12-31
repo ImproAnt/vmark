@@ -311,6 +311,185 @@
   color: var(--meta-content-color);
 }
 
+/* Footnotes */
+.milkdown sup[data-type="footnote_reference"] {
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 0.75em;
+  vertical-align: super;
+  padding: 0 2px;
+  font-weight: 500;
+}
+
+.milkdown sup[data-type="footnote_reference"]:hover {
+  text-decoration: underline;
+}
+
+.milkdown sup[data-type="footnote_reference"]::before {
+  content: "[";
+}
+
+.milkdown sup[data-type="footnote_reference"]::after {
+  content: "]";
+}
+
+.milkdown dl[data-type="footnote_definition"] {
+  margin: 0.5em 0;
+  padding: 0;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.milkdown dl[data-type="footnote_definition"] dt {
+  display: inline;
+  font-weight: 500;
+  color: var(--primary-color);
+  margin-right: 0.25em;
+  cursor: pointer;
+}
+
+.milkdown dl[data-type="footnote_definition"] dt:hover {
+  text-decoration: underline;
+}
+
+.milkdown dl[data-type="footnote_definition"] dt::before {
+  content: "[";
+}
+
+.milkdown dl[data-type="footnote_definition"] dt::after {
+  content: "]: ";
+}
+
+.milkdown dl[data-type="footnote_definition"] dd {
+  display: inline;
+  margin: 0;
+}
+
+.milkdown dl[data-type="footnote_definition"] dd::after {
+  content: " ↩";
+  color: var(--primary-color);
+  font-size: 0.9em;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.milkdown dl[data-type="footnote_definition"] dd:hover::after {
+  opacity: 1;
+}
+
+.milkdown dl[data-type="footnote_definition"] dd > *:first-child {
+  display: inline;
+}
+
+/* Footnote Popup - Editable */
+.footnote-popup {
+  position: fixed;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1000;
+  width: 280px;
+  padding: 8px 10px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-color);
+  pointer-events: auto;
+}
+
+.footnote-popup-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.footnote-popup-textarea {
+  width: 100%;
+  min-height: 36px;
+  max-height: 120px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: none;
+  outline: none !important;
+  -webkit-appearance: none;
+  cursor: default;
+  caret-color: transparent;
+  overflow: hidden;
+}
+
+.footnote-popup-textarea:focus {
+  outline: none !important;
+  box-shadow: none;
+}
+
+/* Edit mode */
+.footnote-popup.editing .footnote-popup-textarea {
+  background: var(--bg-secondary);
+  border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
+  cursor: text;
+  caret-color: var(--text-color);
+  overflow: auto;
+}
+
+.footnote-popup-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.footnote-popup-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.footnote-popup-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.footnote-popup-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-color);
+}
+
+.footnote-popup-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.footnote-popup-btn-save:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.footnote-popup-btn-goto:hover {
+  color: var(--primary-color);
+}
+
 /* Focus mode styles moved to src/plugins/focusMode/focus-mode.css */
 
 /* Source editor (CodeMirror) - matches .milkdown styling */

@@ -47,6 +47,7 @@ import { overrideKeymapPlugin, cursorSyncPlugin, blankDocFocusPlugin } from "@/p
 import { syntaxRevealPlugin } from "@/plugins/syntaxReveal";
 import { linkPopupPlugin } from "@/plugins/linkPopup";
 import { imagePopupPlugin } from "@/plugins/imagePopup";
+import { footnotePopupPlugin } from "@/plugins/footnotePopup";
 import { alertBlockPlugin } from "@/plugins/alertBlock";
 import { detailsBlockPlugin } from "@/plugins/detailsBlock";
 import { focusModePlugin } from "@/plugins/focusMode";
@@ -219,6 +220,7 @@ function MilkdownEditorInner() {
       .use(syntaxRevealPlugin)
       .use(linkPopupPlugin)
       .use(imagePopupPlugin)
+      .use(footnotePopupPlugin)
       .use(focusModePlugin)
       .use(typewriterModePlugin)
       .use(searchPlugin)
