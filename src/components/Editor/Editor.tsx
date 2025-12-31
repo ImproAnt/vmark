@@ -80,6 +80,93 @@ import "@/plugins/latex/latex.css";
 import "@/plugins/mermaid/mermaid.css";
 import "katex/dist/katex.min.css";
 
+// Timing constants for focus behavior
+const FOCUS_DELAY_MS = 50;
+const BLUR_REFOCUS_DELAY_MS = 10;
+
+// Helper to wait for editor ready, then execute action with optional delay
+function whenEditorReady(
+  getEditor: () => MilkdownEditor | undefined,
+  action: (editor: MilkdownEditor) => void,
+  options: { pollMs?: number; delayMs?: number } = {}
+): { cancel: () => void } {
+  const { pollMs = FOCUS_DELAY_MS, delayMs = 0 } = options;
+  let cancelled = false;
+  let pollInterval: ReturnType<typeof setInterval> | undefined;
+  let actionTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  const tryExecute = () => {
+    const editor = getEditor();
+    if (!editor) return false;
+
+    // Editor ready - execute action (with optional delay)
+    if (delayMs > 0) {
+      actionTimeout = setTimeout(() => {
+        if (!cancelled) action(editor);
+      }, delayMs);
+    } else {
+      action(editor);
+    }
+    return true;
+  };
+
+  // Try immediately, then poll if not ready
+  if (!tryExecute()) {
+    pollInterval = setInterval(() => {
+      if (cancelled || tryExecute()) {
+        if (pollInterval) clearInterval(pollInterval);
+      }
+    }, pollMs);
+  }
+
+  return {
+    cancel: () => {
+      cancelled = true;
+      if (pollInterval) clearInterval(pollInterval);
+      if (actionTimeout) clearTimeout(actionTimeout);
+    },
+  };
+}
+
+// Focus editor and restore cursor position
+function focusEditorWithCursor(
+  editor: MilkdownEditor,
+  getCursorInfo: () => ReturnType<typeof useDocumentCursorInfo>
+) {
+  editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx);
+    view.focus();
+
+    const cursorInfo = getCursorInfo();
+    if (cursorInfo) {
+      restoreCursorInProseMirror(view, cursorInfo);
+    } else {
+      // Default to start of document
+      const { state } = view;
+      const selection = Selection.atStart(state.doc);
+      view.dispatch(state.tr.setSelection(selection).scrollIntoView());
+    }
+  });
+}
+
+// Helper to create menu command listeners with common pattern
+type EditorGetter = () => MilkdownEditor | undefined;
+
+async function createMenuListener(
+  event: string,
+  getEditor: EditorGetter,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  command: any,
+  args?: Record<string, unknown>
+): Promise<UnlistenFn> {
+  return listen(event, async () => {
+    if (!(await isWindowFocused())) return;
+    const editor = getEditor();
+    if (editor) {
+      editor.action(callCommand(command, args));
+    }
+  });
+}
 
 function MilkdownEditorInner() {
   const content = useDocumentContent();
@@ -91,6 +178,9 @@ function MilkdownEditorInner() {
   // Use empty string to force sync on mount
   const lastExternalContent = useRef<string>("");
   const formatUnlistenRefs = useRef<UnlistenFn[]>([]);
+  // Keep latest cursorInfo in ref to avoid stale closure in mount effect
+  const cursorInfoRef = useRef(cursorInfo);
+  cursorInfoRef.current = cursorInfo;
 
   const handleMarkdownUpdate = useCallback((_: unknown, markdown: string) => {
     isInternalChange.current = true;
@@ -145,56 +235,19 @@ function MilkdownEditorInner() {
       .config(configureSlashMenu)
   );
 
-  // Auto-focus on mount - poll until editor is ready
+  // Auto-focus on mount - wait for editor ready, then focus with cursor restore
   useEffect(() => {
-    let cancelled = false;
-    let pollInterval: ReturnType<typeof setInterval>;
-    let focusTimeout: ReturnType<typeof setTimeout>;
-
-    const tryFocus = () => {
-      const editor = get();
-      if (!editor) return false;
-
-      // Editor is ready, focus it
-      focusTimeout = setTimeout(() => {
-        if (cancelled) return;
-        editor.action((ctx) => {
-          const view = ctx.get(editorViewCtx);
-          view.focus();
-
-          // Restore cursor position from previous mode if available
-          // Note: cursorInfo is captured from closure at mount time
-          if (cursorInfo) {
-            restoreCursorInProseMirror(view, cursorInfo);
-          } else {
-            // Default to start of document
-            const { state } = view;
-            const selection = Selection.atStart(state.doc);
-            view.dispatch(state.tr.setSelection(selection).scrollIntoView());
-          }
-        });
-      }, 50);
-      return true;
-    };
-
-    // Try immediately, then poll if not ready
-    if (!tryFocus()) {
-      pollInterval = setInterval(() => {
-        if (cancelled || tryFocus()) {
-          clearInterval(pollInterval);
-        }
-      }, 50);
-    }
-
-    return () => {
-      cancelled = true;
-      if (pollInterval) clearInterval(pollInterval);
-      if (focusTimeout) clearTimeout(focusTimeout);
-    };
+    const handle = whenEditorReady(
+      get,
+      (editor) => focusEditorWithCursor(editor, () => cursorInfoRef.current),
+      { delayMs: FOCUS_DELAY_MS }
+    );
+    return () => handle.cancel();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync external content changes TO the editor
+  // Also handles case where editor becomes ready after content is set
   useEffect(() => {
     const editor = get();
     if (!editor) return;
@@ -209,6 +262,21 @@ function MilkdownEditorInner() {
     lastExternalContent.current = content;
     editor.action(replaceAll(content));
   }, [content, get]);
+
+  // Ensure sync happens when editor first becomes ready
+  // This catches the case where content was set before editor initialized
+  useEffect(() => {
+    const handle = whenEditorReady(get, (editor) => {
+      // Sync if content differs from initial and not from internal change
+      if (content !== lastExternalContent.current && !isInternalChange.current) {
+        lastExternalContent.current = content;
+        editor.action(replaceAll(content));
+      }
+    });
+    return () => handle.cancel();
+  // Only run on mount to catch late editor initialization
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle Paragraph menu events
   useParagraphCommands(get);
@@ -247,7 +315,7 @@ function MilkdownEditorInner() {
         currentEditor.action((ctx) => {
           const view = ctx.get(editorViewCtx);
 
-          // Check if focus went to a dialog, input, or interactive element - don't steal focus back
+          // Re-check activeElement at refocus time to avoid stale reference
           const activeElement = document.activeElement;
           if (activeElement?.tagName === "INPUT" ||
               activeElement?.tagName === "TEXTAREA" ||
@@ -259,10 +327,12 @@ function MilkdownEditorInner() {
             return;
           }
 
-          // Refocus editor and restore selection
-          view.focus();
+          // Only refocus if editor doesn't already have focus
+          if (!view.hasFocus()) {
+            view.focus();
+          }
         });
-      }, 10);
+      }, BLUR_REFOCUS_DELAY_MS);
     };
 
     // Get the ProseMirror DOM element and add blur listener
@@ -294,55 +364,25 @@ function MilkdownEditorInner() {
 
       if (cancelled) return;
 
-      const unlistenBold = await listen("menu:bold", async () => {
-        if (!(await isWindowFocused())) return;
-        const editor = get();
-        if (editor) {
-          editor.action(callCommand(toggleStrongCommand.key));
-        }
-      });
-      if (cancelled) { unlistenBold(); return; }
-      formatUnlistenRefs.current.push(unlistenBold);
+      // Define menu commands to register
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const menuCommands: Array<{ event: string; command: any; args?: Record<string, unknown> }> = [
+        { event: "menu:bold", command: toggleStrongCommand.key },
+        { event: "menu:italic", command: toggleEmphasisCommand.key },
+        { event: "menu:strikethrough", command: toggleStrikethroughCommand.key },
+        { event: "menu:code", command: toggleInlineCodeCommand.key },
+        { event: "menu:link", command: toggleLinkCommand.key, args: { href: "" } },
+      ];
 
-      const unlistenItalic = await listen("menu:italic", async () => {
-        if (!(await isWindowFocused())) return;
-        const editor = get();
-        if (editor) {
-          editor.action(callCommand(toggleEmphasisCommand.key));
+      for (const { event, command, args } of menuCommands) {
+        if (cancelled) break;
+        const unlisten = await createMenuListener(event, get, command, args);
+        if (cancelled) {
+          unlisten();
+          break;
         }
-      });
-      if (cancelled) { unlistenItalic(); return; }
-      formatUnlistenRefs.current.push(unlistenItalic);
-
-      const unlistenStrikethrough = await listen("menu:strikethrough", async () => {
-        if (!(await isWindowFocused())) return;
-        const editor = get();
-        if (editor) {
-          editor.action(callCommand(toggleStrikethroughCommand.key));
-        }
-      });
-      if (cancelled) { unlistenStrikethrough(); return; }
-      formatUnlistenRefs.current.push(unlistenStrikethrough);
-
-      const unlistenCode = await listen("menu:code", async () => {
-        if (!(await isWindowFocused())) return;
-        const editor = get();
-        if (editor) {
-          editor.action(callCommand(toggleInlineCodeCommand.key));
-        }
-      });
-      if (cancelled) { unlistenCode(); return; }
-      formatUnlistenRefs.current.push(unlistenCode);
-
-      const unlistenLink = await listen("menu:link", async () => {
-        if (!(await isWindowFocused())) return;
-        const editor = get();
-        if (editor) {
-          editor.action(callCommand(toggleLinkCommand.key, { href: "" }));
-        }
-      });
-      if (cancelled) { unlistenLink(); return; }
-      formatUnlistenRefs.current.push(unlistenLink);
+        formatUnlistenRefs.current.push(unlisten);
+      }
     };
 
     setupListeners();

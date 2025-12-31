@@ -200,36 +200,37 @@ const initialState: SettingsState = {
   },
 };
 
+// Helper to create section updaters - reduces duplication
+const createSectionUpdater = <T extends keyof SettingsState>(
+  set: (fn: (state: SettingsState) => Partial<SettingsState>) => void,
+  section: T
+) => <K extends keyof SettingsState[T]>(key: K, value: SettingsState[T][K]) =>
+  set((state) => ({
+    [section]: { ...state[section], [key]: value },
+  }));
+
 export const useSettingsStore = create<SettingsState & SettingsActions>()(
   persist(
     (set) => ({
       ...initialState,
 
-      updateGeneralSetting: (key, value) =>
-        set((state) => ({
-          general: { ...state.general, [key]: value },
-        })),
+      updateGeneralSetting: createSectionUpdater(set, "general"),
+      updateAppearanceSetting: createSectionUpdater(set, "appearance"),
+      updateCJKFormattingSetting: createSectionUpdater(set, "cjkFormatting"),
+      updateMarkdownSetting: createSectionUpdater(set, "markdown"),
 
-      updateAppearanceSetting: (key, value) =>
-        set((state) => ({
-          appearance: { ...state.appearance, [key]: value },
-        })),
-
-      updateCJKFormattingSetting: (key, value) =>
-        set((state) => ({
-          cjkFormatting: { ...state.cjkFormatting, [key]: value },
-        })),
-
-      updateMarkdownSetting: (key, value) =>
-        set((state) => ({
-          markdown: { ...state.markdown, [key]: value },
-        })),
-
-      resetSettings: () => set(initialState),
+      resetSettings: () => set(structuredClone(initialState)),
     }),
     {
       name: "vmark-settings",
-      storage: createJSONStorage(() => localStorage),
+      // Guard localStorage access for SSR/non-browser environments
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? localStorage : {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        }
+      ),
     }
   )
 );
