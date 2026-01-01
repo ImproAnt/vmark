@@ -2,9 +2,15 @@ import { create } from "zustand";
 
 export type SidebarViewMode = "files" | "outline" | "history";
 
+// Sidebar width constraints
+const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MAX_WIDTH = 480;
+const SIDEBAR_DEFAULT_WIDTH = 260;
+
 interface UIState {
   settingsOpen: boolean;
   sidebarVisible: boolean;
+  sidebarWidth: number;
   outlineVisible: boolean;
   sidebarViewMode: SidebarViewMode;
   activeHeadingLine: number | null; // Current heading line for outline highlight
@@ -18,11 +24,13 @@ interface UIActions {
   setSidebarViewMode: (mode: SidebarViewMode) => void;
   showSidebarWithView: (mode: SidebarViewMode) => void;
   setActiveHeadingLine: (line: number | null) => void;
+  setSidebarWidth: (width: number) => void;
 }
 
 export const useUIStore = create<UIState & UIActions>((set) => ({
   settingsOpen: false,
   sidebarVisible: false,
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
   outlineVisible: false,
   sidebarViewMode: "outline",
   activeHeadingLine: null,
@@ -34,4 +42,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   setSidebarViewMode: (mode) => set({ sidebarViewMode: mode }),
   showSidebarWithView: (mode) => set({ sidebarVisible: true, sidebarViewMode: mode }),
   setActiveHeadingLine: (line) => set({ activeHeadingLine: line }),
+  setSidebarWidth: (width) => set({
+    sidebarWidth: Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width)),
+  }),
 }));

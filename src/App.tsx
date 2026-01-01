@@ -1,4 +1,4 @@
-import { Component, type ReactNode } from "react";
+import { Component, type ReactNode, useCallback, useRef } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Editor } from "@/components/Editor";
 import { Sidebar } from "@/components/Sidebar";
@@ -77,7 +77,39 @@ function MainLayout() {
     (state) => state.typewriterModeEnabled
   );
   const sidebarVisible = useUIStore((state) => state.sidebarVisible);
+  const sidebarWidth = useUIStore((state) => state.sidebarWidth);
   const isDocumentWindow = useIsDocumentWindow();
+
+  // Resize handle state
+  const isResizing = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    startX.current = e.clientX;
+    startWidth.current = useUIStore.getState().sidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const delta = e.clientX - startX.current;
+      useUIStore.getState().setSidebarWidth(startWidth.current + delta);
+    };
+
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
 
   // Initialize hooks
   useMenuEvents();
@@ -114,16 +146,23 @@ function MainLayout() {
       <TitleBar />
 
       {sidebarVisible && (
-        <aside
-          style={{
-            width: 240,
-            minWidth: 240,
-            height: "100%",
-            flexShrink: 0,
-          }}
-        >
-          <Sidebar />
-        </aside>
+        <>
+          <aside
+            style={{
+              width: sidebarWidth,
+              minWidth: sidebarWidth,
+              height: "100%",
+              flexShrink: 0,
+            }}
+          >
+            <Sidebar />
+          </aside>
+          {/* Resize handle */}
+          <div
+            className="sidebar-resize-handle"
+            onMouseDown={handleResizeStart}
+          />
+        </>
       )}
       <div
         style={{

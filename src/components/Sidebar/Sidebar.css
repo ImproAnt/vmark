@@ -1,12 +1,29 @@
 .sidebar {
-  width: var(--sidebar-width);
-  min-width: var(--sidebar-width);
+  width: 100%;
+  min-width: 100%;
   align-self: stretch;
   flex-shrink: 0;
   background-color: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
+}
+
+/* Resize handle */
+.sidebar-resize-handle {
+  width: 3px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  margin-left: -1px;
+  z-index: 10;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle:active {
+  background: var(--border-color);
 }
 
 /* Header */
