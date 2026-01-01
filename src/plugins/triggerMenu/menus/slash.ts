@@ -22,6 +22,10 @@ import { insertTableCommand } from "@milkdown/kit/preset/gfm";
 import { open, message } from "@tauri-apps/plugin-dialog";
 import { mathBlockSchema } from "@/plugins/latex/math-block-schema";
 import { mermaidBlockSchema } from "@/plugins/mermaid/mermaid-block-schema";
+import {
+  insertFootnote,
+  openPopupForNewFootnote,
+} from "@/plugins/footnotePopup/footnoteUtils";
 import { useDocumentStore } from "@/stores/documentStore";
 import { copyImageToAssets, insertImageNode } from "@/utils/imageUtils";
 import { getWindowLabel } from "@/utils/windowFocus";
@@ -37,7 +41,6 @@ const insertingImageWindows = new Set<string>();
 interface BlockInfo {
   type: string;
   pos: number;
-  depth: number;
   // Node type is complex - ProseMirror Node
   node: Node;
 }
@@ -51,7 +54,7 @@ function getParentList(ctx: Ctx): BlockInfo | null {
   for (let d = $from.depth; d > 0; d--) {
     const node = $from.node(d);
     if (node.type.name === "bullet_list" || node.type.name === "ordered_list") {
-      return { type: node.type.name, pos: $from.before(d), depth: d, node };
+      return { type: node.type.name, pos: $from.before(d), node };
     }
   }
   return null;
@@ -206,7 +209,6 @@ function convertToTaskList(ctx: Ctx) {
  */
 const icons = {
   paragraph: `<svg viewBox="0 0 24 24"><path d="M13 4v16"/><path d="M17 4v16"/><path d="M19 4H9.5a4.5 4.5 0 1 0 0 9H13"/></svg>`,
-  heading: `<svg viewBox="0 0 24 24"><path d="M6 12h12"/><path d="M6 20V4"/><path d="M18 20V4"/></svg>`,
   heading1: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg>`,
   heading2: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>`,
   heading3: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2"/></svg>`,
@@ -223,6 +225,7 @@ const icons = {
   table: `<svg viewBox="0 0 24 24"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>`,
   sigma: `<svg viewBox="0 0 24 24"><path d="M18 7V4H6l6 8-6 8h12v-3"/></svg>`,
   diagram: `<svg viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>`,
+  footnote: `<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M12 4h9"/><path d="M4 12h9"/><path d="M4 7V4h3"/><path d="M4 20v-3h3"/></svg>`,
 };
 
 /**
@@ -442,6 +445,18 @@ const slashMenuItems: TriggerMenuItem[] = [
           const node = mermaidBlockType.create({}, state.schema.text(defaultContent));
           const tr = state.tr.replaceSelectionWith(node);
           view.dispatch(tr);
+        },
+      },
+      {
+        label: "Footnote",
+        icon: icons.footnote,
+        keywords: ["footnote", "note", "reference", "cite", "annotation"],
+        action: (ctx) => {
+          const result = insertFootnote(ctx);
+          if (result) {
+            const view = ctx.get(editorViewCtx);
+            openPopupForNewFootnote(view, result.label, result.defPos);
+          }
         },
       },
     ],

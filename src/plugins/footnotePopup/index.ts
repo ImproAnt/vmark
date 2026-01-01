@@ -6,129 +6,58 @@
  */
 
 import { $prose } from "@milkdown/kit/utils";
-import { Plugin, PluginKey, PluginView } from "@milkdown/kit/prose/state";
+import { Plugin, PluginKey, PluginView, Transaction } from "@milkdown/kit/prose/state";
 import type { EditorView } from "@milkdown/kit/prose/view";
-import type { Node as ProsemirrorNode } from "@milkdown/kit/prose/model";
 import { FootnotePopupView } from "./FootnotePopupView";
 import { useFootnotePopupStore } from "@/stores/footnotePopupStore";
-import { scrollToPosition } from "./utils";
+import {
+  scrollToPosition,
+  findFootnoteDefinition,
+  findFootnoteReference,
+  getFootnoteRefFromTarget,
+  getFootnoteDefFromTarget,
+} from "./utils";
+import {
+  getReferenceLabels,
+  getDefinitionInfo,
+  createRenumberTransaction,
+  createCleanupAndRenumberTransaction,
+} from "./footnoteCleanup";
 
 export const footnotePopupPluginKey = new PluginKey("footnotePopup");
 
-/**
- * Find footnote definition content by label.
- */
-function findFootnoteDefinition(
-  view: EditorView,
-  label: string
-): { content: string; pos: number } | null {
-  const { doc } = view.state;
-  let result: { content: string; pos: number } | null = null;
-
-  doc.descendants((node: ProsemirrorNode, pos: number) => {
-    if (result) return false; // Stop if found
-
-    if (node.type.name === "footnote_definition" && node.attrs.label === label) {
-      // Extract text content from definition
-      let content = "";
-      node.content.forEach((child: ProsemirrorNode) => {
-        if (child.isText) {
-          content += child.text;
-        } else if (child.isTextblock) {
-          child.content.forEach((textNode: ProsemirrorNode) => {
-            if (textNode.isText) {
-              content += textNode.text;
-            }
-          });
-        }
-      });
-      result = { content: content.trim() || "Empty footnote", pos };
-      return false;
-    }
-    return true;
-  });
-
-  return result;
-}
-
-/**
- * Find footnote reference position by label.
- */
-function findFootnoteReference(
-  view: EditorView,
-  label: string
-): number | null {
-  const { doc } = view.state;
-  let result: number | null = null;
-
-  doc.descendants((node: ProsemirrorNode, pos: number) => {
-    if (result !== null) return false; // Stop if found
-
-    if (node.type.name === "footnote_reference" && node.attrs.label === label) {
-      result = pos;
-      return false;
-    }
-    return true;
-  });
-
-  return result;
-}
-
-/**
- * Check if element is a footnote reference.
- */
-function isFootnoteReference(element: HTMLElement): boolean {
-  return (
-    element.tagName === "SUP" &&
-    element.getAttribute("data-type") === "footnote_reference"
-  );
-}
-
-/**
- * Check if element is a footnote definition.
- */
-function isFootnoteDefinition(element: HTMLElement): boolean {
-  return (
-    element.tagName === "DL" &&
-    element.getAttribute("data-type") === "footnote_definition"
-  );
-}
-
-/**
- * Get footnote reference element from event target.
- */
-function getFootnoteRefFromTarget(target: EventTarget | null): HTMLElement | null {
-  let el = target as HTMLElement | null;
-
-  // Walk up to find footnote reference (might be on ::before/::after pseudo)
-  while (el && el !== document.body) {
-    if (isFootnoteReference(el)) {
-      return el;
-    }
-    el = el.parentElement;
-  }
-
-  return null;
-}
-
-/**
- * Get footnote definition element from event target.
- */
-function getFootnoteDefFromTarget(target: EventTarget | null): HTMLElement | null {
-  let el = target as HTMLElement | null;
-
-  while (el && el !== document.body) {
-    if (isFootnoteDefinition(el)) {
-      return el;
-    }
-    el = el.parentElement;
-  }
-
-  return null;
-}
+// Timing constants
+/** Delay before showing popup on hover (avoids flickering on quick mouse moves) */
+const HOVER_OPEN_DELAY_MS = 150;
+/** Delay before closing popup on mouse out (allows moving to popup) */
+const HOVER_CLOSE_DELAY_MS = 100;
 
 let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+let closeTimeout: ReturnType<typeof setTimeout> | null = null;
 let currentRefElement: HTMLElement | null = null;
+
+/** Clear hover open timeout */
+function clearHoverTimeout() {
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout);
+    hoverTimeout = null;
+  }
+}
+
+/** Clear hover close timeout */
+function clearCloseTimeout() {
+  if (closeTimeout) {
+    clearTimeout(closeTimeout);
+    closeTimeout = null;
+  }
+}
+
+/** Reset all hover state (call on plugin destroy) */
+export function resetHoverState() {
+  clearHoverTimeout();
+  clearCloseTimeout();
+  currentRefElement = null;
+}
 
 /**
  * Handle mouse enter on footnote reference.
@@ -145,17 +74,21 @@ function handleMouseOver(view: EditorView, event: MouseEvent): boolean {
     return false;
   }
 
-  currentRefElement = refElement;
+  // Clear any pending close
+  clearCloseTimeout();
 
-  // Clear any pending timeout
-  if (hoverTimeout) {
-    clearTimeout(hoverTimeout);
-  }
+  // Clear any pending open timeout
+  clearHoverTimeout();
 
   // Delay to avoid flickering on quick mouse moves
   hoverTimeout = setTimeout(() => {
     const label = refElement.getAttribute("data-label");
-    if (!label) return;
+    if (!label) {
+      // No label - don't set currentRefElement so we can retry
+      return;
+    }
+
+    currentRefElement = refElement;
 
     const definition = findFootnoteDefinition(view, label);
     const content = definition?.content ?? "Footnote not found";
@@ -163,7 +96,7 @@ function handleMouseOver(view: EditorView, event: MouseEvent): boolean {
 
     const rect = refElement.getBoundingClientRect();
     useFootnotePopupStore.getState().openPopup(label, content, rect, defPos);
-  }, 150);
+  }, HOVER_OPEN_DELAY_MS);
 
   return false;
 }
@@ -184,20 +117,18 @@ function handleMouseOut(_view: EditorView, event: MouseEvent): boolean {
     return false;
   }
 
-  // Clear hover state
-  if (hoverTimeout) {
-    clearTimeout(hoverTimeout);
-    hoverTimeout = null;
-  }
+  // Clear hover open timeout and state
+  clearHoverTimeout();
   currentRefElement = null;
 
   // Delay closing to allow moving to popup
-  setTimeout(() => {
+  clearCloseTimeout();
+  closeTimeout = setTimeout(() => {
     const popup = document.querySelector(".footnote-popup");
     if (!popup?.matches(":hover")) {
       useFootnotePopupStore.getState().closePopup();
     }
-  }, 100);
+  }, HOVER_CLOSE_DELAY_MS);
 
   return false;
 }
@@ -208,17 +139,15 @@ function handleMouseOut(_view: EditorView, event: MouseEvent): boolean {
  * - Click on definition: scroll back to reference
  */
 function handleClick(view: EditorView, _pos: number, event: MouseEvent): boolean {
-  // Check for footnote reference click -> go to definition
+  // Check for footnote reference click -> scroll to definition
   const refElement = getFootnoteRefFromTarget(event.target);
   if (refElement) {
     const label = refElement.getAttribute("data-label");
     if (label) {
       const definition = findFootnoteDefinition(view, label);
-      if (definition) {
+      if (definition?.pos !== undefined) {
         scrollToPosition(view, definition.pos);
-        // Close popup if open
-        useFootnotePopupStore.getState().closePopup();
-        return true; // Prevent default
+        return true; // Prevent default selection behavior
       }
     }
   }
@@ -241,6 +170,7 @@ function handleClick(view: EditorView, _pos: number, event: MouseEvent): boolean
 
 /**
  * Plugin view that manages the FootnotePopupView lifecycle.
+ * Popup shows via hover, click, or explicit open (new footnote insertion).
  */
 class FootnotePopupPluginView implements PluginView {
   private popupView: FootnotePopupView;
@@ -250,10 +180,13 @@ class FootnotePopupPluginView implements PluginView {
   }
 
   update() {
+    // Update popup position if open
     this.popupView.update();
   }
 
   destroy() {
+    // Clear module-level hover timeouts to prevent stale callbacks
+    resetHoverState();
     this.popupView.destroy();
   }
 }
@@ -273,6 +206,67 @@ export const footnotePopupPlugin = $prose(() => {
         mouseover: handleMouseOver,
         mouseout: handleMouseOut,
       },
+    },
+    /**
+     * Append a transaction to clean up orphaned definitions and renumber.
+     * Triggers when footnote references are deleted.
+     */
+    appendTransaction(transactions: readonly Transaction[], oldState, newState) {
+      // Get node types from schema
+      const refType = newState.schema.nodes.footnote_reference;
+      const defType = newState.schema.nodes.footnote_definition;
+      if (!refType || !defType) return null;
+
+      // Only process if document changed
+      const docChanged = transactions.some(tr => tr.docChanged);
+      if (!docChanged) return null;
+
+      // Get reference labels before and after
+      const oldRefLabels = getReferenceLabels(oldState.doc);
+      const newRefLabels = getReferenceLabels(newState.doc);
+
+      // Check if any reference was deleted
+      let refDeleted = false;
+      for (const label of oldRefLabels) {
+        if (!newRefLabels.has(label)) {
+          refDeleted = true;
+          break;
+        }
+      }
+
+      if (!refDeleted) return null;
+
+      // Get current definitions
+      const defs = getDefinitionInfo(newState.doc);
+
+      // Find orphaned definitions (no matching reference)
+      const orphanedDefs = defs.filter(d => !newRefLabels.has(d.label));
+
+      if (orphanedDefs.length === 0 && newRefLabels.size === 0) {
+        // All footnotes deleted - just remove remaining definitions
+        if (defs.length > 0) {
+          let tr = newState.tr;
+          const sortedDefs = [...defs].sort((a, b) => b.pos - a.pos);
+          for (const def of sortedDefs) {
+            tr = tr.delete(def.pos, def.pos + def.size);
+          }
+          return tr;
+        }
+        return null;
+      }
+
+      if (orphanedDefs.length === 0) {
+        // No orphans but refs changed - need to renumber
+        return createRenumberTransaction(newState, refType, defType);
+      }
+
+      // Delete orphans and renumber in one transaction
+      return createCleanupAndRenumberTransaction(
+        newState,
+        newRefLabels,
+        refType,
+        defType
+      );
     },
   });
 });

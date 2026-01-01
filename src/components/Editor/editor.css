@@ -315,8 +315,10 @@
 .milkdown sup[data-type="footnote_reference"] {
   color: var(--primary-color);
   cursor: pointer;
-  font-size: 0.75em;
-  vertical-align: super;
+  font-size: 0.65em;
+  vertical-align: baseline;
+  position: relative;
+  bottom: 0.35em;
   padding: 0 2px;
   font-weight: 500;
 }
