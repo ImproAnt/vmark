@@ -89,11 +89,7 @@ function processInlineHtmlTags(tree: Root) {
       if (isHtmlTag(current, "<sup>") && next && isHtmlTag(afterNext, "</sup>")) {
         const text = getTextValue(next);
         if (text !== null) {
-          newChildren.push({
-            type: "superscript",
-            data: { hName: "sup" },
-            children: [{ type: "text", value: text }],
-          } as unknown as PhrasingContent);
+          newChildren.push(createSuperscriptNode("", text) as unknown as PhrasingContent);
           i += 3;
           continue;
         }
@@ -103,11 +99,7 @@ function processInlineHtmlTags(tree: Root) {
       if (isHtmlTag(current, "<sub>") && next && isHtmlTag(afterNext, "</sub>")) {
         const text = getTextValue(next);
         if (text !== null) {
-          newChildren.push({
-            type: "subscript",
-            data: { hName: "sub" },
-            children: [{ type: "text", value: text }],
-          } as unknown as PhrasingContent);
+          newChildren.push(createSubscriptNode("", text) as unknown as PhrasingContent);
           i += 3;
           continue;
         }
