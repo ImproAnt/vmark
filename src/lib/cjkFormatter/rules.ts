@@ -233,10 +233,10 @@ export function convertDashes(text: string): string {
   );
 
   const replacer = (_: string, before: string, after: string) => {
-    // No space between closing quotes/parens and ——
-    const leftSpace = before === "）" || before === "》" ? "" : " ";
-    // No space between —— and opening quotes/parens
-    const rightSpace = after === "（" || after === "《" ? "" : " ";
+    // No space between closing brackets/quotes and ——
+    const leftSpace = CJK_CLOSING_BRACKETS.includes(before) ? "" : " ";
+    // No space between —— and opening brackets/quotes
+    const rightSpace = CJK_OPENING_BRACKETS.includes(after) ? "" : " ";
     return `${before}${leftSpace}——${rightSpace}${after}`;
   };
 
@@ -252,10 +252,10 @@ export function convertDashes(text: string): string {
  */
 export function fixEmdashSpacing(text: string): string {
   return text.replace(/([^\s])\s*——\s*([^\s])/g, (_, before, after) => {
-    // No space between closing quotes/parens and ——
-    const leftSpace = before === "）" || before === "》" ? "" : " ";
-    // No space between —— and opening quotes/parens
-    const rightSpace = after === "（" || after === "《" ? "" : " ";
+    // No space between closing brackets/quotes and ——
+    const leftSpace = CJK_CLOSING_BRACKETS.includes(before) ? "" : " ";
+    // No space between —— and opening brackets/quotes
+    const rightSpace = CJK_OPENING_BRACKETS.includes(after) ? "" : " ";
     return `${before}${leftSpace}——${rightSpace}${after}`;
   });
 }
@@ -314,6 +314,20 @@ export function fixDoubleQuoteSpacing(text: string): string {
  */
 export function fixSingleQuoteSpacing(text: string): string {
   return fixQuoteSpacing(text, "\u2018", "\u2019");
+}
+
+/**
+ * Fix spacing around CJK corner quotes 「」
+ */
+export function fixCornerQuoteSpacing(text: string): string {
+  return fixQuoteSpacing(text, "「", "」");
+}
+
+/**
+ * Fix spacing around CJK double corner quotes 『』
+ */
+export function fixDoubleCornerQuoteSpacing(text: string): string {
+  return fixQuoteSpacing(text, "『", "』");
 }
 
 /**
@@ -419,6 +433,8 @@ export function applyRules(text: string, config: CJKFormattingSettings): string 
 
     if (config.quoteSpacing) {
       text = fixDoubleQuoteSpacing(text);
+      // Note: CJK corner quotes 「」『』 do NOT need spacing - they follow
+      // Chinese typography rules where fullwidth brackets have no surrounding spaces
     }
     if (config.singleQuoteSpacing) {
       text = fixSingleQuoteSpacing(text);
@@ -443,19 +459,21 @@ export function applyRules(text: string, config: CJKFormattingSettings): string 
       text = fixSlashSpacing(text);
     }
 
-    // Group 5: Cleanup
+    // Group 5: Cleanup (CJK-specific)
     if (config.consecutivePunctuationLimit > 0) {
       text = limitConsecutivePunctuation(
         text,
         config.consecutivePunctuationLimit
       );
     }
-    if (config.spaceCollapsing) {
-      text = collapseSpaces(text);
-    }
-    if (config.trailingSpaceRemoval) {
-      text = removeTrailingSpaces(text);
-    }
+  }
+
+  // Group 5: Universal cleanup rules (apply to all text)
+  if (config.spaceCollapsing) {
+    text = collapseSpaces(text);
+  }
+  if (config.trailingSpaceRemoval) {
+    text = removeTrailingSpaces(text);
   }
 
   // Group 1: Universal (newline collapsing)
