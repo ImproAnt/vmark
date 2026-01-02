@@ -44,26 +44,10 @@ export function getTableInfo(view: EditorView): TableInfo | null {
   const { selection } = view.state;
   const $pos = selection.$from;
 
-  // Find table in ancestry
+  // Find table, row, and cell in ancestry using $pos.index() for correct indices
   let tableNode: Node | null = null;
   let tablePos = -1;
   let tableDepth = -1;
-
-  for (let d = $pos.depth; d > 0; d--) {
-    const node = $pos.node(d);
-    if (node.type.name === "table") {
-      tableNode = node;
-      tablePos = $pos.before(d);
-      tableDepth = d;
-      break;
-    }
-  }
-
-  if (!tableNode || tablePos < 0) {
-    return null;
-  }
-
-  // Find current cell
   let cellNode: Node | null = null;
   let cellPos = -1;
   let rowIndex = -1;
@@ -71,18 +55,23 @@ export function getTableInfo(view: EditorView): TableInfo | null {
 
   for (let d = $pos.depth; d > 0; d--) {
     const node = $pos.node(d);
-    if (node.type.name === "table_cell" || node.type.name === "table_header") {
+    if (node.type.name === "table") {
+      tableNode = node;
+      tablePos = $pos.before(d);
+      tableDepth = d;
+    } else if (node.type.name === "table_row") {
+      // Row index is this node's index within the table
+      rowIndex = $pos.index(d - 1);
+    } else if (node.type.name === "table_cell" || node.type.name === "table_header") {
       cellNode = node;
       cellPos = $pos.before(d);
-      break;
+      // Column index is this cell's index within the row
+      colIndex = $pos.index(d - 1);
     }
   }
 
-  // Calculate row and column indices
-  if (cellPos >= 0 && tableDepth > 0) {
-    const relativePos = cellPos - tablePos - 1;
-    rowIndex = findRowIndex(tableNode, relativePos);
-    colIndex = findColIndex(tableNode, rowIndex, relativePos);
+  if (!tableNode || tablePos < 0) {
+    return null;
   }
 
   // Count rows and columns
@@ -100,48 +89,6 @@ export function getTableInfo(view: EditorView): TableInfo | null {
     numRows,
     numCols,
   };
-}
-
-/**
- * Find the row index for a given position within a table.
- */
-function findRowIndex(table: Node, relativePos: number): number {
-  let pos = 0;
-  for (let row = 0; row < table.childCount; row++) {
-    const rowNode = table.child(row);
-    const rowSize = rowNode.nodeSize;
-    if (pos + rowSize > relativePos) {
-      return row;
-    }
-    pos += rowSize;
-  }
-  return table.childCount - 1;
-}
-
-/**
- * Find the column index for a given position within a row.
- */
-function findColIndex(table: Node, rowIndex: number, relativePos: number): number {
-  if (rowIndex < 0 || rowIndex >= table.childCount) return 0;
-
-  const row = table.child(rowIndex);
-  let rowStart = 0;
-  for (let r = 0; r < rowIndex; r++) {
-    rowStart += table.child(r).nodeSize;
-  }
-
-  const posInRow = relativePos - rowStart - 1; // -1 for row opening tag
-  let pos = 0;
-
-  for (let col = 0; col < row.childCount; col++) {
-    const cell = row.child(col);
-    const cellSize = cell.nodeSize;
-    if (pos + cellSize > posInRow) {
-      return col;
-    }
-    pos += cellSize;
-  }
-  return row.childCount - 1;
 }
 
 /**
