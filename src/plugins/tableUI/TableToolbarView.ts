@@ -149,16 +149,13 @@ export class TableToolbarView {
     alignment: "left" | "center" | "right"
   ): HTMLElement {
     return this.buildButton(iconSvg, title, (e) => {
-      this.editorView.focus();
       if (e.shiftKey) {
         // Shift+click: align all columns
+        this.editorView.focus();
         alignAllColumns(this.editorView, alignment);
       } else {
-        // Normal click: align current column
-        const editor = this.getEditor();
-        if (editor) {
-          editor.action(callCommand(setAlignCommand.key as never, alignment as never));
-        }
+        // Normal click: align current column (uses executeCommand which focuses)
+        this.executeCommand(setAlignCommand, alignment);
       }
     });
   }
