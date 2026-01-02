@@ -186,12 +186,18 @@ export class TableContextMenu {
 
   private handleDeleteRow() {
     this.editorView.focus();
-    deleteRow(this.editorView);
+    // Defer to next microtask to ensure focus/selection is updated
+    queueMicrotask(() => {
+      deleteRow(this.editorView);
+    });
   }
 
   private handleDeleteCol() {
     this.editorView.focus();
-    deleteColumn(this.editorView);
+    // Defer to next microtask to ensure focus/selection is updated
+    queueMicrotask(() => {
+      deleteColumn(this.editorView);
+    });
   }
 
   private handleDeleteTable() {
