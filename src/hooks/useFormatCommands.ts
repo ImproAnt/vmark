@@ -8,7 +8,7 @@ import type { Node, Mark } from "@milkdown/kit/prose/model";
 import { useDocumentStore } from "@/stores/documentStore";
 import { copyImageToAssets, insertImageNode } from "@/utils/imageUtils";
 import { isWindowFocused, getWindowLabel } from "@/utils/windowFocus";
-import { findMarkRange } from "@/plugins/syntaxReveal/marks";
+import { findMarkRange, findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
 
 // Re-entry guard for image insertion (prevents duplicate dialogs)
 const isInsertingImageRef = { current: false };
@@ -22,15 +22,7 @@ type GetEditor = () => Editor | undefined;
 function toggleMark(view: EditorView, markTypeName: string): boolean {
   const { state, dispatch } = view;
   const markType = state.schema.marks[markTypeName];
-
-  // Debug: log available marks
-  console.log("[toggleMark] Requested:", markTypeName);
-  console.log("[toggleMark] Available marks:", Object.keys(state.schema.marks));
-
-  if (!markType) {
-    console.error("[toggleMark] Mark type not found:", markTypeName);
-    return false;
-  }
+  if (!markType) return false;
 
   const { from, to, empty } = state.selection;
   const $from = state.selection.$from;
@@ -57,16 +49,31 @@ function toggleMark(view: EditorView, markTypeName: string): boolean {
     // Cursor inside mark - remove from entire range
     dispatch(state.tr.removeMark(markRange.from, markRange.to, markType));
     return true;
-  } else {
-    // Toggle stored mark
-    const storedMarks = state.storedMarks || $from.marks();
-    if (markType.isInSet(storedMarks)) {
-      dispatch(state.tr.removeStoredMark(markType));
-    } else {
-      dispatch(state.tr.addStoredMark(markType.create()));
-    }
+  }
+
+  // Fallback: check if cursor is inside ANY other mark (e.g., link)
+  // If so, apply the target mark to that range
+  // Exception: inline code inside link is not useful, skip this fallback
+  const inheritedRange = findAnyMarkRangeAtCursor(from, $from);
+  if (inheritedRange && !(markTypeName === "inlineCode" && inheritedRange.isLink)) {
+    dispatch(
+      state.tr.addMark(
+        inheritedRange.from,
+        inheritedRange.to,
+        markType.create()
+      )
+    );
     return true;
   }
+
+  // Final fallback - toggle stored mark for new typing
+  const storedMarks = state.storedMarks || $from.marks();
+  if (markType.isInSet(storedMarks)) {
+    dispatch(state.tr.removeStoredMark(markType));
+  } else {
+    dispatch(state.tr.addStoredMark(markType.create()));
+  }
+  return true;
 }
 
 export function useFormatCommands(getEditor: GetEditor) {
@@ -170,23 +177,15 @@ export function useFormatCommands(getEditor: GetEditor) {
       // Helper to create mark toggle listener
       const createMarkListener = async (eventName: string, markType: string) => {
         const unlisten = await listen(eventName, async () => {
-          console.log(`[useFormatCommands] Received event: ${eventName}`);
-          if (!(await isWindowFocused())) {
-            console.log(`[useFormatCommands] Window not focused, ignoring`);
-            return;
-          }
+          if (!(await isWindowFocused())) return;
           const editor = getEditor();
           if (editor) {
             editor.action((ctx) => {
               const view = ctx.get(editorViewCtx);
               if (view) {
                 toggleMark(view, markType);
-              } else {
-                console.error(`[useFormatCommands] No editor view for ${eventName}`);
               }
             });
-          } else {
-            console.error(`[useFormatCommands] No editor for ${eventName}`);
           }
         });
         if (cancelled) { unlisten(); return null; }

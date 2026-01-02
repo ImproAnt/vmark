@@ -13,7 +13,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useUIStore } from "@/stores/uiStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { getCursorInfoFromProseMirror } from "@/utils/cursorSync/prosemirror";
-import { findMarkRange } from "@/plugins/syntaxReveal/marks";
+import { findMarkRange, findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
 
 /**
  * Delay (ms) before enabling cursor tracking to allow restoration to complete.
@@ -90,7 +90,7 @@ function expandedToggleMark(view: EditorView, markTypeName: string): boolean {
     dispatch(state.tr.removeMark(markRange.from, markRange.to, markType));
     return true;
   } else {
-    // Cursor not in mark - check if we can restore previous mark
+    // Cursor not in target mark - check if we can restore previous mark
     if (
       lastRemovedMark &&
       lastRemovedMark.markType === markTypeName &&
@@ -108,17 +108,33 @@ function expandedToggleMark(view: EditorView, markTypeName: string): boolean {
       );
       lastRemovedMark = null;
       return true;
-    } else {
-      // Normal case - toggle stored mark
+    }
+
+    // Fallback: check if cursor is inside ANY other mark (e.g., link)
+    // If so, apply the target mark to that range
+    // Exception: inline code inside link is not useful, skip this fallback
+    const inheritedRange = findAnyMarkRangeAtCursor(from, $from);
+    if (inheritedRange && !(markTypeName === "inlineCode" && inheritedRange.isLink)) {
       lastRemovedMark = null;
-      const storedMarks = state.storedMarks || $from.marks();
-      if (markType.isInSet(storedMarks)) {
-        dispatch(state.tr.removeStoredMark(markType));
-      } else {
-        dispatch(state.tr.addStoredMark(markType.create()));
-      }
+      dispatch(
+        state.tr.addMark(
+          inheritedRange.from,
+          inheritedRange.to,
+          markType.create()
+        )
+      );
       return true;
     }
+
+    // Final fallback - toggle stored mark for new typing
+    lastRemovedMark = null;
+    const storedMarks = state.storedMarks || $from.marks();
+    if (markType.isInSet(storedMarks)) {
+      dispatch(state.tr.removeStoredMark(markType));
+    } else {
+      dispatch(state.tr.addStoredMark(markType.create()));
+    }
+    return true;
   }
 }
 
