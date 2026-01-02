@@ -9,9 +9,8 @@ import { Plugin, PluginKey, Selection } from "@milkdown/kit/prose/state";
 import type { EditorView } from "@milkdown/kit/prose/view";
 import { keymap } from "@milkdown/kit/prose/keymap";
 import { $prose } from "@milkdown/kit/utils";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useUIStore } from "@/stores/uiStore";
-import { useDocumentStore } from "@/stores/documentStore";
+import { useEditorStore } from "@/stores/editorStore";
 import { getCursorInfoFromProseMirror } from "@/utils/cursorSync/prosemirror";
 import { findMarkRange, findAnyMarkRangeAtCursor, findWordAtCursor } from "@/plugins/syntaxReveal/marks";
 
@@ -210,8 +209,6 @@ export const expandedMarkTogglePlugin = $prose(() =>
  */
 export const cursorSyncPlugin = $prose(() => {
   let trackingEnabled = false;
-  // Get window label synchronously (Tauri v2)
-  const windowLabel = getCurrentWebviewWindow().label;
 
   // Delay tracking to allow cursor restoration to complete first
   setTimeout(() => {
@@ -225,9 +222,12 @@ export const cursorSyncPlugin = $prose(() => {
         // Skip tracking until restoration is complete
         if (!trackingEnabled) return;
         // Track selection changes
+        // NOTE: Using editorStore instead of documentStore here because
+        // documentStore.setCursorInfo() interferes with ProseMirror input handling
+        // and causes characters to be dropped. Root cause TBD.
         if (!view.state.selection.eq(prevState.selection)) {
           const cursorInfo = getCursorInfoFromProseMirror(view);
-          useDocumentStore.getState().setCursorInfo(windowLabel, cursorInfo);
+          useEditorStore.getState().setCursorInfo(cursorInfo);
         }
       },
     }),

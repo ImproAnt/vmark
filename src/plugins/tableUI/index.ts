@@ -93,8 +93,8 @@ class TableUIPluginView implements PluginView {
 
   update(view: EditorView) {
     updateToolbarState(view);
-    // Update column resize handles when content changes
-    this.columnResize.updateHandles();
+    // Debounced update for resize handles (MutationObserver disabled to avoid input interference)
+    this.columnResize.scheduleUpdate();
   }
 
   destroy() {

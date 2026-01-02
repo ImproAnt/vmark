@@ -32,22 +32,30 @@ let resizeState: ResizeState = {
 export class ColumnResizeManager {
   private view: EditorView;
   private observer: MutationObserver | null = null;
+  private updateTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(view: EditorView) {
     this.view = view;
 
-    // Initial setup
-    this.updateHandles();
+    // Initial setup (delayed to not interfere with editor init)
+    setTimeout(() => this.updateHandles(), 100);
 
-    // Watch for DOM changes to add handles to new tables
-    this.observer = new MutationObserver(() => {
+    // NOTE: MutationObserver disabled - it interferes with ProseMirror's input handling
+    // Table handle updates are triggered from plugin update() method instead
+  }
+
+  /**
+   * Schedule a debounced update of resize handles.
+   * Called from plugin update() to avoid synchronous DOM operations during input.
+   */
+  scheduleUpdate() {
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+    }
+    this.updateTimeout = setTimeout(() => {
+      this.updateTimeout = null;
       this.updateHandles();
-    });
-
-    this.observer.observe(view.dom, {
-      childList: true,
-      subtree: true,
-    });
+    }, 200);
   }
 
   /**
