@@ -39,6 +39,7 @@ import { syntaxRevealPlugin } from "@/plugins/syntaxReveal";
 import { linkPopupPlugin } from "@/plugins/linkPopup";
 import { imagePopupPlugin } from "@/plugins/imagePopup";
 import { footnotePopupPlugin } from "@/plugins/footnotePopup";
+import { tableUIPlugin, tableKeymapPlugin } from "@/plugins/tableUI";
 import { alertBlockPlugin } from "@/plugins/alertBlock";
 import { detailsBlockPlugin } from "@/plugins/detailsBlock";
 import { focusModePlugin } from "@/plugins/focusMode";
@@ -74,6 +75,7 @@ import "@/plugins/search/search.css";
 import "@/plugins/codePreview/code-preview.css";
 import "@/plugins/latex/latex.css";
 import "@/plugins/mermaid/mermaid.css";
+import "@/plugins/tableUI/table-ui.css";
 import "katex/dist/katex.min.css";
 
 // Timing constants for focus behavior
@@ -177,6 +179,8 @@ function MilkdownEditorInner() {
       .use(expandedMarkTogglePlugin)
       .use(commonmark)
       .use(gfm)
+      .use(tableUIPlugin)
+      .use(tableKeymapPlugin)
       .use(alertBlockPlugin.flat())
       .use(detailsBlockPlugin.flat())
       .use(history)
