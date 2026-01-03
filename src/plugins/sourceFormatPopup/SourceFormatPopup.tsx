@@ -47,18 +47,27 @@ interface FormatButton {
   shortcut: string;
 }
 
-const FORMAT_BUTTONS: FormatButton[] = [
+// Format button groups: headings | bold italic strike highlight | link image | sup sub code
+const TEXT_FORMAT_BUTTONS: FormatButton[] = [
   { type: "bold", icon: createIcon(icons.bold), label: "Bold", shortcut: "⌘B" },
   { type: "italic", icon: createIcon(icons.italic), label: "Italic", shortcut: "⌘I" },
-  { type: "code", icon: createIcon(icons.inlineCode), label: "Code", shortcut: "⌘`" },
   { type: "strikethrough", icon: createIcon(icons.strikethrough), label: "Strikethrough", shortcut: "⌘⇧X" },
   { type: "highlight", icon: createIcon(icons.highlight), label: "Highlight", shortcut: "⌘⇧H" },
-  { type: "superscript", icon: createIcon(icons.superscript), label: "Superscript", shortcut: "⌘⇧." },
-  { type: "subscript", icon: createIcon(icons.subscript), label: "Subscript", shortcut: "⌘." },
+];
+
+const LINK_BUTTONS: FormatButton[] = [
   { type: "link", icon: createIcon(icons.link), label: "Link", shortcut: "⌘K" },
   { type: "image", icon: createIcon(icons.image), label: "Image", shortcut: "⌘⇧I" },
-  { type: "footnote", icon: createIcon(icons.footnote), label: "Footnote", shortcut: "⌘⇧F" },
 ];
+
+const CODE_BUTTONS: FormatButton[] = [
+  { type: "superscript", icon: createIcon(icons.superscript), label: "Superscript", shortcut: "⌘⇧." },
+  { type: "subscript", icon: createIcon(icons.subscript), label: "Subscript", shortcut: "⌘." },
+  { type: "code", icon: createIcon(icons.inlineCode), label: "Code", shortcut: "⌘`" },
+];
+
+// Combined for active format detection
+const ALL_FORMAT_BUTTONS = [...TEXT_FORMAT_BUTTONS, ...LINK_BUTTONS, ...CODE_BUTTONS];
 
 interface TableButtonDef {
   id: string;
@@ -178,7 +187,7 @@ export function SourceFormatPopup() {
     }
 
     const formats = new Set<FormatType>();
-    FORMAT_BUTTONS.forEach(({ type }) => {
+    ALL_FORMAT_BUTTONS.forEach(({ type }) => {
       if (hasFormat(editorView, type)) {
         formats.add(type);
       }
@@ -348,21 +357,8 @@ export function SourceFormatPopup() {
       }}
     >
       {mode === "format" ? (
-        // Format buttons for text selection
+        // Format buttons: headings | bold italic strike highlight | link image | sup sub code
         <>
-          {FORMAT_BUTTONS.map(({ type, icon, label, shortcut }) => (
-            <button
-              key={type}
-              type="button"
-              className={`source-format-btn ${activeFormats.has(type) ? "active" : ""}`}
-              title={`${label} (${shortcut})`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleFormat(type)}
-            >
-              {icon}
-            </button>
-          ))}
-          <div className="source-format-separator" />
           <div className="source-format-dropdown">
             <button
               type="button"
@@ -391,6 +387,45 @@ export function SourceFormatPopup() {
               </div>
             )}
           </div>
+          <div className="source-format-separator" />
+          {TEXT_FORMAT_BUTTONS.map(({ type, icon, label, shortcut }) => (
+            <button
+              key={type}
+              type="button"
+              className={`source-format-btn ${activeFormats.has(type) ? "active" : ""}`}
+              title={`${label} (${shortcut})`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleFormat(type)}
+            >
+              {icon}
+            </button>
+          ))}
+          <div className="source-format-separator" />
+          {LINK_BUTTONS.map(({ type, icon, label, shortcut }) => (
+            <button
+              key={type}
+              type="button"
+              className={`source-format-btn ${activeFormats.has(type) ? "active" : ""}`}
+              title={`${label} (${shortcut})`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleFormat(type)}
+            >
+              {icon}
+            </button>
+          ))}
+          <div className="source-format-separator" />
+          {CODE_BUTTONS.map(({ type, icon, label, shortcut }) => (
+            <button
+              key={type}
+              type="button"
+              className={`source-format-btn ${activeFormats.has(type) ? "active" : ""}`}
+              title={`${label} (${shortcut})`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleFormat(type)}
+            >
+              {icon}
+            </button>
+          ))}
         </>
       ) : mode === "table" ? (
         // Table buttons when cursor is in table (two rows)

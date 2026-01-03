@@ -167,8 +167,7 @@
 .source-format-dropdown-menu {
   position: absolute;
   top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: -4px; /* Align with popup's left border (accounting for popup padding) */
   margin-top: 4px;
   padding: 4px;
   min-width: 120px;
@@ -210,6 +209,11 @@
 .source-format-dropdown-item svg {
   width: 16px;
   height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
   color: var(--text-secondary);
 }
 
