@@ -145,6 +145,10 @@ function MilkdownEditorInner() {
             ...((options as any).unsafe || []),
             // Don't escape == used for highlight
             { character: "=", after: "=", inConstruct: "phrasing" },
+            // Don't escape ~ used for subscript (single tilde)
+            { character: "~", inConstruct: "phrasing" },
+            // Don't escape ^ used for superscript
+            { character: "^", inConstruct: "phrasing" },
           ],
         }));
       })
