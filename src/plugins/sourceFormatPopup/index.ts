@@ -2,7 +2,7 @@
  * Source Format Popup Extension for CodeMirror
  *
  * Detects text selection and shows/hides the formatting popup.
- * Also detects when cursor is in a table to show table operations.
+ * Table popup is shown via keyboard shortcut, not automatically.
  * Uses debounce to avoid flicker during rapid selection changes.
  */
 
@@ -19,6 +19,36 @@ const MIN_SELECTION_LENGTH = 1;
 
 // Delay before showing popup (ms)
 const SHOW_DELAY = 200;
+
+/**
+ * Check if position is inside a code fence (``` ... ```).
+ */
+function isInCodeFence(view: EditorView, pos: number): boolean {
+  const doc = view.state.doc.toString();
+  const lines = doc.split("\n");
+
+  let currentPos = 0;
+  let inCodeFence = false;
+
+  for (const line of lines) {
+    const lineEnd = currentPos + line.length;
+
+    // Check if this line starts/ends a code fence
+    if (line.trimStart().startsWith("```")) {
+      if (pos >= currentPos && pos <= lineEnd) {
+        // Cursor is on a fence line - consider it inside
+        return true;
+      }
+      inCodeFence = !inCodeFence;
+    } else if (inCodeFence && pos >= currentPos && pos <= lineEnd) {
+      return true;
+    }
+
+    currentPos = lineEnd + 1; // +1 for newline
+  }
+
+  return false;
+}
 
 /**
  * Clear any pending show timeout.
@@ -84,8 +114,14 @@ export const sourceFormatExtension = EditorView.updateListener.of((update) => {
       const currentTo = currentSelection.to;
 
       if (currentTo - currentFrom < MIN_SELECTION_LENGTH) {
-        // No selection - check for table
-        checkTableContext(update.view);
+        // No selection - close popup (table popup is triggered by shortcut)
+        useSourceFormatStore.getState().closePopup();
+        return;
+      }
+
+      // Don't show popup if selection is in a code fence
+      if (isInCodeFence(update.view, currentFrom) || isInCodeFence(update.view, currentTo)) {
+        useSourceFormatStore.getState().closePopup();
         return;
       }
 
@@ -113,36 +149,43 @@ export const sourceFormatExtension = EditorView.updateListener.of((update) => {
       });
     }, SHOW_DELAY);
   } else {
-    // No selection - check if cursor is in a table
+    // No selection - close popup (table popup is triggered by shortcut)
     clearShowTimeout();
-    checkTableContext(update.view);
+    useSourceFormatStore.getState().closePopup();
   }
 });
 
 /**
- * Check if cursor is in a table and show table popup if so.
+ * Toggle table popup visibility. Called via keyboard shortcut.
+ * Shows table popup if cursor is in a table, otherwise does nothing.
  */
-function checkTableContext(view: EditorView) {
-  const tableInfo = getSourceTableInfo(view);
+export function toggleTablePopup(view: EditorView): boolean {
+  const store = useSourceFormatStore.getState();
 
-  if (tableInfo) {
-    // Cursor is in a table - show table popup
-    const { from } = view.state.selection.main;
-    const rect = getCursorRect(view, from);
-    if (!rect) {
-      useSourceFormatStore.getState().closePopup();
-      return;
-    }
-
-    useSourceFormatStore.getState().openTablePopup({
-      anchorRect: rect,
-      editorView: view,
-      tableInfo,
-    });
-  } else {
-    // Not in table - close popup
-    useSourceFormatStore.getState().closePopup();
+  // If table popup is already open, close it
+  if (store.isOpen && store.mode === "table") {
+    store.closePopup();
+    return true;
   }
+
+  // Check if cursor is in a table
+  const tableInfo = getSourceTableInfo(view);
+  if (!tableInfo) {
+    return false; // Not in table, don't consume the key
+  }
+
+  // Show table popup
+  const { from } = view.state.selection.main;
+  const rect = getCursorRect(view, from);
+  if (!rect) return false;
+
+  store.openTablePopup({
+    anchorRect: rect,
+    editorView: view,
+    tableInfo,
+  });
+
+  return true;
 }
 
 // Re-export components

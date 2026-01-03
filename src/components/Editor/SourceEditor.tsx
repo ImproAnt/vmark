@@ -35,7 +35,7 @@ import {
   markdownPairBackspace,
   tabEscapeKeymap,
 } from "@/plugins/codemirror";
-import { sourceFormatExtension, SourceFormatPopup } from "@/plugins/sourceFormatPopup";
+import { sourceFormatExtension, SourceFormatPopup, toggleTablePopup } from "@/plugins/sourceFormatPopup";
 
 // Custom brackets config for markdown (^, standard brackets)
 const markdownCloseBrackets = markdownLanguage.data.of({
@@ -126,6 +126,21 @@ export function SourceEditor() {
           { key: "Mod-d", run: selectNextOccurrence, preventDefault: true },
           // Cmd+Shift+L: select all occurrences
           { key: "Mod-Shift-l", run: selectSelectionMatches, preventDefault: true },
+          // Cmd+Option+W: toggle word wrap
+          {
+            key: "Mod-Alt-w",
+            run: () => {
+              useEditorStore.getState().toggleWordWrap();
+              return true;
+            },
+            preventDefault: true,
+          },
+          // Cmd+Option+T: toggle table popup (when cursor is in table)
+          {
+            key: "Mod-Alt-t",
+            run: (view) => toggleTablePopup(view),
+            preventDefault: true,
+          },
           ...closeBracketsKeymap,
           ...defaultKeymap,
           ...historyKeymap,
