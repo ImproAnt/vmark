@@ -242,7 +242,7 @@
   font-weight: 600;
   border: none;
   border-radius: 4px;
-  background: var(--bg-tertiary, rgba(0, 0, 0, 0.05));
+  background: transparent;
   color: var(--text-secondary);
   cursor: default;
   user-select: none;
@@ -250,25 +250,22 @@
 }
 
 .source-format-quick-btn:hover {
-  background: var(--hover-bg, rgba(0, 0, 0, 0.1));
+  background: var(--hover-bg, rgba(0, 0, 0, 0.06));
   color: var(--text-color);
 }
 
 .source-format-quick-btn.active {
-  background: var(--primary-color, #0066cc);
-  color: white;
-}
-
-.dark-theme .source-format-quick-btn {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-bg, rgba(0, 0, 0, 0.1));
+  color: var(--text-color);
 }
 
 .dark-theme .source-format-quick-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dark-theme .source-format-quick-btn.active {
-  background: var(--primary-color, #4a9eff);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-color);
 }
 
 /* Language dropdown */
@@ -310,22 +307,22 @@
 /* Search input */
 .source-format-lang-search {
   padding: 6px;
-  border-bottom: 1px solid var(--border-color);
 }
 
 .source-format-lang-search input {
   width: 100%;
   padding: 6px 8px;
   font-size: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-color);
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
   color: var(--text-color);
   outline: none;
 }
 
 .source-format-lang-search input:focus {
-  border-color: var(--primary-color, #0066cc);
+  border-bottom-color: var(--border-color);
 }
 
 .source-format-lang-search input::placeholder {
@@ -372,8 +369,8 @@
 }
 
 .source-format-lang-item.active {
-  background: var(--primary-color, #0066cc);
-  color: white;
+  background: var(--hover-bg, rgba(0, 0, 0, 0.15));
+  color: var(--text-color);
 }
 
 .dark-theme .source-format-lang-item:hover {
@@ -381,5 +378,6 @@
 }
 
 .dark-theme .source-format-lang-item.active {
-  background: var(--primary-color, #4a9eff);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-color);
 }

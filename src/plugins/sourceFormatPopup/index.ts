@@ -23,33 +23,26 @@ const MIN_SELECTION_LENGTH = 1;
 const SHOW_DELAY = 200;
 
 /**
- * Check if position is inside a code fence (``` ... ```).
+ * Check if position is inside a code fence content (not on opening line).
  */
-function isInCodeFence(view: EditorView, pos: number): boolean {
-  const doc = view.state.doc.toString();
-  const lines = doc.split("\n");
+function isInCodeFenceContent(view: EditorView, pos: number): boolean {
+  const codeFenceInfo = getCodeFenceInfo(view);
+  if (!codeFenceInfo) return false;
 
-  let currentPos = 0;
-  let inCodeFence = false;
+  // Check if cursor is inside the fence but NOT on the opening line
+  const cursorLine = view.state.doc.lineAt(pos).number;
+  return cursorLine > codeFenceInfo.startLine && cursorLine <= codeFenceInfo.endLine;
+}
 
-  for (const line of lines) {
-    const lineEnd = currentPos + line.length;
+/**
+ * Check if cursor is on the opening line of a code fence (after ```).
+ */
+function isOnCodeFenceOpeningLine(view: EditorView, pos: number): boolean {
+  const codeFenceInfo = getCodeFenceInfo(view);
+  if (!codeFenceInfo) return false;
 
-    // Check if this line starts/ends a code fence
-    if (line.trimStart().startsWith("```")) {
-      if (pos >= currentPos && pos <= lineEnd) {
-        // Cursor is on a fence line - consider it inside
-        return true;
-      }
-      inCodeFence = !inCodeFence;
-    } else if (inCodeFence && pos >= currentPos && pos <= lineEnd) {
-      return true;
-    }
-
-    currentPos = lineEnd + 1; // +1 for newline
-  }
-
-  return false;
+  const cursorLine = view.state.doc.lineAt(pos).number;
+  return cursorLine === codeFenceInfo.startLine;
 }
 
 /**
@@ -104,6 +97,28 @@ export const sourceFormatExtension = EditorView.updateListener.of((update) => {
   const { from, to } = update.view.state.selection.main;
   const hasSelection = to - from >= MIN_SELECTION_LENGTH;
 
+  // Check if cursor is on code fence opening line (show language picker)
+  if (!hasSelection && isOnCodeFenceOpeningLine(update.view, from)) {
+    clearShowTimeout();
+    showTimeout = setTimeout(() => {
+      const codeFenceInfo = getCodeFenceInfo(update.view);
+      if (!codeFenceInfo) return;
+
+      const cursorLine = update.view.state.doc.lineAt(from).number;
+      if (cursorLine !== codeFenceInfo.startLine) return;
+
+      const rect = getCursorRect(update.view, from);
+      if (!rect) return;
+
+      useSourceFormatStore.getState().openCodePopup({
+        anchorRect: rect,
+        editorView: update.view,
+        codeFenceInfo,
+      });
+    }, SHOW_DELAY);
+    return;
+  }
+
   if (hasSelection) {
     // Clear any pending timeout
     clearShowTimeout();
@@ -121,8 +136,8 @@ export const sourceFormatExtension = EditorView.updateListener.of((update) => {
         return;
       }
 
-      // Don't show popup if selection is in a code fence
-      if (isInCodeFence(update.view, currentFrom) || isInCodeFence(update.view, currentTo)) {
+      // Don't show popup if selection is in code fence content
+      if (isInCodeFenceContent(update.view, currentFrom) || isInCodeFenceContent(update.view, currentTo)) {
         useSourceFormatStore.getState().closePopup();
         return;
       }

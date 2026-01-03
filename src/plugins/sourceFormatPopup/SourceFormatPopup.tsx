@@ -488,9 +488,15 @@ export function SourceFormatPopup() {
         </div>
       ) : mode === "code" ? (
         // Language picker for code fence
+        (() => {
+          const recentLangs = getRecentLanguages();
+          const quickLangs = recentLangs.length > 0
+            ? recentLangs.slice(0, 5)
+            : QUICK_LANGUAGES.map(l => l.name);
+          return (
         <>
           <div className="source-format-quick-langs">
-            {QUICK_LANGUAGES.map(({ name }) => (
+            {quickLangs.map((name) => (
               <button
                 key={name}
                 type="button"
@@ -539,50 +545,27 @@ export function SourceFormatPopup() {
                     }}
                   />
                 </div>
-                {(() => {
-                  const recentLangs = getRecentLanguages();
-                  const filtered = filterLanguages(languageSearch);
-                  return (
-                    <>
-                      {!languageSearch && recentLangs.length > 0 && (
-                        <div className="source-format-lang-section">
-                          <div className="source-format-lang-section-title">Recent</div>
-                          {recentLangs.map((name) => (
-                            <button
-                              key={name}
-                              type="button"
-                              className={`source-format-lang-item ${codeFenceInfo?.language === name ? "active" : ""}`}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => handleLanguageSelect(name)}
-                            >
-                              {name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <div className="source-format-lang-section">
-                        {!languageSearch && <div className="source-format-lang-section-title">All Languages</div>}
-                        <div className="source-format-lang-list">
-                          {filtered.map(({ name }) => (
-                            <button
-                              key={name}
-                              type="button"
-                              className={`source-format-lang-item ${codeFenceInfo?.language === name ? "active" : ""}`}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => handleLanguageSelect(name)}
-                            >
-                              {name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
+                <div className="source-format-lang-section">
+                  <div className="source-format-lang-list">
+                    {filterLanguages(languageSearch).map(({ name }) => (
+                      <button
+                        key={name}
+                        type="button"
+                        className={`source-format-lang-item ${codeFenceInfo?.language === name ? "active" : ""}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleLanguageSelect(name)}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </>
+          );
+        })()
       ) : (
         // Heading buttons when selection is in a heading
         HEADING_BUTTONS.map(({ level, icon, label }) => (

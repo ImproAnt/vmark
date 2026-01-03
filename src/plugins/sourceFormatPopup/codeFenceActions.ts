@@ -11,21 +11,32 @@ import { addRecentLanguage } from "./languages";
 /**
  * Set or change the language of a code fence.
  * Modifies the text after ``` on the opening line.
+ * Moves cursor to the beginning of the next line (inside the code fence).
  */
 export function setCodeFenceLanguage(
   view: EditorView,
   info: CodeFenceInfo,
   language: string
 ): void {
-  const { languageStartPos, languageEndPos } = info;
+  const { languageStartPos, languageEndPos, startLine } = info;
+  const doc = view.state.doc;
 
-  // Replace the language portion (or insert if empty)
+  // Calculate position of the next line (inside the code fence)
+  const openingLine = doc.line(startLine);
+  const nextLineStart = openingLine.to + 1; // Position after the newline
+
+  // Calculate the adjustment for the cursor position
+  const lengthDiff = language.length - (languageEndPos - languageStartPos);
+  const cursorPos = nextLineStart + lengthDiff;
+
+  // Replace the language portion and move cursor inside the fence
   view.dispatch({
     changes: {
       from: languageStartPos,
       to: languageEndPos,
       insert: language,
     },
+    selection: { anchor: cursorPos },
   });
 
   // Track in recent languages (only if not empty)
