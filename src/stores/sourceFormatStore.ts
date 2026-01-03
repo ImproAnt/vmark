@@ -8,6 +8,7 @@
 import { create } from "zustand";
 import type { EditorView } from "@codemirror/view";
 import type { SourceTableInfo } from "@/plugins/sourceFormatPopup/tableDetection";
+import type { CodeFenceInfo } from "@/plugins/sourceFormatPopup/codeFenceDetection";
 
 export interface AnchorRect {
   top: number;
@@ -17,7 +18,7 @@ export interface AnchorRect {
 }
 
 /** Popup mode determines which buttons to show */
-export type PopupMode = "format" | "table" | "heading";
+export type PopupMode = "format" | "table" | "heading" | "code";
 
 /** Heading info for heading mode */
 export interface HeadingInfo {
@@ -34,6 +35,7 @@ interface SourceFormatState {
   editorView: EditorView | null;
   tableInfo: SourceTableInfo | null;
   headingInfo: HeadingInfo | null;
+  codeFenceInfo: CodeFenceInfo | null;
 }
 
 interface SourceFormatActions {
@@ -52,6 +54,11 @@ interface SourceFormatActions {
     editorView: EditorView;
     headingInfo: HeadingInfo;
   }) => void;
+  openCodePopup: (data: {
+    anchorRect: AnchorRect;
+    editorView: EditorView;
+    codeFenceInfo: CodeFenceInfo;
+  }) => void;
   closePopup: () => void;
   updatePosition: (anchorRect: AnchorRect) => void;
 }
@@ -66,6 +73,7 @@ const initialState: SourceFormatState = {
   editorView: null,
   tableInfo: null,
   headingInfo: null,
+  codeFenceInfo: null,
 };
 
 export const useSourceFormatStore = create<SourceFormatStore>((set) => ({
@@ -80,6 +88,7 @@ export const useSourceFormatStore = create<SourceFormatStore>((set) => ({
       editorView: data.editorView,
       tableInfo: null,
       headingInfo: null,
+      codeFenceInfo: null,
     }),
 
   openTablePopup: (data) =>
@@ -91,6 +100,7 @@ export const useSourceFormatStore = create<SourceFormatStore>((set) => ({
       editorView: data.editorView,
       tableInfo: data.tableInfo,
       headingInfo: null,
+      codeFenceInfo: null,
     }),
 
   openHeadingPopup: (data) =>
@@ -102,6 +112,19 @@ export const useSourceFormatStore = create<SourceFormatStore>((set) => ({
       editorView: data.editorView,
       tableInfo: null,
       headingInfo: data.headingInfo,
+      codeFenceInfo: null,
+    }),
+
+  openCodePopup: (data) =>
+    set({
+      isOpen: true,
+      mode: "code",
+      anchorRect: data.anchorRect,
+      selectedText: "",
+      editorView: data.editorView,
+      tableInfo: null,
+      headingInfo: null,
+      codeFenceInfo: data.codeFenceInfo,
     }),
 
   closePopup: () => set(initialState),

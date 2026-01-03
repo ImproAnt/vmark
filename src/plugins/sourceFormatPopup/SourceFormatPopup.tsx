@@ -26,6 +26,13 @@ import {
   deleteTable,
 } from "./tableDetection";
 import { setHeadingLevel, convertToHeading } from "./headingDetection";
+import { setCodeFenceLanguage } from "./codeFenceActions";
+import {
+  QUICK_LANGUAGES,
+  getQuickLabel,
+  filterLanguages,
+  getRecentLanguages,
+} from "./languages";
 import "./source-format.css";
 
 interface FormatButton {
@@ -38,7 +45,7 @@ interface FormatButton {
 const FORMAT_BUTTONS: FormatButton[] = [
   { type: "bold", icon: createIcon(icons.bold), label: "Bold", shortcut: "⌘B" },
   { type: "italic", icon: createIcon(icons.italic), label: "Italic", shortcut: "⌘I" },
-  { type: "code", icon: createIcon(icons.inlineCode), label: "Code", shortcut: "⌘E" },
+  { type: "code", icon: createIcon(icons.inlineCode), label: "Code", shortcut: "⌘`" },
   { type: "strikethrough", icon: createIcon(icons.strikethrough), label: "Strikethrough", shortcut: "⌘⇧X" },
   { type: "highlight", icon: createIcon(icons.highlight), label: "Highlight", shortcut: "⌘⇧H" },
   { type: "superscript", icon: createIcon(icons.superscript), label: "Superscript", shortcut: "⌘⇧." },
@@ -95,6 +102,12 @@ export function SourceFormatPopup() {
   const editorView = useSourceFormatStore((state) => state.editorView);
   const tableInfo = useSourceFormatStore((state) => state.tableInfo);
   const headingInfo = useSourceFormatStore((state) => state.headingInfo);
+  const codeFenceInfo = useSourceFormatStore((state) => state.codeFenceInfo);
+
+  // Code mode state
+  const [languageSearch, setLanguageSearch] = useState("");
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate position when popup opens or anchor changes
   useEffect(() => {
@@ -246,12 +259,34 @@ export function SourceFormatPopup() {
     [editorView]
   );
 
+  const handleLanguageSelect = useCallback(
+    (language: string) => {
+      if (!editorView || !codeFenceInfo) return;
+
+      setCodeFenceLanguage(editorView, codeFenceInfo, language);
+      setLanguageDropdownOpen(false);
+      setLanguageSearch("");
+      useSourceFormatStore.getState().closePopup();
+      editorView.focus();
+    },
+    [editorView, codeFenceInfo]
+  );
+
   // Close dropdown when popup closes
   useEffect(() => {
     if (!isOpen) {
       setHeadingDropdownOpen(false);
+      setLanguageDropdownOpen(false);
+      setLanguageSearch("");
     }
   }, [isOpen]);
+
+  // Focus search input when language dropdown opens
+  useEffect(() => {
+    if (languageDropdownOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [languageDropdownOpen]);
 
   // Don't render if not open
   if (!isOpen) return null;
@@ -325,6 +360,103 @@ export function SourceFormatPopup() {
             {icon}
           </button>
         ))
+      ) : mode === "code" ? (
+        // Language picker for code fence
+        <>
+          <div className="source-format-quick-langs">
+            {QUICK_LANGUAGES.map(({ name }) => (
+              <button
+                key={name}
+                type="button"
+                className={`source-format-quick-btn ${codeFenceInfo?.language === name ? "active" : ""}`}
+                title={name}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleLanguageSelect(name)}
+              >
+                {getQuickLabel(name)}
+              </button>
+            ))}
+          </div>
+          <div className="source-format-separator" />
+          <div className="source-format-dropdown source-format-lang-dropdown">
+            <button
+              type="button"
+              className={`source-format-btn source-format-dropdown-trigger ${languageDropdownOpen ? "active" : ""}`}
+              title="Select language"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+            >
+              <span className="source-format-lang-label">
+                {codeFenceInfo?.language || "plain"}
+              </span>
+              {createIcon(icons.chevronDown, 12)}
+            </button>
+            {languageDropdownOpen && (
+              <div className="source-format-lang-menu">
+                <div className="source-format-lang-search">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={languageSearch}
+                    onChange={(e) => setLanguageSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setLanguageDropdownOpen(false);
+                        editorView?.focus();
+                      } else if (e.key === "Enter") {
+                        const filtered = filterLanguages(languageSearch);
+                        if (filtered.length > 0) {
+                          handleLanguageSelect(filtered[0].name);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                {(() => {
+                  const recentLangs = getRecentLanguages();
+                  const filtered = filterLanguages(languageSearch);
+                  return (
+                    <>
+                      {!languageSearch && recentLangs.length > 0 && (
+                        <div className="source-format-lang-section">
+                          <div className="source-format-lang-section-title">Recent</div>
+                          {recentLangs.map((name) => (
+                            <button
+                              key={name}
+                              type="button"
+                              className={`source-format-lang-item ${codeFenceInfo?.language === name ? "active" : ""}`}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleLanguageSelect(name)}
+                            >
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <div className="source-format-lang-section">
+                        {!languageSearch && <div className="source-format-lang-section-title">All Languages</div>}
+                        <div className="source-format-lang-list">
+                          {filtered.map(({ name }) => (
+                            <button
+                              key={name}
+                              type="button"
+                              className={`source-format-lang-item ${codeFenceInfo?.language === name ? "active" : ""}`}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleLanguageSelect(name)}
+                            >
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         // Heading buttons when selection is in a heading
         HEADING_BUTTONS.map(({ level, icon, label }) => (

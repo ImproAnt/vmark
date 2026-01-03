@@ -10,6 +10,8 @@ import { EditorView } from "@codemirror/view";
 import { useSourceFormatStore } from "@/stores/sourceFormatStore";
 import { getSourceTableInfo } from "./tableDetection";
 import { getHeadingInfo } from "./headingDetection";
+import { getCodeFenceInfo } from "./codeFenceDetection";
+import { getWordAtCursor } from "./wordSelection";
 
 // Debounce timeout for showing popup
 let showTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -183,6 +185,105 @@ export function toggleTablePopup(view: EditorView): boolean {
     anchorRect: rect,
     editorView: view,
     tableInfo,
+  });
+
+  return true;
+}
+
+/**
+ * Trigger format popup at cursor position via keyboard shortcut.
+ * Shows context-aware popup based on cursor location:
+ * - Code fence: language picker
+ * - Table: table actions
+ * - Heading: heading levels
+ * - Regular text: format buttons (auto-selects word if no selection)
+ */
+export function triggerFormatPopup(view: EditorView): boolean {
+  const store = useSourceFormatStore.getState();
+  const { from, to } = view.state.selection.main;
+
+  // If popup is already open, close it
+  if (store.isOpen) {
+    store.closePopup();
+    return true;
+  }
+
+  // 1. Check if in code fence
+  const codeFenceInfo = getCodeFenceInfo(view);
+  if (codeFenceInfo) {
+    const rect = getCursorRect(view, from);
+    if (!rect) return false;
+
+    store.openCodePopup({
+      anchorRect: rect,
+      editorView: view,
+      codeFenceInfo,
+    });
+    return true;
+  }
+
+  // 2. Check if in table
+  const tableInfo = getSourceTableInfo(view);
+  if (tableInfo) {
+    const rect = getCursorRect(view, from);
+    if (!rect) return false;
+
+    store.openTablePopup({
+      anchorRect: rect,
+      editorView: view,
+      tableInfo,
+    });
+    return true;
+  }
+
+  // 3. Check if in heading
+  const headingInfo = getHeadingInfo(view);
+  if (headingInfo) {
+    // For headings, use selection rect if there's a selection, else cursor rect
+    let rect;
+    if (from !== to) {
+      rect = getSelectionRect(view, from, to);
+    } else {
+      rect = getCursorRect(view, from);
+    }
+    if (!rect) return false;
+
+    store.openHeadingPopup({
+      anchorRect: rect,
+      editorView: view,
+      headingInfo,
+    });
+    return true;
+  }
+
+  // 4. Regular text - auto-select word if no selection
+  let selFrom = from;
+  let selTo = to;
+
+  if (selFrom === selTo) {
+    // No selection - try to select word at cursor
+    const wordRange = getWordAtCursor(view);
+    if (!wordRange) {
+      return false; // No word to select, do nothing
+    }
+
+    // Select the word
+    view.dispatch({
+      selection: { anchor: wordRange.from, head: wordRange.to },
+    });
+    selFrom = wordRange.from;
+    selTo = wordRange.to;
+  }
+
+  // Show format popup
+  const rect = getSelectionRect(view, selFrom, selTo);
+  if (!rect) return false;
+
+  const selectedText = view.state.doc.sliceString(selFrom, selTo);
+  store.openPopup({
+    anchorRect: rect,
+    selectedText,
+    editorView: view,
   });
 
   return true;
