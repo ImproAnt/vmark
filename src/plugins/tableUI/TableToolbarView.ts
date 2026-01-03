@@ -29,12 +29,12 @@ import {
 } from "@/utils/popupPosition";
 import { deleteTableAtPos, deleteRow, deleteColumn, isInHeaderRow, alignAllColumns } from "./table-utils";
 
-// SVG Icons
+// SVG Icons (row/col insert icons from source mode, delete icons with line-through style)
 const icons = {
-  addRowAbove: `<svg viewBox="0 0 24 24"><path d="M19 14v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5"/><line x1="12" y1="3" x2="12" y2="11"/><polyline points="8 7 12 3 16 7"/></svg>`,
-  addRowBelow: `<svg viewBox="0 0 24 24"><path d="M5 10V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"/><line x1="12" y1="21" x2="12" y2="13"/><polyline points="16 17 12 21 8 17"/></svg>`,
-  addColLeft: `<svg viewBox="0 0 24 24"><path d="M14 5h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/><line x1="3" y1="12" x2="11" y2="12"/><polyline points="7 8 3 12 7 16"/></svg>`,
-  addColRight: `<svg viewBox="0 0 24 24"><path d="M10 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5"/><line x1="21" y1="12" x2="13" y2="12"/><polyline points="17 16 21 12 17 8"/></svg>`,
+  addRowAbove: `<svg viewBox="0 0 24 24"><path d="M5 3h14"/><path d="m12 10-4-4 4-4"/><path d="M12 6v8"/><rect width="20" height="8" x="2" y="14" rx="2"/></svg>`,
+  addRowBelow: `<svg viewBox="0 0 24 24"><path d="M5 21h14"/><path d="m12 14 4 4-4 4"/><path d="M12 18v-8"/><rect width="20" height="8" x="2" y="2" rx="2"/></svg>`,
+  addColLeft: `<svg viewBox="0 0 24 24"><path d="M3 5v14"/><path d="m10 12-4-4 4-4"/><path d="M6 12h8"/><rect width="8" height="20" x="14" y="2" rx="2"/></svg>`,
+  addColRight: `<svg viewBox="0 0 24 24"><path d="M21 5v14"/><path d="m14 12 4-4-4-4"/><path d="M18 12h-8"/><rect width="8" height="20" x="2" y="2" rx="2"/></svg>`,
   deleteRow: `<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><rect x="3" y="6" width="18" height="12" rx="2" fill="none"/></svg>`,
   deleteCol: `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><rect x="6" y="3" width="12" height="18" rx="2" fill="none"/></svg>`,
   deleteTable: `<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
