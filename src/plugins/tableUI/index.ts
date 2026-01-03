@@ -28,34 +28,46 @@ export const tableUIPluginKey = new PluginKey<TableUIPluginState>("tableUI");
 
 /**
  * Update toolbar state based on current selection.
+ *
+ * IMPORTANT: We must check isInTable() BEFORE calling getTableInfo()/getTableRect().
+ * These functions call view.domAtPos() which can trigger browser scroll when
+ * querying positions of off-screen tables. Early exit prevents scroll jumps.
  */
-function updateToolbarState(view: EditorView) {
+function updateToolbarState(view: EditorView): boolean {
   const store = useTableToolbarStore.getState();
 
-  if (isInTable(view)) {
-    const info = getTableInfo(view);
-    if (info) {
-      const rect = getTableRect(view, info.tablePos);
-      if (rect) {
-        if (store.isOpen && store.tablePos === info.tablePos) {
-          // Just update position
-          store.updatePosition(rect);
-        } else {
-          // Open toolbar for new table
-          store.openToolbar({
-            tablePos: info.tablePos,
-            anchorRect: rect,
-          });
-        }
-        return;
+  // Early exit if not in table - avoid querying table positions which can cause scroll
+  if (!isInTable(view)) {
+    if (store.isOpen) {
+      store.closeToolbar();
+    }
+    return false;
+  }
+
+  // Cursor is in table - safe to query table position
+  const info = getTableInfo(view);
+  if (info) {
+    const rect = getTableRect(view, info.tablePos);
+    if (rect) {
+      if (store.isOpen && store.tablePos === info.tablePos) {
+        // Just update position
+        store.updatePosition(rect);
+      } else {
+        // Open toolbar for new table
+        store.openToolbar({
+          tablePos: info.tablePos,
+          anchorRect: rect,
+        });
       }
+      return true;
     }
   }
 
-  // Not in table or couldn't get info - close toolbar
+  // Couldn't get table info - close toolbar
   if (store.isOpen) {
     store.closeToolbar();
   }
+  return false;
 }
 
 // Editor getter type
@@ -100,9 +112,12 @@ class TableUIPluginView implements PluginView {
   }
 
   update(view: EditorView) {
-    updateToolbarState(view);
-    // Debounced update for resize handles (MutationObserver disabled to avoid input interference)
-    this.columnResize.scheduleUpdate();
+    const inTable = updateToolbarState(view);
+    // Only update resize handles when cursor is in table - avoids querying
+    // off-screen table positions which can trigger unwanted scroll
+    if (inTable) {
+      this.columnResize.scheduleUpdate();
+    }
   }
 
   destroy() {
