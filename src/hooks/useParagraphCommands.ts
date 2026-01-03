@@ -4,7 +4,6 @@ import { callCommand } from "@milkdown/kit/utils";
 import {
   wrapInHeadingCommand,
   turnIntoTextCommand,
-  wrapInBlockquoteCommand,
   createCodeBlockCommand,
   wrapInBulletListCommand,
   wrapInOrderedListCommand,
@@ -12,6 +11,7 @@ import {
   liftListItemCommand,
   insertHrCommand,
 } from "@milkdown/kit/preset/commonmark";
+import { toggleBlockquoteCommand } from "@/plugins/blockquoteToggle";
 import { editorViewCtx } from "@milkdown/kit/core";
 import type { Editor } from "@milkdown/kit/core";
 import {
@@ -112,12 +112,12 @@ export function useParagraphCommands(getEditor: GetEditor) {
       if (cancelled) { unlistenDecreaseHeading(); return; }
       unlistenRefs.current.push(unlistenDecreaseHeading);
 
-      // Quote
+      // Quote (toggle)
       const unlistenQuote = await listen("menu:quote", async () => {
         if (!(await isWindowFocused())) return;
         const editor = getEditor();
         if (editor) {
-          editor.action(callCommand(wrapInBlockquoteCommand.key));
+          editor.action(callCommand(toggleBlockquoteCommand.key));
         }
       });
       if (cancelled) { unlistenQuote(); return; }

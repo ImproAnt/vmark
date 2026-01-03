@@ -10,7 +10,6 @@ import type { Node } from "@milkdown/kit/prose/model";
 import { callCommand } from "@milkdown/kit/utils";
 import {
   wrapInHeadingCommand,
-  wrapInBlockquoteCommand,
   insertHrCommand,
   createCodeBlockCommand,
   wrapInBulletListCommand,
@@ -18,6 +17,7 @@ import {
   turnIntoTextCommand,
   liftListItemCommand,
 } from "@milkdown/kit/preset/commonmark";
+import { toggleBlockquoteCommand } from "@/plugins/blockquoteToggle";
 import { insertTableCommand } from "@milkdown/kit/preset/gfm";
 import { open, message } from "@tauri-apps/plugin-dialog";
 import { mathBlockSchema } from "@/plugins/latex/math-block-schema";
@@ -369,7 +369,7 @@ const slashMenuItems: TriggerMenuItem[] = [
         icon: icons.quote,
         keywords: ["blockquote", "citation"],
         action: (ctx) => {
-          convertBlock(ctx, () => callCommand(wrapInBlockquoteCommand.key)(ctx));
+          convertBlock(ctx, () => callCommand(toggleBlockquoteCommand.key)(ctx));
         },
       },
     ],

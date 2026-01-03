@@ -47,6 +47,11 @@ import {
   BLUR_REFOCUS_DELAY_MS,
 } from "./editorUtils";
 import { overrideKeymapPlugin, expandedMarkTogglePlugin, cursorSyncPlugin, blankDocFocusPlugin } from "@/plugins/editorPlugins";
+import { smartPastePlugin } from "@/plugins/smartPaste";
+import { taskTogglePlugin } from "@/plugins/taskToggle";
+import { listContinuationPlugin } from "@/plugins/listContinuation";
+import { toggleBlockquoteCommand } from "@/plugins/blockquoteToggle";
+import { formatToolbarKeymapPlugin, formatToolbarViewPlugin } from "@/plugins/formatToolbar";
 import { syntaxRevealPlugin } from "@/plugins/syntaxReveal";
 import { linkPopupPlugin } from "@/plugins/linkPopup";
 import { imagePopupPlugin } from "@/plugins/imagePopup";
@@ -94,6 +99,7 @@ import "@/plugins/mermaid/mermaid.css";
 import "@/plugins/tableUI/table-ui.css";
 import "@/plugins/subSuperscript/sub-super.css";
 import "@/plugins/highlight/highlight.css";
+import "@/plugins/formatToolbar/format-toolbar.css";
 import "katex/dist/katex.min.css";
 
 function MilkdownEditorInner() {
@@ -158,7 +164,13 @@ function MilkdownEditorInner() {
       })
       .use(overrideKeymapPlugin)
       .use(expandedMarkTogglePlugin)
+      .use(listContinuationPlugin) // Before commonmark to override Enter
       .use(commonmark)
+      .use(toggleBlockquoteCommand) // Register command for menu handlers
+      .use(smartPastePlugin)
+      .use(taskTogglePlugin)
+      .use(formatToolbarKeymapPlugin)
+      .use(formatToolbarViewPlugin)
       // Filter out default strikethrough input rule (accepts single ~)
       .use(gfm.filter((plugin) => plugin !== strikethroughInputRule))
       // Syntax highlighting for code blocks
