@@ -70,15 +70,18 @@
 /* Focus state for keyboard navigation */
 .source-format-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--primary-color, #007aff);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 4px 4px 0 0;
 }
 
 .source-format-btn:focus:not(:focus-visible) {
-  box-shadow: none;
+  border-bottom: none;
+  border-radius: 4px;
 }
 
 .source-format-btn:focus-visible {
-  box-shadow: 0 0 0 2px var(--primary-color, #007aff);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 4px 4px 0 0;
 }
 
 /* Danger variant for delete buttons */
@@ -275,15 +278,18 @@
 
 .source-format-quick-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--primary-color, #007aff);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 4px 4px 0 0;
 }
 
 .source-format-quick-btn:focus:not(:focus-visible) {
-  box-shadow: none;
+  border-bottom: none;
+  border-radius: 4px;
 }
 
 .source-format-quick-btn:focus-visible {
-  box-shadow: 0 0 0 2px var(--primary-color, #007aff);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 4px 4px 0 0;
 }
 
 .dark-theme .source-format-quick-btn:hover {
@@ -398,6 +404,23 @@
 .source-format-lang-item.active {
   background: var(--hover-bg, rgba(0, 0, 0, 0.15));
   color: var(--text-color);
+}
+
+/* Focus state for keyboard navigation */
+.source-format-lang-item:focus {
+  outline: none;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 4px 4px 0 0;
+}
+
+.source-format-lang-item:focus:not(:focus-visible) {
+  border-bottom: none;
+  border-radius: 4px;
+}
+
+.source-format-lang-item:focus-visible {
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 4px 4px 0 0;
 }
 
 .dark-theme .source-format-lang-item:hover {

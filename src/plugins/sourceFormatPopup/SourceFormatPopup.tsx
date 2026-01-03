@@ -562,8 +562,19 @@ export function SourceFormatPopup() {
               type="button"
               className={`source-format-btn source-format-dropdown-trigger ${languageDropdownOpen ? "active" : ""}`}
               title="Select language"
+              aria-expanded={languageDropdownOpen}
+              aria-haspopup="listbox"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setLanguageDropdownOpen(!languageDropdownOpen);
+                } else if (e.key === "ArrowDown" && !languageDropdownOpen) {
+                  e.preventDefault();
+                  setLanguageDropdownOpen(true);
+                }
+              }}
             >
               <span className="source-format-lang-label">
                 {codeFenceInfo?.language || "plain"}
@@ -571,7 +582,7 @@ export function SourceFormatPopup() {
               {createIcon(icons.chevronDown, 12)}
             </button>
             {languageDropdownOpen && (
-              <div className="source-format-lang-menu">
+              <div className="source-format-lang-menu" role="listbox">
                 <div className="source-format-lang-search">
                   <input
                     ref={searchInputRef}
@@ -581,26 +592,67 @@ export function SourceFormatPopup() {
                     onChange={(e) => setLanguageSearch(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Escape") {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setLanguageDropdownOpen(false);
-                        editorView?.focus();
+                        // Focus back to dropdown trigger
+                        const trigger = containerRef.current?.querySelector('.source-format-dropdown-trigger') as HTMLElement;
+                        trigger?.focus();
                       } else if (e.key === "Enter") {
+                        e.preventDefault();
                         const filtered = filterLanguages(languageSearch);
                         if (filtered.length > 0) {
                           handleLanguageSelect(filtered[0].name);
                         }
+                      } else if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        // Move focus to first language item
+                        const firstItem = containerRef.current?.querySelector('.source-format-lang-item') as HTMLElement;
+                        firstItem?.focus();
                       }
                     }}
                   />
                 </div>
                 <div className="source-format-lang-section">
-                  <div className="source-format-lang-list">
-                    {filterLanguages(languageSearch).map(({ name }) => (
+                  <div className="source-format-lang-list" role="listbox">
+                    {filterLanguages(languageSearch).map(({ name }, index, arr) => (
                       <button
                         key={name}
                         type="button"
+                        role="option"
+                        aria-selected={codeFenceInfo?.language === name}
                         className={`source-format-lang-item ${codeFenceInfo?.language === name ? "active" : ""}`}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleLanguageSelect(name)}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault();
+                            const items = containerRef.current?.querySelectorAll('.source-format-lang-item');
+                            if (items && index < arr.length - 1) {
+                              (items[index + 1] as HTMLElement)?.focus();
+                            }
+                          } else if (e.key === "ArrowUp") {
+                            e.preventDefault();
+                            if (index === 0) {
+                              // Go back to search input
+                              searchInputRef.current?.focus();
+                            } else {
+                              const items = containerRef.current?.querySelectorAll('.source-format-lang-item');
+                              if (items) {
+                                (items[index - 1] as HTMLElement)?.focus();
+                              }
+                            }
+                          } else if (e.key === "Escape") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setLanguageDropdownOpen(false);
+                            const trigger = containerRef.current?.querySelector('.source-format-dropdown-trigger') as HTMLElement;
+                            trigger?.focus();
+                          } else if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleLanguageSelect(name);
+                          }
+                        }}
                       >
                         {name}
                       </button>
