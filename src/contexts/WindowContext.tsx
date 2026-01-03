@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 import { useDocumentStore } from "../stores/documentStore";
 import { useRecentFilesStore } from "../stores/recentFilesStore";
 
@@ -33,7 +34,23 @@ export function WindowProvider({ children }: WindowProviderProps) {
           if (!doc) {
             // Check if we have a file path in the URL query params
             const urlParams = new URLSearchParams(globalThis.location?.search || "");
-            const filePath = urlParams.get("file");
+            let filePath = urlParams.get("file");
+
+            // For main window, also check pending files from Finder launch
+            if (!filePath && label === "main") {
+              try {
+                const pendingFiles = await invoke<string[]>("get_pending_open_files");
+                if (pendingFiles.length > 0) {
+                  filePath = pendingFiles[0];
+                  // Open remaining files in new windows
+                  for (let i = 1; i < pendingFiles.length; i++) {
+                    invoke("open_file_in_new_window", { path: pendingFiles[i] });
+                  }
+                }
+              } catch (e) {
+                console.error("[WindowContext] Failed to get pending files:", e);
+              }
+            }
 
             if (filePath) {
               // Load file content from disk

@@ -8,12 +8,5 @@
       "icons-dev/icon.icns",
       "icons-dev/icon.ico"
     ]
-  },
-  "app": {
-    "windows": [
-      {
-        "title": "VMark (Dev)"
-      }
-    ]
   }
 }

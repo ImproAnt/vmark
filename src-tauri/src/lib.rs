@@ -3,6 +3,19 @@ mod menu_events;
 mod watcher;
 mod window_manager;
 
+use std::sync::Mutex;
+use tauri::Manager;
+
+/// Stores file paths opened via Finder before the main window is ready
+static PENDING_OPEN_FILES: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+/// Get and clear any pending files that were opened before frontend was ready
+#[tauri::command]
+fn get_pending_open_files() -> Vec<String> {
+    let mut pending = PENDING_OPEN_FILES.lock().unwrap();
+    std::mem::take(&mut *pending)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[allow(unused_mut)]
@@ -20,6 +33,7 @@ pub fn run() {
             window_manager::request_quit,
             watcher::start_watching,
             watcher::stop_watching,
+            get_pending_open_files,
         ])
         .setup(|app| {
             let menu = menu::create_menu(app.handle())?;
@@ -66,6 +80,26 @@ pub fn run() {
                 } => {
                     if !has_visible_windows {
                         let _ = window_manager::create_document_window(app, None);
+                    }
+                }
+                // Handle files opened from Finder (double-click, "Open With", etc.)
+                tauri::RunEvent::Opened { urls } => {
+                    for url in urls {
+                        // Convert file:// URL to path
+                        if let Ok(path) = url.to_file_path() {
+                            if let Some(path_str) = path.to_str() {
+                                // Check if main window exists and is ready
+                                if let Some(_main_window) = app.get_webview_window("main") {
+                                    // App is running - open in new window
+                                    let _ = window_manager::create_document_window(app, Some(path_str));
+                                } else {
+                                    // App just launched - store for main window to pick up
+                                    if let Ok(mut pending) = PENDING_OPEN_FILES.lock() {
+                                        pending.push(path_str.to_string());
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 _ => {}
