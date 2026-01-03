@@ -56,15 +56,15 @@
   opacity: 0.8;
 }
 
-/* Active state - when format is applied */
+/* Active state - when format is applied (theme-aware) */
 .source-format-btn.active {
-  background: var(--primary-color, #0066cc);
-  color: white;
+  background: var(--hover-bg, rgba(0, 0, 0, 0.1));
+  color: var(--text-color);
 }
 
 .source-format-btn.active:hover {
-  background: var(--primary-color-hover, #0052a3);
-  color: white;
+  background: var(--hover-bg, rgba(0, 0, 0, 0.15));
+  color: var(--text-color);
 }
 
 /* Danger variant for delete buttons */
@@ -97,11 +97,13 @@
 }
 
 .dark-theme .source-format-btn.active {
-  background: var(--primary-color, #4a9eff);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-color);
 }
 
 .dark-theme .source-format-btn.active:hover {
-  background: var(--primary-color-hover, #3d8be0);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-color);
 }
 
 .dark-theme .source-format-btn.danger {
