@@ -35,7 +35,7 @@ function getQuoteLevel(text: string): number {
 /**
  * Check if a line is part of a blockquote.
  */
-function isBlockquoteLine(text: string): boolean {
+export function isBlockquoteLine(text: string): boolean {
   return /^\s*>/.test(text);
 }
 

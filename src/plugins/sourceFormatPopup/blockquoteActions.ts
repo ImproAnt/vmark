@@ -8,16 +8,10 @@
  */
 
 import type { EditorView } from "@codemirror/view";
+import { isBlockquoteLine } from "./blockquoteDetection";
 
-// Pattern to detect blockquote lines
+// Pattern to extract blockquote parts (indent, content)
 const BLOCKQUOTE_PATTERN = /^(\s*)>\s?(.*)$/;
-
-/**
- * Check if a line is a blockquote.
- */
-function isBlockquoteLine(text: string): boolean {
-  return BLOCKQUOTE_PATTERN.test(text);
-}
 
 /**
  * Toggle blockquote formatting on selected lines.
