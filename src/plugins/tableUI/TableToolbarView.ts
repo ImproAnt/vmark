@@ -102,6 +102,16 @@ export class TableToolbarView {
         return;
       }
 
+      // Cmd+E: close toolbar (toggle) - only when focus is on toolbar
+      if (e.key === "e" && (e.metaKey || e.ctrlKey)) {
+        if (this.container.contains(document.activeElement)) {
+          e.preventDefault();
+          useTableToolbarStore.getState().closeToolbar();
+          this.editorView.focus();
+          return;
+        }
+      }
+
       if (e.key === "Tab") {
         const focusable = this.getFocusableElements();
         if (focusable.length === 0) return;

@@ -55,7 +55,7 @@ export function getCodeFenceInfo(view: EditorView): CodeFenceInfo | null {
       const potentialFenceChars = match[2];
 
       // Check if this is actually an opening (not a closing) by looking for its pair
-      const isOpening = isOpeningFence(doc, lineNum, potentialFenceChars.length);
+      const isOpening = isOpeningFence(doc, lineNum);
 
       if (isOpening) {
         openingLine = { number: lineNum, text: line.text, from: line.from };
@@ -119,12 +119,12 @@ export function getCodeFenceInfo(view: EditorView): CodeFenceInfo | null {
 
 /**
  * Check if a fence at given line is an opening fence (not closing).
- * An opening fence is one that has a closing fence after it.
+ * Uses fence counting: fences alternate between opening and closing.
+ * Even count before = opening, odd count before = closing.
  */
 function isOpeningFence(
   doc: { line: (n: number) => { text: string }; lines: number },
-  lineNum: number,
-  fenceLength: number
+  lineNum: number
 ): boolean {
   const line = doc.line(lineNum);
   const match = line.text.match(FENCE_OPEN_PATTERN);
@@ -134,21 +134,18 @@ function isOpeningFence(
   // If line has language identifier, it's definitely an opening
   if (match[3]) return true;
 
-  // If line is just backticks, check context
-  // Look for a matching closing fence
-  for (let i = lineNum + 1; i <= doc.lines; i++) {
+  // For fence without language, count fences from start to determine parity.
+  // Fences pair up: 1st=open, 2nd=close, 3rd=open, 4th=close, etc.
+  // So if even count (0, 2, 4...) before this line, this fence is opening.
+  // If odd count (1, 3, 5...) before this line, this fence is closing.
+  let fenceCount = 0;
+  for (let i = 1; i < lineNum; i++) {
     const checkLine = doc.line(i);
-    const checkMatch = checkLine.text.match(FENCE_OPEN_PATTERN);
-
-    if (checkMatch && checkMatch[2] && checkMatch[2].length >= fenceLength) {
-      // Found another fence line
-      if (!checkMatch[3]) {
-        // No language = could be closing
-        return true;
-      }
-      // Has language = it's a new opening, our fence might be closing
+    if (FENCE_OPEN_PATTERN.test(checkLine.text)) {
+      fenceCount++;
     }
   }
 
-  return false;
+  // Even count before means this is an opening fence
+  return fenceCount % 2 === 0;
 }

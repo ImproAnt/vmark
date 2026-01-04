@@ -4,13 +4,13 @@
  * Provides Cmd+E toggle for a context-aware floating toolbar in Milkdown.
  * Similar to source mode's format popup.
  *
- * Context detection priority (matches Source mode):
+ * Context detection priority:
  * 1. Toggle if already open
  * 2. Code block → CODE toolbar
- * 3. Table → TABLE toolbar (merged)
- * 4. List → LIST toolbar (merged)
- * 5. Blockquote → BLOCKQUOTE toolbar (merged)
- * 6. Has selection → FORMAT toolbar
+ * 3. Has selection → FORMAT toolbar (honors user selection over block context)
+ * 4. Table → TABLE toolbar
+ * 5. List → LIST toolbar
+ * 6. Blockquote → BLOCKQUOTE toolbar
  * 7-10. Inline elements (link, image, math, footnote)
  * 11-12. Heading or paragraph line start → HEADING toolbar
  * 13-14. Word → FORMAT toolbar (auto-select)
@@ -70,7 +70,14 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     return true;
   }
 
-  // 3. Table → TABLE toolbar (merged in Phase 2)
+  // 3. Has selection → FORMAT toolbar (honor user's selection over block context)
+  if (!empty) {
+    const anchorRect = getCursorRect(view);
+    formatStore.openToolbar(anchorRect, view, "format");
+    return true;
+  }
+
+  // 4. Table → TABLE toolbar (merged in Phase 2)
   // TODO: Phase 2 will merge table toolbar into format toolbar
   if (isInTable(view)) {
     const info = getTableInfo(view);
@@ -86,7 +93,7 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     }
   }
 
-  // 4. List → LIST toolbar (merged in Phase 2)
+  // 5. List → LIST toolbar (merged in Phase 2)
   // TODO: Phase 2 will add list-specific toolbar with format + list actions
   if (isInList(view)) {
     const anchorRect = getCursorRect(view);
@@ -95,19 +102,12 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     return true;
   }
 
-  // 5. Blockquote → BLOCKQUOTE toolbar (merged in Phase 2)
+  // 6. Blockquote → BLOCKQUOTE toolbar (merged in Phase 2)
   // TODO: Phase 2 will add blockquote-specific toolbar with format + quote actions
   if (isInBlockquote(view)) {
     const anchorRect = getCursorRect(view);
     const contextMode = getContextMode(view);
     formatStore.openToolbar(anchorRect, view, contextMode);
-    return true;
-  }
-
-  // 6. Has selection → FORMAT toolbar
-  if (!empty) {
-    const anchorRect = getCursorRect(view);
-    formatStore.openToolbar(anchorRect, view, "format");
     return true;
   }
 

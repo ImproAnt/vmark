@@ -61,10 +61,12 @@ function clearShowTimeout() {
  * Also updates cursor context on every selection/doc change.
  */
 export const sourceFormatExtension = EditorView.updateListener.of((update) => {
-  // Update cursor context on selection or document changes
-  if (update.selectionSet || update.docChanged) {
+  const store = useSourceCursorContextStore.getState();
+
+  // Update cursor context when view changes (including initial) or selection/doc changes
+  if (store.editorView !== update.view || update.selectionSet || update.docChanged) {
     const context = computeSourceCursorContext(update.view);
-    useSourceCursorContextStore.getState().setContext(context, update.view);
+    store.setContext(context, update.view);
   }
 
   // Only handle selection changes for popup

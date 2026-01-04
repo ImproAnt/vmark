@@ -44,30 +44,22 @@ function updateToolbarState(view: EditorView): boolean {
     return false;
   }
 
-  // Cursor is in table - safe to query table position
-  const info = getTableInfo(view);
-  if (info) {
-    const rect = getTableRect(view, info.tablePos);
-    if (rect) {
-      if (store.isOpen && store.tablePos === info.tablePos) {
-        // Just update position
+  // Cursor is in table - only update position if toolbar already open
+  // (toolbar is opened via Cmd+E, not automatically)
+  if (store.isOpen) {
+    const info = getTableInfo(view);
+    if (info) {
+      const rect = getTableRect(view, info.tablePos);
+      if (rect) {
         store.updatePosition(rect);
-      } else {
-        // Open toolbar for new table
-        store.openToolbar({
-          tablePos: info.tablePos,
-          anchorRect: rect,
-        });
       }
-      return true;
+    } else {
+      // Couldn't get table info - close toolbar
+      store.closeToolbar();
     }
   }
 
-  // Couldn't get table info - close toolbar
-  if (store.isOpen) {
-    store.closeToolbar();
-  }
-  return false;
+  return true; // In table
 }
 
 // Editor getter type

@@ -267,10 +267,9 @@ export function triggerFormatPopup(view: EditorView): boolean {
   }
 
   // 12. Heading → HEADING toolbar
-  if (ctx.inHeading) {
-    const headingInfo = getHeadingInfo(view);
-    if (!headingInfo) return false;
-
+  // Always check detection function directly - cached context may be stale on app reopen
+  const headingInfo = getHeadingInfo(view);
+  if (headingInfo) {
     const rect = getCursorRect(view, from);
     if (!rect) return false;
 
