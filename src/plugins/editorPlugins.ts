@@ -14,7 +14,7 @@ import { useEditorStore } from "@/stores/editorStore";
 import { useFormatToolbarStore } from "@/stores/formatToolbarStore";
 import { useTableToolbarStore } from "@/stores/tableToolbarStore";
 import { getCursorInfoFromProseMirror } from "@/utils/cursorSync/prosemirror";
-import { findMarkRange, findAnyMarkRangeAtCursor, findWordAtCursor } from "@/plugins/syntaxReveal/marks";
+import { findMarkRange, findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
 
 /**
  * Delay (ms) before enabling cursor tracking to allow restoration to complete.
@@ -155,15 +155,7 @@ export function expandedToggleMark(view: EditorView, markTypeName: string): bool
       return true;
     }
 
-    // Fallback: select word at cursor and apply mark
-    const wordRange = findWordAtCursor($from);
-    if (wordRange) {
-      clearLastRemoved();
-      dispatch(state.tr.addMark(wordRange.from, wordRange.to, markType.create()));
-      return true;
-    }
-
-    // Final fallback - toggle stored mark for new typing
+    // No word auto-selection - toggle stored mark for new typing
     clearLastRemoved();
     const storedMarks = state.storedMarks || $from.marks();
     if (markType.isInSet(storedMarks)) {

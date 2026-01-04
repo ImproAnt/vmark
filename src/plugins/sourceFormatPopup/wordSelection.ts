@@ -1,26 +1,48 @@
 /**
  * Word Selection Utility
  *
- * Detects and selects words at cursor position for auto-selection
- * when triggering the format popup via keyboard shortcut.
+ * Detects words at cursor position using Intl.Segmenter API.
+ * Matches browser-native word selection behavior (double-click).
  */
 
 import type { EditorView } from "@codemirror/view";
 
-/**
- * Word character pattern (alphanumeric + underscore).
- */
-const WORD_CHAR = /[\w\u4e00-\u9fff\u3400-\u4dbf]/;
+// Intl.Segmenter type declaration (ES2022)
+interface SegmentData {
+  segment: string;
+  index: number;
+  isWordLike?: boolean;
+}
+
+type SegmenterType = { segment: (text: string) => Iterable<SegmentData> };
+
+// Cached segmenter instance (created once, reused)
+let cachedSegmenter: SegmenterType | null = null;
 
 /**
- * Get word range at cursor position.
- * Returns the range of the word under cursor, or null if cursor is not in a word.
- *
- * Handles these cases:
- * - Cursor in middle of word: selects entire word
- * - Cursor at end of word: selects word before cursor
- * - Cursor at start of word: selects word after cursor
- * - Cursor in whitespace: returns null
+ * Get or create a cached Intl.Segmenter instance.
+ * Returns null if Intl.Segmenter is not available.
+ */
+function getWordSegmenter(): SegmenterType | null {
+  if (cachedSegmenter) return cachedSegmenter;
+
+  // Feature detection for Intl.Segmenter
+  if (!("Segmenter" in Intl)) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Segmenter = (Intl as any).Segmenter as new (
+    locale?: string,
+    options?: { granularity: string }
+  ) => SegmenterType;
+
+  cachedSegmenter = new Segmenter(undefined, { granularity: "word" });
+  return cachedSegmenter;
+}
+
+/**
+ * Get word range at cursor position using Intl.Segmenter.
+ * Matches browser-native word selection behavior (double-click).
+ * Returns null if cursor is in whitespace/punctuation or Segmenter unavailable.
  */
 export function getWordAtCursor(
   view: EditorView
@@ -30,42 +52,28 @@ export function getWordAtCursor(
   const lineText = line.text;
   const posInLine = from - line.from;
 
-  // Check if cursor is at a word character or adjacent to one
-  const charAtCursor = lineText[posInLine] ?? "";
-  const charBefore = posInLine > 0 ? lineText[posInLine - 1] : "";
+  const segmenter = getWordSegmenter();
+  if (!segmenter) return null;
 
-  const atWordChar = WORD_CHAR.test(charAtCursor);
-  const afterWordChar = WORD_CHAR.test(charBefore);
+  const segments = Array.from(segmenter.segment(lineText));
 
-  // If not at or after a word character, no word to select
-  if (!atWordChar && !afterWordChar) {
-    return null;
+  // Find segment containing cursor
+  for (const segment of segments) {
+    const segStart = segment.index;
+    const segEnd = segStart + segment.segment.length;
+
+    if (posInLine >= segStart && posInLine <= segEnd) {
+      // Skip non-word segments (punctuation, whitespace)
+      if (!segment.isWordLike) return null;
+
+      return {
+        from: line.from + segStart,
+        to: line.from + segEnd,
+      };
+    }
   }
 
-  // Find word boundaries
-  let start = posInLine;
-  let end = posInLine;
-
-  // Expand left
-  while (start > 0 && WORD_CHAR.test(lineText[start - 1])) {
-    start--;
-  }
-
-  // Expand right
-  while (end < lineText.length && WORD_CHAR.test(lineText[end])) {
-    end++;
-  }
-
-  // Convert to document positions
-  const wordFrom = line.from + start;
-  const wordTo = line.from + end;
-
-  // Don't return empty range
-  if (wordFrom === wordTo) {
-    return null;
-  }
-
-  return { from: wordFrom, to: wordTo };
+  return null;
 }
 
 /**

@@ -301,28 +301,13 @@ export function triggerFormatPopup(view: EditorView): boolean {
   const contextMode = getContextModeSource(view);
 
   if (contextMode === "format") {
-    // Format mode - auto-select word if no selection
-    let selFrom = from;
-    let selTo = to;
-
-    if (selFrom === selTo) {
-      // No selection - try to select word at cursor
-      const wordRange = getWordAtCursor(view);
-      if (wordRange) {
-        // Select the word
-        view.dispatch({
-          selection: { anchor: wordRange.from, head: wordRange.to },
-        });
-        selFrom = wordRange.from;
-        selTo = wordRange.to;
-      }
-    }
-
-    // Show format popup
-    const rect = getSelectionRect(view, selFrom, selTo);
+    // Format mode - show popup at selection or cursor (no auto-selection)
+    const rect = from !== to
+      ? getSelectionRect(view, from, to)
+      : getCursorRect(view, from);
     if (!rect) return false;
 
-    const selectedText = view.state.doc.sliceString(selFrom, selTo);
+    const selectedText = view.state.doc.sliceString(from, to);
     store.openPopup({
       anchorRect: rect,
       selectedText,
