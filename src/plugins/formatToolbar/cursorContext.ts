@@ -14,9 +14,14 @@ import type {
   BlockquoteContext,
   HeadingContext,
   ContextMode,
+  LinkContext,
+  ImageContext,
+  InlineMathContext,
+  FootnoteContext,
+  FormattedRangeContext,
 } from "@/types/cursorContext";
 import type { FormatType } from "@/plugins/sourceFormatPopup/formatActions";
-import { findWordAtCursor } from "@/plugins/syntaxReveal/marks";
+import { findWordAtCursor, findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
 
 /**
  * Get code block info if cursor is inside a code block node.
@@ -224,6 +229,249 @@ function isNearPunctuation(view: EditorView): boolean {
 }
 
 /**
+ * Get link context if cursor is inside a link mark.
+ */
+function getLinkContext(view: EditorView): LinkContext | null {
+  const { $from } = view.state.selection;
+  const marks = $from.marks();
+  const linkMark = marks.find((m) => m.type.name === "link");
+
+  if (!linkMark) return null;
+
+  // Find the full range of the link mark
+  const parent = $from.parent;
+  const parentStart = $from.start();
+  const pos = $from.pos;
+
+  let from = pos;
+  let to = pos;
+
+  // Scan backwards
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+    if (child.isText && linkMark.isInSet(child.marks) && childTo <= pos) {
+      from = childFrom;
+    }
+  });
+
+  // Find actual start by scanning
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+    if (child.isText && linkMark.isInSet(child.marks)) {
+      if (childFrom < from && pos >= childFrom && pos <= childTo) {
+        from = childFrom;
+      }
+    }
+  });
+
+  // Scan forward for end
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+    if (child.isText && linkMark.isInSet(child.marks)) {
+      if (pos >= childFrom && pos <= childTo) {
+        to = childTo;
+      }
+      if (childFrom >= pos && linkMark.isInSet(child.marks) && childFrom < to + 1) {
+        to = Math.max(to, childTo);
+      }
+    }
+  });
+
+  // Recalculate properly - find contiguous range
+  from = pos;
+  to = pos;
+  let foundStart = false;
+
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+
+    if (child.isText && linkMark.isInSet(child.marks)) {
+      if (!foundStart) {
+        from = childFrom;
+        foundStart = true;
+      }
+      if (pos >= from && pos <= childTo) {
+        // Continue extending while contiguous
+        to = childTo;
+      }
+    } else if (foundStart && childFrom < pos) {
+      // Reset if gap before cursor
+      from = pos;
+      to = pos;
+      foundStart = false;
+    }
+  });
+
+  // Final pass: find contiguous range containing pos
+  from = -1;
+  to = -1;
+  let rangeStart = -1;
+  let rangeEnd = -1;
+
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+
+    if (child.isText && linkMark.isInSet(child.marks)) {
+      if (rangeStart === -1) {
+        rangeStart = childFrom;
+      }
+      rangeEnd = childTo;
+    } else {
+      // Check if cursor was in accumulated range
+      if (rangeStart !== -1 && pos >= rangeStart && pos <= rangeEnd) {
+        from = rangeStart;
+        to = rangeEnd;
+      }
+      rangeStart = -1;
+      rangeEnd = -1;
+    }
+  });
+
+  // Check final range
+  if (rangeStart !== -1 && pos >= rangeStart && pos <= rangeEnd) {
+    from = rangeStart;
+    to = rangeEnd;
+  }
+
+  if (from === -1 || to === -1) return null;
+
+  return {
+    href: linkMark.attrs.href || "",
+    text: view.state.doc.textBetween(from, to),
+    from,
+    to,
+    contentFrom: from,
+    contentTo: to,
+  };
+}
+
+/**
+ * Get image context if cursor is adjacent to an inline image.
+ */
+function getImageContext(view: EditorView): ImageContext | null {
+  const { $from } = view.state.selection;
+  const parent = $from.parent;
+  const parentStart = $from.start();
+  const pos = $from.pos;
+
+  // Check nodes around cursor for image
+  let imageInfo: ImageContext | null = null;
+
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+
+    if (child.type.name === "image" && pos >= childFrom && pos <= childTo) {
+      imageInfo = {
+        src: child.attrs.src || "",
+        alt: child.attrs.alt || "",
+        from: childFrom,
+        to: childTo,
+      };
+    }
+  });
+
+  return imageInfo;
+}
+
+/**
+ * Get inline math context if cursor is inside inline math.
+ */
+function getInlineMathContext(view: EditorView): InlineMathContext | null {
+  const { $from } = view.state.selection;
+  const parent = $from.parent;
+  const parentStart = $from.start();
+  const pos = $from.pos;
+
+  let mathInfo: InlineMathContext | null = null;
+
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+
+    if (
+      (child.type.name === "math_inline" || child.type.name === "inlineMath") &&
+      pos >= childFrom &&
+      pos <= childTo
+    ) {
+      mathInfo = {
+        from: childFrom,
+        to: childTo,
+        contentFrom: childFrom + 1, // Skip opening $
+        contentTo: childTo - 1, // Skip closing $
+      };
+    }
+  });
+
+  return mathInfo;
+}
+
+/**
+ * Get footnote context if cursor is on a footnote reference.
+ */
+function getFootnoteContext(view: EditorView): FootnoteContext | null {
+  const { $from } = view.state.selection;
+  const parent = $from.parent;
+  const parentStart = $from.start();
+  const pos = $from.pos;
+
+  let footnoteInfo: FootnoteContext | null = null;
+
+  parent.forEach((child, offset) => {
+    const childFrom = parentStart + offset;
+    const childTo = childFrom + child.nodeSize;
+
+    if (
+      (child.type.name === "footnote_reference" ||
+        child.type.name === "footnoteRef") &&
+      pos >= childFrom &&
+      pos <= childTo
+    ) {
+      footnoteInfo = {
+        label: child.attrs.label || child.attrs.id || "",
+        from: childFrom,
+        to: childTo,
+        contentFrom: childFrom,
+        contentTo: childTo,
+      };
+    }
+  });
+
+  return footnoteInfo;
+}
+
+/**
+ * Get innermost format range at cursor (for auto-selection).
+ */
+function getInnermostFormatRange(view: EditorView): FormattedRangeContext | null {
+  const { $from, empty } = view.state.selection;
+
+  // Only check when no selection
+  if (!empty) return null;
+
+  const pos = $from.pos;
+  const result = findAnyMarkRangeAtCursor(pos, $from);
+
+  if (!result) return null;
+
+  // Determine the format type based on the mark
+  const formatType: FormatType = result.isLink ? "link" : "bold"; // Default to bold for other marks
+
+  return {
+    type: formatType,
+    from: result.from,
+    to: result.to,
+    contentFrom: result.from,
+    contentTo: result.to,
+  };
+}
+
+/**
  * Determine context mode.
  */
 function getContextMode(view: EditorView): ContextMode {
@@ -299,8 +547,15 @@ export function computeMilkdownCursorContext(view: EditorView): CursorContext {
   const inBlockquote = getBlockquoteContext(view);
   const inTable = getTableContext(view);
 
+  // Inline contexts
+  const inLink = getLinkContext(view);
+  const inImage = getImageContext(view);
+  const inInlineMath = getInlineMathContext(view);
+  const inFootnote = getFootnoteContext(view);
+
   // Format marks
   const activeFormats = getActiveFormats(view);
+  const innermostFormat = getInnermostFormatRange(view);
 
   // Position
   const atLineStart = isAtLineStart(view);
@@ -315,22 +570,22 @@ export function computeMilkdownCursorContext(view: EditorView): CursorContext {
   return {
     // Block contexts
     inCodeBlock,
-    inBlockMath: null, // Not implemented for Milkdown yet
+    inBlockMath: null, // Block math not applicable in Milkdown (different rendering)
     inTable,
     inList,
     inBlockquote,
     inHeading,
 
-    // Inline contexts (not yet implemented for Milkdown)
-    inLink: null,
-    inImage: null,
-    inInlineMath: null,
-    inFootnote: null,
+    // Inline contexts
+    inLink,
+    inImage,
+    inInlineMath,
+    inFootnote,
 
     // Format marks
     activeFormats,
     formatRanges: [], // Not applicable for ProseMirror (marks are stored in AST)
-    innermostFormat: null,
+    innermostFormat,
 
     // Position
     atLineStart,

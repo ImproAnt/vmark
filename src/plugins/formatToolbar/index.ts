@@ -44,6 +44,7 @@ export const formatToolbarPluginKey = new PluginKey("formatToolbar");
  */
 function toggleContextAwareToolbar(view: EditorView): boolean {
   const formatStore = useFormatToolbarStore.getState();
+  const cursorContext = useMilkdownCursorContextStore.getState().context;
   const { empty } = view.state.selection;
 
   // 1. Toggle: if format toolbar is open, close it
@@ -76,10 +77,73 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     return true;
   }
 
-  // 7-10. Inline elements (link, image, math, footnote)
-  // TODO: Phase 4 will add inline element auto-selection
+  // 7. Cursor in formatted range → FORMAT toolbar (auto-select content)
+  if (cursorContext.innermostFormat) {
+    const fmt = cursorContext.innermostFormat;
+    const originalCursorPos = view.state.selection.from;
 
-  // 11. Heading → HEADING toolbar
+    // Auto-select the formatted content
+    const tr = view.state.tr.setSelection(
+      TextSelection.create(view.state.doc, fmt.contentFrom, fmt.contentTo)
+    );
+    view.dispatch(tr);
+
+    const anchorRect = getCursorRect(view);
+    formatStore.openToolbar(anchorRect, view, {
+      contextMode: "format",
+      originalCursorPos,
+    });
+    return true;
+  }
+
+  // 8. Image → Do nothing (has own popup on click)
+  if (cursorContext.inImage) {
+    return false;
+  }
+
+  // 9. Footnote → Show footnote info (for now, just skip like image)
+  if (cursorContext.inFootnote) {
+    // TODO: Add footnote-specific toolbar
+    return false;
+  }
+
+  // 10. Link → FORMAT toolbar (auto-select link text)
+  if (cursorContext.inLink) {
+    const lnk = cursorContext.inLink;
+    const originalCursorPos = view.state.selection.from;
+
+    const tr = view.state.tr.setSelection(
+      TextSelection.create(view.state.doc, lnk.contentFrom, lnk.contentTo)
+    );
+    view.dispatch(tr);
+
+    const anchorRect = getCursorRect(view);
+    formatStore.openToolbar(anchorRect, view, {
+      contextMode: "format",
+      originalCursorPos,
+    });
+    return true;
+  }
+
+  // 11. Inline math → FORMAT toolbar (auto-select math content)
+  if (cursorContext.inInlineMath) {
+    const mth = cursorContext.inInlineMath;
+    const originalCursorPos = view.state.selection.from;
+
+    const tr = view.state.tr.setSelection(
+      TextSelection.create(view.state.doc, mth.contentFrom, mth.contentTo)
+    );
+    view.dispatch(tr);
+
+    const anchorRect = getCursorRect(view);
+    formatStore.openToolbar(anchorRect, view, {
+      contextMode: "format",
+      originalCursorPos,
+    });
+    return true;
+  }
+
+  // 12. Heading → HEADING toolbar
   const headingInfo = getHeadingInfo(view);
   if (headingInfo) {
     const anchorRect = getCursorRect(view);
@@ -87,7 +151,7 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     return true;
   }
 
-  // 12. Cursor at paragraph line start → HEADING toolbar
+  // 13. Cursor at paragraph line start → HEADING toolbar
   if (isAtParagraphLineStart(view)) {
     const anchorRect = getCursorRect(view);
     formatStore.openHeadingToolbar(anchorRect, view, {
@@ -97,7 +161,7 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     return true;
   }
 
-  // 13-14. Cursor in word → FORMAT toolbar (auto-select word)
+  // 14-15. Cursor in word → FORMAT toolbar (auto-select word)
   const $from = view.state.selection.$from;
   const wordRange = findWordAtCursor($from);
   if (wordRange) {
@@ -118,7 +182,7 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     return true;
   }
 
-  // 15-16. Blank line or otherwise → INSERT toolbar
+  // 16-17. Blank line or otherwise → INSERT toolbar
   const anchorRect = getCursorRect(view);
   const contextMode = getContextMode(view);
   formatStore.openToolbar(anchorRect, view, contextMode);
