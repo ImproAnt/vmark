@@ -44,65 +44,59 @@ export interface HeadingButtonDef {
   label: string;
 }
 
-// Format button groups: headings | bold italic strike highlight | link image | sup sub code
+// Format buttons (reordered: bold, italic, highlight, strikethrough, link, sup, sub, code)
 export const TEXT_FORMAT_BUTTONS: FormatButton[] = [
   { type: "bold", icon: createIcon(icons.bold), label: "Bold", shortcut: "⌘B" },
-  {
-    type: "italic",
-    icon: createIcon(icons.italic),
-    label: "Italic",
-    shortcut: "⌘I",
-  },
-  {
-    type: "strikethrough",
-    icon: createIcon(icons.strikethrough),
-    label: "Strikethrough",
-    shortcut: "⌘⇧X",
-  },
-  {
-    type: "highlight",
-    icon: createIcon(icons.highlight),
-    label: "Highlight",
-    shortcut: "⌘⇧H",
-  },
+  { type: "italic", icon: createIcon(icons.italic), label: "Italic", shortcut: "⌘I" },
+  { type: "highlight", icon: createIcon(icons.highlight), label: "Highlight", shortcut: "⌥⌘H" },
+  { type: "strikethrough", icon: createIcon(icons.strikethrough), label: "Strikethrough", shortcut: "⌘⇧X" },
+  { type: "link", icon: createIcon(icons.link), label: "Link", shortcut: "⌘K" },
+  { type: "superscript", icon: createIcon(icons.superscript), label: "Superscript", shortcut: "⌥⌘⇧=" },
+  { type: "subscript", icon: createIcon(icons.subscript), label: "Subscript", shortcut: "⌥⌘=" },
+  { type: "code", icon: createIcon(icons.inlineCode), label: "Code", shortcut: "⌘`" },
 ];
 
+// Legacy button groups (kept for backwards compatibility)
 export const LINK_BUTTONS: FormatButton[] = [
   { type: "link", icon: createIcon(icons.link), label: "Link", shortcut: "⌘K" },
-  {
-    type: "image",
-    icon: createIcon(icons.image),
-    label: "Image",
-    shortcut: "⌘⇧I",
-  },
+  { type: "image", icon: createIcon(icons.image), label: "Image", shortcut: "⌘⇧I" },
 ];
 
 export const CODE_BUTTONS: FormatButton[] = [
-  {
-    type: "superscript",
-    icon: createIcon(icons.superscript),
-    label: "Superscript",
-    shortcut: "⌘⇧.",
-  },
-  {
-    type: "subscript",
-    icon: createIcon(icons.subscript),
-    label: "Subscript",
-    shortcut: "⌘.",
-  },
-  {
-    type: "code",
-    icon: createIcon(icons.inlineCode),
-    label: "Code",
-    shortcut: "⌘`",
-  },
+  { type: "superscript", icon: createIcon(icons.superscript), label: "Superscript", shortcut: "⌥⌘⇧=" },
+  { type: "subscript", icon: createIcon(icons.subscript), label: "Subscript", shortcut: "⌥⌘=" },
+  { type: "code", icon: createIcon(icons.inlineCode), label: "Code", shortcut: "⌘`" },
 ];
 
 // Combined for active format detection
-export const ALL_FORMAT_BUTTONS = [
-  ...TEXT_FORMAT_BUTTONS,
-  ...LINK_BUTTONS,
-  ...CODE_BUTTONS,
+export const ALL_FORMAT_BUTTONS = TEXT_FORMAT_BUTTONS;
+
+// Insert button types
+export type InsertType =
+  | "inline-image" | "inline-math" | "footnote"
+  | "block-image" | "ordered-list" | "unordered-list" | "blockquote" | "table" | "divider";
+
+export interface InsertButton {
+  type: InsertType;
+  icon: React.ReactNode;
+  label: string;
+}
+
+// Inline insert buttons (cursor not in word, not at blank line)
+export const INLINE_INSERT_BUTTONS: InsertButton[] = [
+  { type: "inline-image", icon: createIcon(icons.image), label: "Image" },
+  { type: "inline-math", icon: createIcon(icons.math), label: "Math" },
+  { type: "footnote", icon: createIcon(icons.footnote), label: "Footnote" },
+];
+
+// Block insert buttons (cursor at beginning of blank line)
+export const BLOCK_INSERT_BUTTONS: InsertButton[] = [
+  { type: "block-image", icon: createIcon(icons.image), label: "Image" },
+  { type: "ordered-list", icon: createIcon(icons.orderedList), label: "Ordered List" },
+  { type: "unordered-list", icon: createIcon(icons.unorderedList), label: "Unordered List" },
+  { type: "blockquote", icon: createIcon(icons.blockquote), label: "Blockquote" },
+  { type: "table", icon: createIcon(icons.table), label: "Table" },
+  { type: "divider", icon: createIcon(icons.divider), label: "Divider" },
 ];
 
 export const TABLE_BUTTONS: TableButtonDef[] = [

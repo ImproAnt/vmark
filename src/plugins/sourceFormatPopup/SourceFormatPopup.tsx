@@ -29,6 +29,7 @@ export function SourceFormatPopup() {
 
   const isOpen = useSourceFormatStore((state) => state.isOpen);
   const mode = useSourceFormatStore((state) => state.mode);
+  const contextMode = useSourceFormatStore((state) => state.contextMode);
   const anchorRect = useSourceFormatStore((state) => state.anchorRect);
   const editorView = useSourceFormatStore((state) => state.editorView);
   const tableInfo = useSourceFormatStore((state) => state.tableInfo);
@@ -69,7 +70,7 @@ export function SourceFormatPopup() {
     requestAnimationFrame(() => {
       justOpenedRef.current = false;
     });
-  }, [isOpen, anchorRect, mode, editorView]);
+  }, [isOpen, anchorRect, mode, contextMode, editorView]);
 
   // Update active formats when editor view changes (only in format mode)
   useEffect(() => {
@@ -176,7 +177,7 @@ export function SourceFormatPopup() {
     switch (mode) {
       case "format":
         return (
-          <FormatMode editorView={editorView} activeFormats={activeFormats} />
+          <FormatMode editorView={editorView} activeFormats={activeFormats} contextMode={contextMode} />
         );
       case "table":
         return tableInfo ? (

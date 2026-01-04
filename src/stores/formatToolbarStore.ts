@@ -12,6 +12,7 @@ import type { AnchorRect } from "@/utils/popupPosition";
 import type { EditorView } from "@milkdown/kit/prose/view";
 
 export type ToolbarMode = "format" | "heading";
+export type ContextMode = "format" | "inline-insert" | "block-insert";
 
 export interface HeadingInfo {
   level: number; // 1-6, or 0 for paragraph
@@ -21,13 +22,14 @@ export interface HeadingInfo {
 interface FormatToolbarState {
   isOpen: boolean;
   mode: ToolbarMode;
+  contextMode: ContextMode;
   anchorRect: AnchorRect | null;
   editorView: EditorView | null;
   headingInfo: HeadingInfo | null;
 }
 
 interface FormatToolbarActions {
-  openToolbar: (rect: AnchorRect, view: EditorView) => void;
+  openToolbar: (rect: AnchorRect, view: EditorView, contextMode?: ContextMode) => void;
   openHeadingToolbar: (rect: AnchorRect, view: EditorView, headingInfo: HeadingInfo) => void;
   closeToolbar: () => void;
   updatePosition: (rect: AnchorRect) => void;
@@ -36,6 +38,7 @@ interface FormatToolbarActions {
 const initialState: FormatToolbarState = {
   isOpen: false,
   mode: "format",
+  contextMode: "format",
   anchorRect: null,
   editorView: null,
   headingInfo: null,
@@ -45,10 +48,11 @@ export const useFormatToolbarStore = create<FormatToolbarState & FormatToolbarAc
   (set) => ({
     ...initialState,
 
-    openToolbar: (rect, view) =>
+    openToolbar: (rect, view, contextMode = "format") =>
       set({
         isOpen: true,
         mode: "format",
+        contextMode,
         anchorRect: rect,
         editorView: view,
         headingInfo: null,

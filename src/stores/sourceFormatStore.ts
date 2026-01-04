@@ -20,6 +20,9 @@ export interface AnchorRect {
 /** Popup mode determines which buttons to show */
 export type PopupMode = "format" | "table" | "heading" | "code";
 
+/** Context mode for format popup (when mode is "format") */
+export type ContextMode = "format" | "inline-insert" | "block-insert";
+
 /** Heading info for heading mode */
 export interface HeadingInfo {
   level: number; // 1-6, or 0 for paragraph
@@ -30,6 +33,7 @@ export interface HeadingInfo {
 interface SourceFormatState {
   isOpen: boolean;
   mode: PopupMode;
+  contextMode: ContextMode;
   anchorRect: AnchorRect | null;
   selectedText: string;
   editorView: EditorView | null;
@@ -43,6 +47,7 @@ interface SourceFormatActions {
     anchorRect: AnchorRect;
     selectedText: string;
     editorView: EditorView;
+    contextMode?: ContextMode;
   }) => void;
   openTablePopup: (data: {
     anchorRect: AnchorRect;
@@ -68,6 +73,7 @@ type SourceFormatStore = SourceFormatState & SourceFormatActions;
 const initialState: SourceFormatState = {
   isOpen: false,
   mode: "format",
+  contextMode: "format",
   anchorRect: null,
   selectedText: "",
   editorView: null,
@@ -83,6 +89,7 @@ export const useSourceFormatStore = create<SourceFormatStore>((set) => ({
     set({
       isOpen: true,
       mode: "format",
+      contextMode: data.contextMode ?? "format",
       anchorRect: data.anchorRect,
       selectedText: data.selectedText,
       editorView: data.editorView,

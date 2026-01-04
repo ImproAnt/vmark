@@ -8,7 +8,7 @@
  */
 
 import type { EditorView } from "@milkdown/kit/prose/view";
-import { useFormatToolbarStore, type ToolbarMode } from "@/stores/formatToolbarStore";
+import { useFormatToolbarStore, type ToolbarMode, type ContextMode } from "@/stores/formatToolbarStore";
 import { expandedToggleMark } from "@/plugins/editorPlugins";
 import {
   calculatePopupPosition,
@@ -32,21 +32,47 @@ const icons = {
   h2: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>`,
   h3: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2"/></svg>`,
   h4: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17 10v4h4"/><path d="M21 10v8"/></svg>`,
-  h5: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17 13v-3h4"/><path d="M17 17.7c.4.2.8.3 1.3.3 1.5 0 2.7-1.1 2.7-2.5S19.8 13 18.3 13H17"/></svg>`,
-  h6: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M19.5 10a2.5 2.5 0 0 0-5 0v4a2.5 2.5 0 0 0 5 0"/></svg>`,
+  h5: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17 18h4c0-3-4-4-4-7h4"/></svg>`,
+  h6: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><circle cx="19" cy="16" r="2"/><path d="M20 10c-2 0-3 1.5-3 4"/></svg>`,
   paragraph: `<svg viewBox="0 0 24 24"><path d="M13 4v16"/><path d="M17 4v16"/><path d="M19 4H9.5a4.5 4.5 0 0 0 0 9H13"/></svg>`,
+  // Insert icons
+  image: `<svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+  math: `<svg viewBox="0 0 24 24"><path d="M18 7V4H6l6 8-6 8h12v-3"/></svg>`,
+  footnote: `<svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M6 21h12"/></svg>`,
+  orderedList: `<svg viewBox="0 0 24 24"><line x1="10" x2="21" y1="6" y2="6"/><line x1="10" x2="21" y1="12" y2="12"/><line x1="10" x2="21" y1="18" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>`,
+  unorderedList: `<svg viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>`,
+  blockquote: `<svg viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"/></svg>`,
+  table: `<svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>`,
+  divider: `<svg viewBox="0 0 24 24"><line x1="3" x2="21" y1="12" y2="12"/></svg>`,
 };
 
-// Button definitions with mark types
+// Button definitions with mark types (reordered per requirements)
 const FORMAT_BUTTONS = [
   { icon: icons.bold, title: "Bold (⌘B)", markType: "strong" },
   { icon: icons.italic, title: "Italic (⌘I)", markType: "emphasis" },
+  { icon: icons.highlight, title: "Highlight (⌥⌘H)", markType: "highlight" },
   { icon: icons.strikethrough, title: "Strikethrough (⌘⇧X)", markType: "strike_through" },
-  { icon: icons.code, title: "Inline Code (⌘`)", markType: "inlineCode" },
-  { icon: icons.highlight, title: "Highlight", markType: "highlight" },
   { icon: icons.link, title: "Link (⌘K)", markType: "link" },
-  { icon: icons.subscript, title: "Subscript", markType: "subscript" },
   { icon: icons.superscript, title: "Superscript", markType: "superscript" },
+  { icon: icons.subscript, title: "Subscript", markType: "subscript" },
+  { icon: icons.code, title: "Inline Code (⌘`)", markType: "inlineCode" },
+];
+
+// Inline insert buttons (when cursor not in word, not at blank line)
+const INLINE_INSERT_BUTTONS = [
+  { icon: icons.image, title: "Image", action: "inline-image" },
+  { icon: icons.math, title: "Math", action: "inline-math" },
+  { icon: icons.footnote, title: "Footnote", action: "footnote" },
+];
+
+// Block insert buttons (when cursor at beginning of blank line)
+const BLOCK_INSERT_BUTTONS = [
+  { icon: icons.image, title: "Image", action: "block-image" },
+  { icon: icons.orderedList, title: "Ordered List", action: "ordered-list" },
+  { icon: icons.unorderedList, title: "Unordered List", action: "unordered-list" },
+  { icon: icons.blockquote, title: "Blockquote", action: "blockquote" },
+  { icon: icons.table, title: "Table", action: "table" },
+  { icon: icons.divider, title: "Divider", action: "divider" },
 ];
 
 // Heading buttons (level 0 = paragraph)
@@ -69,6 +95,7 @@ export class FormatToolbarView {
   private editorView: EditorView;
   private wasOpen = false;
   private currentMode: ToolbarMode = "format";
+  private currentContextMode: ContextMode = "format";
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(view: EditorView) {
@@ -87,10 +114,13 @@ export class FormatToolbarView {
         if (state.editorView) {
           this.editorView = state.editorView;
         }
-        // Rebuild container if mode changed
-        if (state.mode !== this.currentMode) {
-          this.rebuildContainer(state.mode, state.headingInfo?.level);
+        // Rebuild container if mode or contextMode changed
+        const modeChanged = state.mode !== this.currentMode;
+        const contextModeChanged = state.mode === "format" && state.contextMode !== this.currentContextMode;
+        if (modeChanged || contextModeChanged) {
+          this.rebuildContainer(state.mode, state.headingInfo?.level, state.contextMode);
           this.currentMode = state.mode;
+          this.currentContextMode = state.contextMode;
         } else if (state.mode === "heading" && state.headingInfo) {
           // Update active state for heading buttons
           this.updateHeadingActiveState(state.headingInfo.level);
@@ -174,7 +204,7 @@ export class FormatToolbarView {
     }
   }
 
-  private buildContainer(mode: ToolbarMode, activeLevel?: number): HTMLElement {
+  private buildContainer(mode: ToolbarMode, activeLevel?: number, contextMode: ContextMode = "format"): HTMLElement {
     const container = document.createElement("div");
     container.className = "format-toolbar";
     container.style.display = "none";
@@ -190,7 +220,16 @@ export class FormatToolbarView {
         }
         row.appendChild(btnEl);
       }
+    } else if (contextMode === "inline-insert") {
+      for (const btn of INLINE_INSERT_BUTTONS) {
+        row.appendChild(this.buildInsertButton(btn.icon, btn.title, btn.action));
+      }
+    } else if (contextMode === "block-insert") {
+      for (const btn of BLOCK_INSERT_BUTTONS) {
+        row.appendChild(this.buildInsertButton(btn.icon, btn.title, btn.action));
+      }
     } else {
+      // Default: format buttons
       for (const btn of FORMAT_BUTTONS) {
         row.appendChild(this.buildFormatButton(btn.icon, btn.title, btn.markType));
       }
@@ -200,11 +239,11 @@ export class FormatToolbarView {
     return container;
   }
 
-  private rebuildContainer(mode: ToolbarMode, activeLevel?: number) {
+  private rebuildContainer(mode: ToolbarMode, activeLevel?: number, contextMode: ContextMode = "format") {
     const wasVisible = this.container.style.display !== "none";
     const oldContainer = this.container;
 
-    this.container = this.buildContainer(mode, activeLevel);
+    this.container = this.buildContainer(mode, activeLevel, contextMode);
     this.container.style.display = wasVisible ? "flex" : "none";
     this.container.style.position = "fixed";
 
@@ -272,6 +311,31 @@ export class FormatToolbarView {
     return btn;
   }
 
+  private buildInsertButton(
+    iconSvg: string,
+    title: string,
+    action: string
+  ): HTMLElement {
+    const btn = document.createElement("button");
+    btn.className = "format-toolbar-btn";
+    btn.type = "button";
+    btn.title = title;
+    btn.innerHTML = iconSvg;
+
+    // Prevent mousedown from stealing focus
+    btn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+    });
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.handleInsert(action);
+    });
+
+    return btn;
+  }
+
   private handleFormat(markType: string) {
     this.editorView.focus();
     expandedToggleMark(this.editorView, markType);
@@ -306,6 +370,53 @@ export class FormatToolbarView {
 
     this.editorView.focus();
     store.closeToolbar();
+  }
+
+  private handleInsert(action: string) {
+    const { state, dispatch } = this.editorView;
+    const { from } = state.selection;
+    let textToInsert = "";
+
+    switch (action) {
+      // Inline inserts
+      case "inline-image":
+        textToInsert = "![](url)";
+        break;
+      case "inline-math":
+        textToInsert = "$formula$";
+        break;
+      case "footnote":
+        textToInsert = "[^1]";
+        break;
+      // Block inserts
+      case "block-image":
+        textToInsert = "![](url)\n";
+        break;
+      case "ordered-list":
+        textToInsert = "1. ";
+        break;
+      case "unordered-list":
+        textToInsert = "- ";
+        break;
+      case "blockquote":
+        textToInsert = "> ";
+        break;
+      case "table":
+        textToInsert = "| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n";
+        break;
+      case "divider":
+        textToInsert = "---\n";
+        break;
+      default:
+        return;
+    }
+
+    // Insert text at cursor position
+    const tr = state.tr.insertText(textToInsert, from);
+    dispatch(tr);
+
+    this.editorView.focus();
+    useFormatToolbarStore.getState().closeToolbar();
   }
 
   private show(anchorRect: AnchorRect) {

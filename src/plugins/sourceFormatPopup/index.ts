@@ -7,11 +7,37 @@
  */
 
 import { EditorView } from "@codemirror/view";
-import { useSourceFormatStore } from "@/stores/sourceFormatStore";
+import { useSourceFormatStore, type ContextMode } from "@/stores/sourceFormatStore";
 import { getSourceTableInfo } from "./tableDetection";
 import { getHeadingInfo } from "./headingDetection";
 import { getCodeFenceInfo } from "./codeFenceDetection";
 import { getWordAtCursor } from "./wordSelection";
+
+/**
+ * Determine context mode for format popup based on cursor position.
+ * - "format": text selected OR cursor in word
+ * - "inline-insert": cursor not in word, not at blank line
+ * - "block-insert": cursor at beginning of blank line
+ */
+function getContextModeSource(view: EditorView): ContextMode {
+  const { from, to } = view.state.selection.main;
+
+  // Has selection → format
+  if (from !== to) return "format";
+
+  // Check if cursor in word
+  const wordRange = getWordAtCursor(view);
+  if (wordRange) return "format";
+
+  // Check if at blank line start
+  const line = view.state.doc.lineAt(from);
+  const atStart = from === line.from;
+  const isEmpty = line.text.trim() === "";
+
+  if (atStart && isEmpty) return "block-insert";
+
+  return "inline-insert";
+}
 
 // Debounce timeout for showing popup
 let showTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -271,34 +297,50 @@ export function triggerFormatPopup(view: EditorView): boolean {
     return true;
   }
 
-  // 4. Regular text - auto-select word if no selection
-  let selFrom = from;
-  let selTo = to;
+  // 4. Regular text - determine context mode
+  const contextMode = getContextModeSource(view);
 
-  if (selFrom === selTo) {
-    // No selection - try to select word at cursor
-    const wordRange = getWordAtCursor(view);
-    if (!wordRange) {
-      return false; // No word to select, do nothing
+  if (contextMode === "format") {
+    // Format mode - auto-select word if no selection
+    let selFrom = from;
+    let selTo = to;
+
+    if (selFrom === selTo) {
+      // No selection - try to select word at cursor
+      const wordRange = getWordAtCursor(view);
+      if (wordRange) {
+        // Select the word
+        view.dispatch({
+          selection: { anchor: wordRange.from, head: wordRange.to },
+        });
+        selFrom = wordRange.from;
+        selTo = wordRange.to;
+      }
     }
 
-    // Select the word
-    view.dispatch({
-      selection: { anchor: wordRange.from, head: wordRange.to },
+    // Show format popup
+    const rect = getSelectionRect(view, selFrom, selTo);
+    if (!rect) return false;
+
+    const selectedText = view.state.doc.sliceString(selFrom, selTo);
+    store.openPopup({
+      anchorRect: rect,
+      selectedText,
+      editorView: view,
+      contextMode,
     });
-    selFrom = wordRange.from;
-    selTo = wordRange.to;
+    return true;
   }
 
-  // Show format popup
-  const rect = getSelectionRect(view, selFrom, selTo);
+  // Inline-insert or block-insert mode - show popup at cursor
+  const rect = getCursorRect(view, from);
   if (!rect) return false;
 
-  const selectedText = view.state.doc.sliceString(selFrom, selTo);
   store.openPopup({
     anchorRect: rect,
-    selectedText,
+    selectedText: "",
     editorView: view,
+    contextMode,
   });
 
   return true;
