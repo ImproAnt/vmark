@@ -15,7 +15,7 @@ import { $prose } from "@milkdown/kit/utils";
 import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
 import { keymap } from "@milkdown/kit/prose/keymap";
 import type { EditorView } from "@milkdown/kit/prose/view";
-import { useFormatToolbarStore } from "@/stores/formatToolbarStore";
+import { useFormatToolbarStore, type HeadingInfo } from "@/stores/formatToolbarStore";
 import { useTableToolbarStore } from "@/stores/tableToolbarStore";
 import { isInTable, getTableInfo, getTableRect } from "@/plugins/tableUI/table-utils";
 import { FormatToolbarView } from "./FormatToolbarView";
@@ -37,17 +37,21 @@ function isInCodeBlock(view: EditorView): boolean {
 }
 
 /**
- * Check if cursor is inside a heading node.
+ * Get heading info if cursor is inside a heading node.
+ * Returns null if not in a heading.
  */
-function isInHeading(view: EditorView): boolean {
+function getHeadingInfo(view: EditorView): HeadingInfo | null {
   const { $from } = view.state.selection;
   for (let d = $from.depth; d > 0; d--) {
     const node = $from.node(d);
     if (node.type.name === "heading") {
-      return true;
+      return {
+        level: node.attrs.level || 1,
+        nodePos: $from.before(d),
+      };
     }
   }
-  return false;
+  return null;
 }
 
 /**
@@ -115,11 +119,11 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     return true;
   }
 
-  // 3. Check if in heading → show format toolbar (heading levels TBD)
-  // For now, just show format toolbar
-  if (isInHeading(view)) {
+  // 3. Check if in heading → show heading toolbar
+  const headingInfo = getHeadingInfo(view);
+  if (headingInfo) {
     const anchorRect = getCursorRect(view);
-    formatStore.openToolbar(anchorRect, view);
+    formatStore.openHeadingToolbar(anchorRect, view, headingInfo);
     return true;
   }
 

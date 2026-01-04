@@ -2,11 +2,13 @@
  * Format Toolbar View
  *
  * DOM-based floating toolbar for inline formatting in Milkdown.
- * Similar to source mode's format popup, triggered by Cmd+/.
+ * Supports two modes:
+ * - format: inline formatting (bold, italic, etc.)
+ * - heading: heading level selection (H1-H6, paragraph)
  */
 
 import type { EditorView } from "@milkdown/kit/prose/view";
-import { useFormatToolbarStore } from "@/stores/formatToolbarStore";
+import { useFormatToolbarStore, type ToolbarMode } from "@/stores/formatToolbarStore";
 import { expandedToggleMark } from "@/plugins/editorPlugins";
 import {
   calculatePopupPosition,
@@ -25,6 +27,14 @@ const icons = {
   link: `<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
   subscript: `<svg viewBox="0 0 24 24"><path d="m4 5 8 8"/><path d="m12 5-8 8"/><path d="M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"/></svg>`,
   superscript: `<svg viewBox="0 0 24 24"><path d="m4 19 8-8"/><path d="m12 19-8-8"/><path d="M20 12h-4c0-1.5.442-2 1.5-2.5S20 8.334 20 7c0-.472-.167-.933-.48-1.29a2.105 2.105 0 0 0-2.617-.436c-.42.239-.738.614-.903 1.06"/></svg>`,
+  // Heading icons
+  h1: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg>`,
+  h2: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>`,
+  h3: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2"/></svg>`,
+  h4: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17 10v4h4"/><path d="M21 10v8"/></svg>`,
+  h5: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17 13v-3h4"/><path d="M17 17.7c.4.2.8.3 1.3.3 1.5 0 2.7-1.1 2.7-2.5S19.8 13 18.3 13H17"/></svg>`,
+  h6: `<svg viewBox="0 0 24 24"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M19.5 10a2.5 2.5 0 0 0-5 0v4a2.5 2.5 0 0 0 5 0"/></svg>`,
+  paragraph: `<svg viewBox="0 0 24 24"><path d="M13 4v16"/><path d="M17 4v16"/><path d="M19 4H9.5a4.5 4.5 0 0 0 0 9H13"/></svg>`,
 };
 
 // Button definitions with mark types
@@ -39,6 +49,17 @@ const FORMAT_BUTTONS = [
   { icon: icons.superscript, title: "Superscript", markType: "superscript" },
 ];
 
+// Heading buttons (level 0 = paragraph)
+const HEADING_BUTTONS = [
+  { icon: icons.h1, title: "Heading 1 (⌘1)", level: 1 },
+  { icon: icons.h2, title: "Heading 2 (⌘2)", level: 2 },
+  { icon: icons.h3, title: "Heading 3 (⌘3)", level: 3 },
+  { icon: icons.h4, title: "Heading 4 (⌘4)", level: 4 },
+  { icon: icons.h5, title: "Heading 5 (⌘5)", level: 5 },
+  { icon: icons.h6, title: "Heading 6 (⌘6)", level: 6 },
+  { icon: icons.paragraph, title: "Paragraph (⌘0)", level: 0 },
+];
+
 /**
  * Format toolbar view - manages the floating toolbar UI.
  */
@@ -47,13 +68,14 @@ export class FormatToolbarView {
   private unsubscribe: () => void;
   private editorView: EditorView;
   private wasOpen = false;
+  private currentMode: ToolbarMode = "format";
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(view: EditorView) {
     this.editorView = view;
 
     // Build DOM structure
-    this.container = this.buildContainer();
+    this.container = this.buildContainer("format");
 
     // Append to document body
     document.body.appendChild(this.container);
@@ -64,6 +86,14 @@ export class FormatToolbarView {
         // Update editor view reference if changed
         if (state.editorView) {
           this.editorView = state.editorView;
+        }
+        // Rebuild container if mode changed
+        if (state.mode !== this.currentMode) {
+          this.rebuildContainer(state.mode, state.headingInfo?.level);
+          this.currentMode = state.mode;
+        } else if (state.mode === "heading" && state.headingInfo) {
+          // Update active state for heading buttons
+          this.updateHeadingActiveState(state.headingInfo.level);
         }
         if (!this.wasOpen) {
           this.show(state.anchorRect);
@@ -144,7 +174,7 @@ export class FormatToolbarView {
     }
   }
 
-  private buildContainer(): HTMLElement {
+  private buildContainer(mode: ToolbarMode, activeLevel?: number): HTMLElement {
     const container = document.createElement("div");
     container.className = "format-toolbar";
     container.style.display = "none";
@@ -152,15 +182,47 @@ export class FormatToolbarView {
     const row = document.createElement("div");
     row.className = "format-toolbar-row";
 
-    for (const btn of FORMAT_BUTTONS) {
-      row.appendChild(this.buildButton(btn.icon, btn.title, btn.markType));
+    if (mode === "heading") {
+      for (const btn of HEADING_BUTTONS) {
+        const btnEl = this.buildHeadingButton(btn.icon, btn.title, btn.level);
+        if (btn.level === activeLevel) {
+          btnEl.classList.add("active");
+        }
+        row.appendChild(btnEl);
+      }
+    } else {
+      for (const btn of FORMAT_BUTTONS) {
+        row.appendChild(this.buildFormatButton(btn.icon, btn.title, btn.markType));
+      }
     }
 
     container.appendChild(row);
     return container;
   }
 
-  private buildButton(
+  private rebuildContainer(mode: ToolbarMode, activeLevel?: number) {
+    const wasVisible = this.container.style.display !== "none";
+    const oldContainer = this.container;
+
+    this.container = this.buildContainer(mode, activeLevel);
+    this.container.style.display = wasVisible ? "flex" : "none";
+    this.container.style.position = "fixed";
+
+    oldContainer.replaceWith(this.container);
+  }
+
+  private updateHeadingActiveState(level: number) {
+    const buttons = this.container.querySelectorAll(".format-toolbar-btn");
+    buttons.forEach((btn, index) => {
+      if (HEADING_BUTTONS[index]?.level === level) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
+
+  private buildFormatButton(
     iconSvg: string,
     title: string,
     markType: string
@@ -185,11 +247,65 @@ export class FormatToolbarView {
     return btn;
   }
 
+  private buildHeadingButton(
+    iconSvg: string,
+    title: string,
+    level: number
+  ): HTMLElement {
+    const btn = document.createElement("button");
+    btn.className = "format-toolbar-btn";
+    btn.type = "button";
+    btn.title = title;
+    btn.innerHTML = iconSvg;
+
+    // Prevent mousedown from stealing focus
+    btn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+    });
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.handleHeadingChange(level);
+    });
+
+    return btn;
+  }
+
   private handleFormat(markType: string) {
     this.editorView.focus();
     expandedToggleMark(this.editorView, markType);
     // Close toolbar after action
     useFormatToolbarStore.getState().closeToolbar();
+  }
+
+  private handleHeadingChange(level: number) {
+    const { state, dispatch } = this.editorView;
+    const store = useFormatToolbarStore.getState();
+    const headingInfo = store.headingInfo;
+
+    if (!headingInfo) return;
+
+    const { nodePos } = headingInfo;
+
+    if (level === 0) {
+      // Convert to paragraph
+      const paragraphType = state.schema.nodes.paragraph;
+      if (paragraphType) {
+        const tr = state.tr.setNodeMarkup(nodePos, paragraphType);
+        dispatch(tr);
+      }
+    } else {
+      // Change heading level
+      const headingType = state.schema.nodes.heading;
+      if (headingType) {
+        const tr = state.tr.setNodeMarkup(nodePos, headingType, { level });
+        dispatch(tr);
+      }
+    }
+
+    this.editorView.focus();
+    store.closeToolbar();
   }
 
   private show(anchorRect: AnchorRect) {

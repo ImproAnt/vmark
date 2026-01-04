@@ -69,9 +69,28 @@
   opacity: 0.8;
 }
 
+/* Active state (for heading mode) */
+.format-toolbar-btn.active {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.1));
+  color: var(--text-color);
+}
+
+.format-toolbar-btn.active:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.15));
+}
+
 /* Dark theme */
 .dark-theme .format-toolbar-btn:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.dark-theme .format-toolbar-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-color);
+}
+
+.dark-theme .format-toolbar-btn.active:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .format-toolbar-btn svg {
