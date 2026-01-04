@@ -128,6 +128,16 @@ export function SourceFormatPopup() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+E (Mod-e): toggle - close popup when already open
+      // Skip if just opened (same keypress that opened the popup)
+      if (e.key === "e" && (e.metaKey || e.ctrlKey)) {
+        if (justOpenedRef.current) return;
+        e.preventDefault();
+        useSourceFormatStore.getState().closePopup();
+        editorView?.focus();
+        return;
+      }
+
       if (e.key === "Escape") {
         useSourceFormatStore.getState().closePopup();
         editorView?.focus();
