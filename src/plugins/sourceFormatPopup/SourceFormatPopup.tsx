@@ -16,7 +16,7 @@ import {
   type PopupPosition,
 } from "@/utils/popupPosition";
 import { hasFormat, type FormatType } from "./formatActions";
-import { FormatMode, TableMode, CodeMode, HeadingMode } from "./modes";
+import { FormatMode, TableMode, CodeMode, HeadingMode, ListMode, BlockquoteMode } from "./modes";
 import { ALL_FORMAT_BUTTONS } from "./buttonDefs";
 import "./source-format.css";
 
@@ -36,6 +36,8 @@ export function SourceFormatPopup() {
   const tableInfo = useSourceFormatStore((state) => state.tableInfo);
   const headingInfo = useSourceFormatStore((state) => state.headingInfo);
   const codeFenceInfo = useSourceFormatStore((state) => state.codeFenceInfo);
+  const listInfo = useSourceFormatStore((state) => state.listInfo);
+  const blockquoteInfo = useSourceFormatStore((state) => state.blockquoteInfo);
 
   // Calculate position when popup opens or anchor changes
   useEffect(() => {
@@ -203,11 +205,8 @@ export function SourceFormatPopup() {
 
     switch (mode) {
       case "format":
-      case "list":       // TODO: Add list-specific actions (indent, outdent, toggle type)
-      case "blockquote": // TODO: Add blockquote actions (increase/decrease level)
       case "math":       // TODO: Add math preview/edit toggle
       case "footnote":   // TODO: Add footnote navigation (go to definition)
-        // Currently all show format buttons; context-specific actions coming later
         return (
           <FormatMode editorView={editorView} activeFormats={activeFormats} contextMode={contextMode} />
         );
@@ -226,6 +225,14 @@ export function SourceFormatPopup() {
       case "heading":
         return headingInfo ? (
           <HeadingMode editorView={editorView} headingInfo={headingInfo} />
+        ) : null;
+      case "list":
+        return listInfo ? (
+          <ListMode editorView={editorView} listInfo={listInfo} />
+        ) : null;
+      case "blockquote":
+        return blockquoteInfo ? (
+          <BlockquoteMode editorView={editorView} blockquoteInfo={blockquoteInfo} />
         ) : null;
       default:
         return null;

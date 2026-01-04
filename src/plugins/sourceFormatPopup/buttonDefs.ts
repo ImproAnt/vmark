@@ -196,3 +196,41 @@ export const HEADING_BUTTONS: HeadingButtonDef[] = [
   { level: 6, icon: createIcon(icons.heading6), label: "Heading 6" },
   { level: 0, icon: createIcon(icons.paragraph), label: "Paragraph" },
 ];
+
+// List button types
+export type ListAction = "outdent" | "indent" | "bullet" | "ordered" | "task" | "remove";
+
+export interface ListButtonDef {
+  id: string;
+  icon: React.ReactNode;
+  label: string;
+  action: ListAction | "separator";
+}
+
+export const LIST_BUTTONS: ListButtonDef[] = [
+  { id: "outdent", icon: createIcon(icons.outdent), label: "Outdent", action: "outdent" },
+  { id: "indent", icon: createIcon(icons.indent), label: "Indent", action: "indent" },
+  { id: "sep1", icon: null, label: "", action: "separator" },
+  { id: "bullet", icon: createIcon(icons.unorderedList), label: "Bullet List", action: "bullet" },
+  { id: "ordered", icon: createIcon(icons.orderedList), label: "Ordered List", action: "ordered" },
+  { id: "task", icon: createIcon(icons.taskList), label: "Task List", action: "task" },
+  { id: "sep2", icon: null, label: "", action: "separator" },
+  { id: "remove", icon: createIcon(icons.removeList), label: "Remove List", action: "remove" },
+];
+
+// Blockquote button types
+export type BlockquoteAction = "nest" | "unnest" | "remove";
+
+export interface BlockquoteButtonDef {
+  id: string;
+  icon: React.ReactNode;
+  label: string;
+  action: BlockquoteAction | "separator";
+}
+
+export const BLOCKQUOTE_BUTTONS: BlockquoteButtonDef[] = [
+  { id: "nest", icon: createIcon(icons.nestQuote), label: "Nest Deeper", action: "nest" },
+  { id: "unnest", icon: createIcon(icons.unnestQuote), label: "Unnest", action: "unnest" },
+  { id: "sep1", icon: null, label: "", action: "separator" },
+  { id: "remove", icon: createIcon(icons.removeQuote), label: "Remove Blockquote", action: "remove" },
+];

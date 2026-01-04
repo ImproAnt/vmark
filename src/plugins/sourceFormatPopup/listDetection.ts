@@ -92,3 +92,119 @@ export function getListItemInfo(view: EditorView): ListItemInfo | null {
 
   return null;
 }
+
+/**
+ * Indent a list item by adding 2 spaces.
+ */
+export function indentListItem(view: EditorView, info: ListItemInfo): void {
+  const { state, dispatch } = view;
+  const changes = { from: info.lineStart, insert: "  " };
+  dispatch(state.update({ changes, scrollIntoView: true }));
+  view.focus();
+}
+
+/**
+ * Outdent a list item by removing up to 2 spaces.
+ */
+export function outdentListItem(view: EditorView, info: ListItemInfo): void {
+  const { state, dispatch } = view;
+  const line = state.doc.lineAt(info.lineStart);
+  const lineText = line.text;
+
+  // Find leading spaces (up to 2)
+  const match = lineText.match(/^(\s{1,2})/);
+  if (!match) return; // No indentation to remove
+
+  const spacesToRemove = match[1].length;
+  const changes = { from: info.lineStart, to: info.lineStart + spacesToRemove };
+  dispatch(state.update({ changes, scrollIntoView: true }));
+  view.focus();
+}
+
+/**
+ * Convert list item to bullet list.
+ */
+export function toBulletList(view: EditorView, info: ListItemInfo): void {
+  if (info.type === "bullet") return; // Already bullet
+
+  const { state, dispatch } = view;
+  const line = state.doc.lineAt(info.lineStart);
+  const lineText = line.text;
+
+  // Get indentation
+  const indentMatch = lineText.match(/^(\s*)/);
+  const indent = indentMatch ? indentMatch[1] : "";
+
+  // Get content after marker
+  const content = lineText.slice(info.marker.length);
+
+  // Create new bullet marker
+  const newLine = `${indent}- ${content}`;
+  const changes = { from: info.lineStart, to: info.lineEnd, insert: newLine };
+  dispatch(state.update({ changes, scrollIntoView: true }));
+  view.focus();
+}
+
+/**
+ * Convert list item to ordered list.
+ */
+export function toOrderedList(view: EditorView, info: ListItemInfo): void {
+  if (info.type === "ordered") return; // Already ordered
+
+  const { state, dispatch } = view;
+  const line = state.doc.lineAt(info.lineStart);
+  const lineText = line.text;
+
+  // Get indentation
+  const indentMatch = lineText.match(/^(\s*)/);
+  const indent = indentMatch ? indentMatch[1] : "";
+
+  // Get content after marker
+  const content = lineText.slice(info.marker.length);
+
+  // Create new ordered marker (use 1. for simplicity)
+  const newLine = `${indent}1. ${content}`;
+  const changes = { from: info.lineStart, to: info.lineEnd, insert: newLine };
+  dispatch(state.update({ changes, scrollIntoView: true }));
+  view.focus();
+}
+
+/**
+ * Convert list item to task list.
+ */
+export function toTaskList(view: EditorView, info: ListItemInfo): void {
+  if (info.type === "task") return; // Already task
+
+  const { state, dispatch } = view;
+  const line = state.doc.lineAt(info.lineStart);
+  const lineText = line.text;
+
+  // Get indentation
+  const indentMatch = lineText.match(/^(\s*)/);
+  const indent = indentMatch ? indentMatch[1] : "";
+
+  // Get content after marker
+  const content = lineText.slice(info.marker.length);
+
+  // Create new task marker
+  const newLine = `${indent}- [ ] ${content}`;
+  const changes = { from: info.lineStart, to: info.lineEnd, insert: newLine };
+  dispatch(state.update({ changes, scrollIntoView: true }));
+  view.focus();
+}
+
+/**
+ * Remove list formatting, converting to plain paragraph.
+ */
+export function removeList(view: EditorView, info: ListItemInfo): void {
+  const { state, dispatch } = view;
+  const line = state.doc.lineAt(info.lineStart);
+  const lineText = line.text;
+
+  // Get content after marker (no indentation for paragraph)
+  const content = lineText.slice(info.marker.length);
+
+  const changes = { from: info.lineStart, to: info.lineEnd, insert: content };
+  dispatch(state.update({ changes, scrollIntoView: true }));
+  view.focus();
+}
