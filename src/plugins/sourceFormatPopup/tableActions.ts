@@ -280,7 +280,6 @@ export function setAllColumnsAlignment(
  */
 export function formatTable(view: EditorView, info: SourceTableInfo): void {
   const doc = view.state.doc;
-
   const parsedRows = info.lines.map((line) => parseRow(line));
 
   // Calculate max width for each column

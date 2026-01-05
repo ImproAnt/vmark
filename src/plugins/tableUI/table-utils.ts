@@ -317,6 +317,60 @@ export function deleteColumn(view: EditorView): boolean {
 }
 
 /**
+ * Align a single column in a table to the specified alignment.
+ * Returns true if successful, false otherwise.
+ */
+export function alignColumn(
+  view: EditorView,
+  alignment: "left" | "center" | "right"
+): boolean {
+  const tableInfo = getTableInfo(view);
+  if (!tableInfo) return false;
+
+  const { tableNode, tablePos, rowIndex, colIndex } = tableInfo;
+  const { state, dispatch } = view;
+
+  try {
+    // Build new table with the specified column aligned
+    const newRows: Node[] = [];
+    for (let r = 0; r < tableNode.childCount; r++) {
+      const row = tableNode.child(r);
+      const newCells: Node[] = [];
+      for (let c = 0; c < row.childCount; c++) {
+        const cell = row.child(c);
+        if (c === colIndex) {
+          // Update alignment attribute on this column's cell
+          const newCell = cell.type.create(
+            { ...cell.attrs, alignment },
+            cell.content,
+            cell.marks
+          );
+          newCells.push(newCell);
+        } else {
+          newCells.push(cell);
+        }
+      }
+      newRows.push(row.type.create(row.attrs, newCells));
+    }
+
+    const newTable = tableNode.type.create(tableNode.attrs, newRows);
+    const tr = state.tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTable);
+
+    // Restore cursor position to same cell
+    const cursorPos = getCellPosition(newTable, tablePos, rowIndex, colIndex);
+    if (cursorPos !== null) {
+      tr.setSelection(TextSelection.near(tr.doc.resolve(cursorPos)));
+    }
+
+    dispatch(tr);
+    return true;
+  } catch (error) {
+    console.error("[table-utils] Align column failed:", error);
+    return false;
+  }
+}
+
+/**
  * Align all columns in a table to the specified alignment.
  * Returns true if successful, false otherwise.
  */
@@ -402,6 +456,9 @@ function getCellPosition(
 /**
  * Format table with space-padded columns for visual alignment.
  * Updates cell contents with trailing spaces for uniform column widths.
+ *
+ * Note: In Milkdown, cells contain paragraphs, so we must preserve
+ * the paragraph structure when updating text content.
  */
 export function formatTable(view: EditorView): boolean {
   const tableInfo = getTableInfo(view);
@@ -435,25 +492,31 @@ export function formatTable(view: EditorView): boolean {
 
     // Build new table with padded cells
     const newRows: Node[] = [];
+    const paragraphType = state.schema.nodes.paragraph;
+
     for (let r = 0; r < numRows; r++) {
       const row = tableNode.child(r);
       const newCells: Node[] = [];
+
       for (let c = 0; c < row.childCount; c++) {
         const cell = row.child(c);
-        const content = cellContents[r][c];
+        const content = cellContents[r]?.[c] || "";
         const paddedContent = padToWidth(content, colWidths[c]);
 
-        // Create new cell with padded text content
+        // Create paragraph with padded text (cells contain paragraphs in Milkdown)
         const textNode = paddedContent
           ? state.schema.text(paddedContent)
           : null;
-        const newCell = cell.type.create(
-          cell.attrs,
-          textNode ? [textNode] : [],
-          cell.marks
+        const newParagraph = paragraphType.create(
+          null,
+          textNode ? [textNode] : []
         );
+
+        // Create new cell preserving its type and attributes
+        const newCell = cell.type.create(cell.attrs, [newParagraph]);
         newCells.push(newCell);
       }
+
       newRows.push(row.type.create(row.attrs, newCells));
     }
 

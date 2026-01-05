@@ -13,7 +13,6 @@ import {
   addRowAfterCommand,
   addColBeforeCommand,
   addColAfterCommand,
-  setAlignCommand,
 } from "@milkdown/kit/preset/gfm";
 import {
   wrapInBulletListCommand,
@@ -26,6 +25,7 @@ import {
   deleteRow,
   deleteColumn,
   isInHeaderRow,
+  alignColumn,
   alignAllColumns,
   formatTable,
   getTableInfo,
@@ -93,7 +93,7 @@ export function handleDeleteTable(view: EditorView, nodeContext: NodeContext): b
 
 export function handleAlignColumn(
   view: EditorView,
-  getEditor: EditorGetter,
+  _getEditor: EditorGetter,
   alignment: "left" | "center" | "right",
   allColumns: boolean
 ) {
@@ -101,7 +101,7 @@ export function handleAlignColumn(
   if (allColumns) {
     alignAllColumns(view, alignment);
   } else {
-    executeCommand(view, getEditor, setAlignCommand, alignment);
+    alignColumn(view, alignment);
   }
 }
 

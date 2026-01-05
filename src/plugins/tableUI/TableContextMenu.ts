@@ -13,9 +13,8 @@ import {
   addRowAfterCommand,
   addColBeforeCommand,
   addColAfterCommand,
-  setAlignCommand,
 } from "@milkdown/kit/preset/gfm";
-import { deleteTableAtPos, deleteRow, deleteColumn, isInHeaderRow, alignAllColumns, getTableInfo } from "./table-utils";
+import { deleteTableAtPos, deleteRow, deleteColumn, isInHeaderRow, alignColumn, alignAllColumns, getTableInfo } from "./table-utils";
 
 // Interface for editor-like object with action method
 interface EditorLike {
@@ -100,15 +99,15 @@ export class TableContextMenu {
       },
       {
         label: "Align Column Left",
-        action: () => this.executeCommand(setAlignCommand, "left"),
+        action: () => this.handleAlignColumn("left"),
       },
       {
         label: "Align Column Center",
-        action: () => this.executeCommand(setAlignCommand, "center"),
+        action: () => this.handleAlignColumn("center"),
       },
       {
         label: "Align Column Right",
-        action: () => this.executeCommand(setAlignCommand, "right"),
+        action: () => this.handleAlignColumn("right"),
         dividerAfter: true,
       },
       {
@@ -222,6 +221,11 @@ export class TableContextMenu {
     if (tableInfo && deleteTableAtPos(this.editorView, tableInfo.tablePos)) {
       this.editorView.focus();
     }
+  }
+
+  private handleAlignColumn(alignment: "left" | "center" | "right") {
+    this.editorView.focus();
+    alignColumn(this.editorView, alignment);
   }
 
   private handleAlignAll(alignment: "left" | "center" | "right") {
