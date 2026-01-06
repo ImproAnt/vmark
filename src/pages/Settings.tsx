@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Palette, Settings, FolderOpen, Zap, Languages, FileText, FlaskConical } from "lucide-react";
+import { Palette, Settings, FolderOpen, Zap, Languages, FileText, FlaskConical, Keyboard } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
@@ -10,6 +10,7 @@ import {
 import { useTheme } from "@/hooks/useTheme";
 import { CJKFormattingSettings } from "./settings/CJKFormattingSettings";
 import { MarkdownSettings } from "./settings/MarkdownSettings";
+import { ShortcutsSettings } from "./settings/ShortcutsSettings";
 import { DevelopingSettings } from "./settings/DevelopingSettings";
 
 // Hook to handle Cmd+W for settings window
@@ -47,7 +48,7 @@ function useDevSectionShortcut() {
   }, []);
 }
 
-type Section = "appearance" | "formatting" | "markdown" | "general" | "files" | "advanced" | "developing";
+type Section = "appearance" | "formatting" | "markdown" | "shortcuts" | "general" | "files" | "advanced" | "developing";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -447,6 +448,7 @@ export function SettingsPage() {
     { id: "appearance" as const, icon: <Palette className="w-4 h-4" />, label: "Appearance" },
     { id: "formatting" as const, icon: <Languages className="w-4 h-4" />, label: "CJK Formatting" },
     { id: "markdown" as const, icon: <FileText className="w-4 h-4" />, label: "Markdown" },
+    { id: "shortcuts" as const, icon: <Keyboard className="w-4 h-4" />, label: "Shortcuts" },
     { id: "general" as const, icon: <Settings className="w-4 h-4" />, label: "General" },
     { id: "files" as const, icon: <FolderOpen className="w-4 h-4" />, label: "Files" },
     { id: "advanced" as const, icon: <Zap className="w-4 h-4" />, label: "Advanced" },
@@ -487,6 +489,7 @@ export function SettingsPage() {
           {section === "appearance" && <AppearanceSettings />}
           {section === "formatting" && <CJKFormattingSettings />}
           {section === "markdown" && <MarkdownSettings />}
+          {section === "shortcuts" && <ShortcutsSettings />}
           {section === "general" && <GeneralSettings />}
           {section === "files" && <FilesSettings />}
           {section === "advanced" && <AdvancedSettings />}

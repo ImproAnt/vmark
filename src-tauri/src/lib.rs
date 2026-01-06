@@ -27,6 +27,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             menu::update_recent_files,
+            menu::rebuild_menu,
             window_manager::new_window,
             window_manager::open_file_in_new_window,
             window_manager::close_window,
