@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { useDocumentActions, useDocumentContent, useDocumentCursorInfo } from "@/hooks/useDocumentState";
 import { parseMarkdownToTiptapDoc, serializeTiptapDocToMarkdown } from "@/utils/tiptapMarkdown";
 import { registerActiveWysiwygFlusher } from "@/utils/wysiwygFlush";
@@ -25,6 +26,48 @@ import { editorKeymapExtension } from "@/plugins/editorPlugins.tiptap";
 
 const CURSOR_TRACKING_DELAY_MS = 200;
 
+const AlignedTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      alignment: {
+        default: null,
+        parseHTML: (element) => {
+          const alignment = (element as HTMLElement).style.textAlign || null;
+          if (alignment === "left" || alignment === "center" || alignment === "right") return alignment;
+          return null;
+        },
+        renderHTML: (attributes) => {
+          const alignment = attributes.alignment as unknown;
+          if (alignment !== "left" && alignment !== "center" && alignment !== "right") return {};
+          return { style: `text-align:${alignment}` };
+        },
+      },
+    };
+  },
+});
+
+const AlignedTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      alignment: {
+        default: null,
+        parseHTML: (element) => {
+          const alignment = (element as HTMLElement).style.textAlign || null;
+          if (alignment === "left" || alignment === "center" || alignment === "right") return alignment;
+          return null;
+        },
+        renderHTML: (attributes) => {
+          const alignment = attributes.alignment as unknown;
+          if (alignment !== "left" && alignment !== "center" && alignment !== "right") return {};
+          return { style: `text-align:${alignment}` };
+        },
+      },
+    };
+  },
+});
+
 export function TiptapEditorInner() {
   const content = useDocumentContent();
   const cursorInfo = useDocumentCursorInfo();
@@ -46,6 +89,10 @@ export function TiptapEditorInner() {
         // We parse/serialize markdown ourselves.
         // Keep Tiptap defaults for schema names and commands.
       }),
+      Table.configure({ resizable: false }),
+      TableRow,
+      AlignedTableHeader,
+      AlignedTableCell,
       imageViewExtension,
       cursorAwareExtension,
       smartPasteExtension,

@@ -2,9 +2,26 @@ import MarkdownIt from "markdown-it";
 import { MarkdownParser, MarkdownSerializer } from "prosemirror-markdown";
 import type { Schema, Node as PMNode } from "@tiptap/pm/model";
 
-const markdownIt = new MarkdownIt("commonmark", { html: false }).enable("strikethrough");
+const markdownIt = new MarkdownIt("commonmark", { html: false }).enable(["strikethrough", "table"]);
 
 const parserCache = new WeakMap<Schema, MarkdownParser>();
+
+type MarkdownParseStateLike = {
+  schema: {
+    nodes: Record<string, unknown>;
+  };
+  openNode: (type: unknown, attrs: unknown) => void;
+  closeNode: () => void;
+};
+
+function getTableCellAlignment(token: { attrs: Array<[string, string]> | null }): "left" | "center" | "right" | null {
+  const style = token.attrs?.find(([name]) => name === "style")?.[1] ?? "";
+  const match = style.match(/text-align\s*:\s*(left|center|right)/i);
+  if (!match) return null;
+  const alignment = match[1]?.toLowerCase();
+  if (alignment === "left" || alignment === "center" || alignment === "right") return alignment;
+  return null;
+}
 
 export function parseMarkdownToTiptapDoc(schema: Schema, markdown: string): PMNode {
   const cached = parserCache.get(schema);
@@ -55,7 +72,44 @@ export function parseMarkdownToTiptapDoc(schema: Schema, markdown: string): PMNo
       }),
     },
     code_inline: { mark: "code", noCloseToken: true },
+    table: { block: "table" },
+    thead: { ignore: true },
+    tbody: { ignore: true },
+    tr: { block: "tableRow" },
+    th: { ignore: true },
+    td: { ignore: true },
   });
+
+  const handlers = (parser as unknown as { tokenHandlers: Record<string, unknown> }).tokenHandlers as Record<
+    string,
+    (state: unknown, token: unknown, tokens: unknown[], index: number) => void
+  >;
+
+  const openTableCell = (cellType: "tableHeader" | "tableCell") => (state: unknown, token: unknown) => {
+    const parseState = state as MarkdownParseStateLike;
+    const tokenWithAttrs = token as { attrs: Array<[string, string]> | null };
+
+    const nodeType = parseState.schema.nodes[cellType];
+    const paragraphType = parseState.schema.nodes.paragraph;
+    if (!nodeType || !paragraphType) return;
+
+    const alignment = getTableCellAlignment(tokenWithAttrs);
+    const attrs = alignment ? { alignment } : null;
+
+    parseState.openNode(nodeType, attrs);
+    parseState.openNode(paragraphType, null);
+  };
+
+  const closeTableCell = (state: unknown) => {
+    const parseState = state as MarkdownParseStateLike;
+    parseState.closeNode(); // paragraph
+    parseState.closeNode(); // cell
+  };
+
+  handlers.th_open = openTableCell("tableHeader");
+  handlers.th_close = closeTableCell;
+  handlers.td_open = openTableCell("tableCell");
+  handlers.td_close = closeTableCell;
 
   parserCache.set(schema, parser);
   return parser.parse(markdown);
@@ -132,6 +186,56 @@ const tiptapMarkdownSerializer = new MarkdownSerializer(
         }
       }
     },
+    table: (state, node) => {
+      if (node.childCount === 0) return;
+
+      const rows: string[][] = [];
+      let maxCols = 0;
+
+      for (let r = 0; r < node.childCount; r++) {
+        const row = node.child(r);
+        const cells: string[] = [];
+        for (let c = 0; c < row.childCount; c++) {
+          const cell = row.child(c);
+          const paragraph = cell.firstChild;
+          const inline = paragraph ? tiptapMarkdownSerializer.serialize(paragraph) : cell.textContent;
+          const normalized = inline.replace(/\\\n/g, " ").replace(/\n/g, " ").trim();
+          cells.push(normalized);
+        }
+        maxCols = Math.max(maxCols, cells.length);
+        rows.push(cells);
+      }
+
+      const markerFor = (alignment: unknown) => {
+        if (alignment === "left") return ":---";
+        if (alignment === "center") return ":---:";
+        if (alignment === "right") return "---:";
+        return "---";
+      };
+
+      const headerRow = rows[0] ?? [];
+      while (headerRow.length < maxCols) headerRow.push("");
+      state.write(`| ${headerRow.join(" | ")} |`);
+      state.write("\n");
+
+      const separator: string[] = [];
+      const firstRowNode = node.child(0);
+      for (let c = 0; c < maxCols; c++) {
+        const firstRowCell = c < firstRowNode.childCount ? firstRowNode.child(c) : null;
+        separator.push(markerFor(firstRowCell?.attrs?.alignment));
+      }
+      state.write(`| ${separator.join(" | ")} |`);
+      state.write("\n");
+
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r] ?? [];
+        while (row.length < maxCols) row.push("");
+        state.write(`| ${row.join(" | ")} |`);
+        if (r < rows.length - 1) state.write("\n");
+      }
+
+      state.closeBlock(node);
+    },
     text: (state, node) => {
       state.text(node.text || "", true);
     },
@@ -150,7 +254,8 @@ const tiptapMarkdownSerializer = new MarkdownSerializer(
       close: (_state, _mark, parent, index) => backticksFor(parent.child(index - 1), 1),
       escape: false,
     },
-  }
+  },
+  { escapeExtraCharacters: /[|]/g }
 );
 
 export function serializeTiptapDocToMarkdown(doc: PMNode): string {
