@@ -55,6 +55,35 @@ async function saveToPath(
 export function useFileOperations() {
   const windowLabel = useWindowLabel();
 
+  const openPathInTab = useCallback(
+    async (path: string, options?: { preferNewTab?: boolean; forceReuse?: boolean }) => {
+      const preferNewTab = options?.preferNewTab ?? false;
+      const forceReuse = options?.forceReuse ?? false;
+      let tabId = useTabStore.getState().activeTabId[windowLabel];
+      const activeDoc = tabId ? useDocumentStore.getState().getDocument(tabId) : null;
+
+      const shouldOpenInNewTab =
+        preferNewTab || !tabId || (!forceReuse && activeDoc?.isDirty);
+      if (shouldOpenInNewTab) {
+        tabId = useTabStore.getState().createTab(windowLabel, path);
+      }
+
+      try {
+        const content = await readTextFile(path);
+        if (shouldOpenInNewTab && tabId) {
+          useDocumentStore.getState().initDocument(tabId, content, path);
+        } else if (tabId) {
+          useDocumentStore.getState().loadContent(tabId, content, path);
+          useTabStore.getState().updateTabPath(tabId, path);
+        }
+        useRecentFilesStore.getState().addFile(path);
+      } catch (error) {
+        console.error("Failed to open file:", error);
+      }
+    },
+    [windowLabel]
+  );
+
   const handleOpen = useCallback(async () => {
     // Only respond if this window is focused
     if (!(await isWindowFocused())) return;
@@ -174,16 +203,16 @@ export function useFileOperations() {
         if (!confirmed) return;
       }
 
-      try {
-        const content = await readTextFile(path);
-        useDocumentStore.getState().loadContent(tabId, content, path);
-        useTabStore.getState().updateTabPath(tabId, path);
-        useRecentFilesStore.getState().addFile(path);
-      } catch (error) {
-        console.error("Failed to open file:", error);
-      }
+      await openPathInTab(path, { forceReuse: true });
     },
-    [windowLabel]
+    [openPathInTab]
+  );
+
+  const handleAppOpenFile = useCallback(
+    async (event: { payload: string }) => {
+      await openPathInTab(event.payload);
+    },
+    [openPathInTab]
   );
 
   const unlistenRefs = useRef<UnlistenFn[]>([]);
@@ -219,6 +248,13 @@ export function useFileOperations() {
       );
       if (cancelled) { unlistenOpenFile(); return; }
       unlistenRefs.current.push(unlistenOpenFile);
+
+      const unlistenAppOpenFile = await listen<string>(
+        "app:open-file",
+        handleAppOpenFile
+      );
+      if (cancelled) { unlistenAppOpenFile(); return; }
+      unlistenRefs.current.push(unlistenAppOpenFile);
     };
 
     setupListeners();
@@ -229,5 +265,5 @@ export function useFileOperations() {
       unlistenRefs.current = [];
       fns.forEach((fn) => fn());
     };
-  }, [handleOpen, handleSave, handleSaveAs, handleOpenFile]);
+  }, [handleOpen, handleSave, handleSaveAs, handleOpenFile, handleAppOpenFile]);
 }
