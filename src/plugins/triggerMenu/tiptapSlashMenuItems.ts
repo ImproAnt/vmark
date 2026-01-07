@@ -2,6 +2,7 @@ import { emit } from "@tauri-apps/api/event";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { convertSelectionToTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
 import { insertFootnoteAndOpenPopup } from "@/plugins/footnotePopup/tiptapInsertFootnote";
+import { expandedToggleMarkTiptap } from "@/plugins/editorPlugins.tiptap";
 import type { SlashMenuItem } from "./tiptapSlashMenuUtils";
 
 const icons = {
@@ -75,8 +76,24 @@ export function createSlashMenuItems(editor: TiptapEditor): SlashMenuItem[] {
         { label: "Highlight", icon: icons.highlight, keywords: ["mark"], action: () => editor.chain().focus().toggleMark("highlight").run() },
         { label: "Strikethrough", icon: icons.strikethrough, keywords: ["strike"], action: () => editor.chain().focus().toggleStrike().run() },
         { label: "Inline Code", icon: icons.inlineCode, keywords: ["mono", "backtick"], action: () => editor.chain().focus().toggleCode().run() },
-        { label: "Subscript", icon: icons.subscript, keywords: ["sub"], action: () => editor.chain().focus().toggleMark("subscript").run() },
-        { label: "Superscript", icon: icons.superscript, keywords: ["sup"], action: () => editor.chain().focus().toggleMark("superscript").run() },
+        {
+          label: "Subscript",
+          icon: icons.subscript,
+          keywords: ["sub"],
+          action: () => {
+            editor.commands.focus();
+            expandedToggleMarkTiptap(editor.view, "subscript");
+          },
+        },
+        {
+          label: "Superscript",
+          icon: icons.superscript,
+          keywords: ["sup"],
+          action: () => {
+            editor.commands.focus();
+            expandedToggleMarkTiptap(editor.view, "superscript");
+          },
+        },
       ],
     },
     {
@@ -116,4 +133,3 @@ export function createSlashMenuItems(editor: TiptapEditor): SlashMenuItem[] {
     { label: "Divider", icon: icons.minus, keywords: ["hr", "line", "separator"], group: "Other", action: () => editor.chain().focus().setHorizontalRule().run() },
   ];
 }
-

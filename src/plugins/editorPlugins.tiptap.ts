@@ -33,6 +33,16 @@ function expandedToggleMark(view: EditorView, markTypeName: string): boolean {
   const markType = state.schema.marks[markTypeName];
   if (!markType) return false;
 
+  const opposingMarkTypeName =
+    markTypeName === "subscript"
+      ? "superscript"
+      : markTypeName === "superscript"
+        ? "subscript"
+        : null;
+  const opposingMarkType = opposingMarkTypeName
+    ? state.schema.marks[opposingMarkTypeName]
+    : null;
+
   const { from, to, empty } = state.selection;
   const $from = state.selection.$from;
   const docTextHash = hashString(state.doc.textContent);
@@ -49,11 +59,16 @@ function expandedToggleMark(view: EditorView, markTypeName: string): boolean {
 
   if (!empty) {
     clearLastRemoved();
-    if (state.doc.rangeHasMark(from, to, markType)) {
-      dispatch(state.tr.removeMark(from, to, markType));
-    } else {
-      dispatch(state.tr.addMark(from, to, markType.create()));
+    let tr = state.tr;
+    if (opposingMarkType) {
+      tr = tr.removeMark(from, to, opposingMarkType);
     }
+    if (tr.doc.rangeHasMark(from, to, markType)) {
+      tr = tr.removeMark(from, to, markType);
+    } else {
+      tr = tr.addMark(from, to, markType.create());
+    }
+    dispatch(tr);
     return true;
   }
 
@@ -75,6 +90,18 @@ function expandedToggleMark(view: EditorView, markTypeName: string): boolean {
     return true;
   }
 
+  if (opposingMarkType) {
+    const opposingRange = findMarkRange(
+      from,
+      opposingMarkType.create(),
+      $from.start(),
+      $from.parent as unknown as Parameters<typeof findMarkRange>[3]
+    );
+    if (opposingRange) {
+      dispatch(state.tr.removeMark(opposingRange.from, opposingRange.to, opposingMarkType));
+    }
+  }
+
   if (
     lastRemovedMark &&
     lastRemovedMark.markType === markTypeName &&
@@ -94,12 +121,20 @@ function expandedToggleMark(view: EditorView, markTypeName: string): boolean {
 
   if (inheritedRange && !(markTypeName === "code" && inheritedRange.isLink)) {
     clearLastRemoved();
-    dispatch(state.tr.addMark(inheritedRange.from, inheritedRange.to, markType.create()));
+    let tr = state.tr;
+    if (opposingMarkType) {
+      tr = tr.removeMark(inheritedRange.from, inheritedRange.to, opposingMarkType);
+    }
+    tr = tr.addMark(inheritedRange.from, inheritedRange.to, markType.create());
+    dispatch(tr);
     return true;
   }
 
   clearLastRemoved();
   const storedMarks = state.storedMarks || $from.marks();
+  if (opposingMarkType && opposingMarkType.isInSet(storedMarks)) {
+    dispatch(state.tr.removeStoredMark(opposingMarkType));
+  }
   if (markType.isInSet(storedMarks)) {
     dispatch(state.tr.removeStoredMark(markType));
   } else {
