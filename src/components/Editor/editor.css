@@ -46,6 +46,14 @@
   outline: none;
 }
 
+.milkdown .ProseMirror .pm-selection-persist {
+  background-color: var(--selection-color, rgba(0, 102, 204, 0.2));
+}
+
+.milkdown .ProseMirror.ProseMirror-focused .pm-selection-persist {
+  background-color: transparent;
+}
+
 .milkdown .editor {
   outline: none;
   margin: 0;

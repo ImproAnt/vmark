@@ -53,6 +53,7 @@
   outline: none;
   border-bottom: 1px solid var(--border-color);
   border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 -2px 0 var(--primary-color);
 }
 
 .format-toolbar-btn:focus:not(:focus-visible) {
@@ -63,6 +64,7 @@
 .format-toolbar-btn:focus-visible {
   border-bottom: 1px solid var(--border-color);
   border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 -2px 0 var(--primary-color);
 }
 
 .format-toolbar-btn:active {
@@ -148,6 +150,7 @@
   outline: none;
   border-bottom: 1px solid var(--border-color);
   border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 -2px 0 var(--primary-color);
 }
 
 .format-toolbar-quick-btn:focus:not(:focus-visible) {
@@ -158,6 +161,7 @@
 .format-toolbar-quick-btn:focus-visible {
   border-bottom: 1px solid var(--border-color);
   border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 -2px 0 var(--primary-color);
 }
 
 .dark-theme .format-toolbar-quick-btn:hover {

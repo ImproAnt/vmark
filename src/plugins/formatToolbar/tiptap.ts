@@ -1,6 +1,7 @@
 import { Extension } from "@tiptap/core";
 import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { keymap } from "@tiptap/pm/keymap";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorView } from "@tiptap/pm/view";
 import { useFormatToolbarStore } from "@/stores/formatToolbarStore";
 import { findWordAtCursor, findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
@@ -10,12 +11,17 @@ import { TiptapFormatToolbarView } from "./TiptapFormatToolbarView";
 
 const formatToolbarPluginKey = new PluginKey("tiptapFormatToolbar");
 
+function refreshToolbarSelection(view: EditorView) {
+  view.dispatch(view.state.tr.setMeta(formatToolbarPluginKey, { refreshSelection: true }));
+}
+
 function toggleContextAwareToolbar(view: EditorView): boolean {
   const store = useFormatToolbarStore.getState();
   const { empty, from } = view.state.selection;
 
   if (store.isOpen) {
     store.closeToolbar();
+    refreshToolbarSelection(view);
     view.focus();
     return true;
   }
@@ -23,17 +29,20 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
   const codeBlockInfo = getCodeBlockInfo(view);
   if (codeBlockInfo) {
     store.openCodeToolbar(getCursorRect(view), view as unknown as never, codeBlockInfo);
+    refreshToolbarSelection(view);
     return true;
   }
 
   if (!empty) {
     store.openToolbar(getCursorRect(view), view as unknown as never, "format");
+    refreshToolbarSelection(view);
     return true;
   }
 
   const nodeContext = getNodeContext(view);
   if (nodeContext) {
     store.openMergedToolbar(getCursorRect(view), view as unknown as never, nodeContext);
+    refreshToolbarSelection(view);
     return true;
   }
 
@@ -51,12 +60,14 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     const originalCursorPos = from;
     view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, inheritedRange.from, inheritedRange.to)));
     store.openToolbar(getCursorRect(view), view as unknown as never, { contextMode: "format", originalCursorPos });
+    refreshToolbarSelection(view);
     return true;
   }
 
   const headingInfo = getHeadingInfo(view);
   if (headingInfo) {
     store.openHeadingToolbar(getCursorRect(view), view as unknown as never, headingInfo);
+    refreshToolbarSelection(view);
     return true;
   }
 
@@ -65,6 +76,7 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
       level: 0,
       nodePos: view.state.selection.$from.before(view.state.selection.$from.depth),
     });
+    refreshToolbarSelection(view);
     return true;
   }
 
@@ -73,10 +85,12 @@ function toggleContextAwareToolbar(view: EditorView): boolean {
     const originalCursorPos = from;
     view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, wordRange.from, wordRange.to)));
     store.openToolbar(getCursorRect(view), view as unknown as never, { contextMode: "format", originalCursorPos });
+    refreshToolbarSelection(view);
     return true;
   }
 
   store.openToolbar(getCursorRect(view), view as unknown as never, getContextMode(view));
+  refreshToolbarSelection(view);
   return true;
 }
 
@@ -96,6 +110,20 @@ export const formatToolbarExtension = Extension.create({
         view(editorView) {
           const toolbarView = new TiptapFormatToolbarView(editorView);
           return { destroy: () => toolbarView.destroy() };
+        },
+      }),
+      new Plugin({
+        props: {
+          decorations(state) {
+            const store = useFormatToolbarStore.getState();
+            const selection = state.selection;
+            if (!store.isOpen || selection.empty) return null;
+            if (selection instanceof NodeSelection) return null;
+            const decoration = Decoration.inline(selection.from, selection.to, {
+              class: "pm-selection-persist",
+            });
+            return DecorationSet.create(state.doc, [decoration]);
+          },
         },
       }),
     ];

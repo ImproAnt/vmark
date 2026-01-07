@@ -19,6 +19,15 @@ export function installToolbarNavigation(opts: {
       return;
     }
 
+    if (e.key === "Enter") {
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (activeEl && opts.container.contains(activeEl) && activeEl instanceof HTMLButtonElement) {
+        e.preventDefault();
+        activeEl.click();
+      }
+      return;
+    }
+
     if (e.key !== "Tab") return;
 
     const focusable = getFocusableElements(opts.container);
@@ -26,7 +35,17 @@ export function installToolbarNavigation(opts: {
 
     const activeEl = document.activeElement as HTMLElement;
     const currentIndex = focusable.indexOf(activeEl);
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      e.preventDefault();
+      const activeButton = opts.container.querySelector<HTMLElement>(".format-toolbar-btn.active");
+      if (activeButton) {
+        activeButton.focus();
+        return;
+      }
+      const fallbackIndex = e.shiftKey ? focusable.length - 1 : 0;
+      focusable[fallbackIndex].focus();
+      return;
+    }
 
     e.preventDefault();
     const nextIndex = e.shiftKey
@@ -42,12 +61,11 @@ export function installToolbarNavigation(opts: {
     }
   };
 
-  document.addEventListener("keydown", keydownHandler);
+  document.addEventListener("keydown", keydownHandler, true);
   document.addEventListener("mousedown", outsideHandler);
 
   return () => {
-    document.removeEventListener("keydown", keydownHandler);
+    document.removeEventListener("keydown", keydownHandler, true);
     document.removeEventListener("mousedown", outsideHandler);
   };
 }
-

@@ -268,16 +268,29 @@ export class TiptapFormatToolbarView {
       isOpen: () => useFormatToolbarStore.getState().isOpen,
       onClose: () => useFormatToolbarStore.getState().closeToolbar(),
     });
-    setTimeout(() => {
-      const focusable = getFocusableElements(this.container);
-      if (focusable.length > 0) focusable[0].focus();
-    }, 30);
+    this.focusInitialControl();
   }
 
   private hide() {
     this.container.style.display = "none";
     this.removeNavigation?.();
     this.removeNavigation = null;
+  }
+
+  private focusInitialControl() {
+    setTimeout(() => {
+      const focusable = getFocusableElements(this.container);
+      if (focusable.length === 0) return;
+      const store = useFormatToolbarStore.getState();
+      if (store.mode === "heading") {
+        const active = this.container.querySelector<HTMLElement>(".format-toolbar-btn.active");
+        if (active) {
+          active.focus();
+          return;
+        }
+      }
+      focusable[0].focus();
+    }, 30);
   }
 
   destroy() {
