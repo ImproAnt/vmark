@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import { open } from "@tauri-apps/plugin-dialog";
 import { useWorkspaceStore, type WorkspaceConfig } from "@/stores/workspaceStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useTabStore } from "@/stores/tabStore";
@@ -28,7 +29,15 @@ export function useWorkspaceMenuEvents() {
       // Open Folder
       const unlistenOpenFolder = await listen("menu:open-folder", async () => {
         try {
-          const path = await invoke<string | null>("open_folder_dialog");
+          // Use JS dialog API directly - supports both files and folders
+          const selected = await open({
+            directory: true,
+            multiple: false,
+            canCreateDirectories: true,
+            title: "Open Workspace Folder",
+          });
+          if (!selected) return;
+          const path = typeof selected === "string" ? selected : selected[0];
           if (!path) return;
 
           // Try to read existing config
