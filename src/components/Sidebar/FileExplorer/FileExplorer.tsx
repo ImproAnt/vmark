@@ -6,6 +6,7 @@ import { useExplorerOperations } from "./useExplorerOperations";
 import { FileNode } from "./FileNode";
 import { ContextMenu, type ContextMenuType, type ContextMenuPosition } from "./ContextMenu";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { getFileName } from "@/utils/paths";
 import type { FileNode as FileNodeType } from "./types";
 import "./FileExplorer.css";
 
@@ -280,7 +281,7 @@ export function FileExplorer({ currentFilePath }: FileExplorerProps) {
 
   // Extract workspace name from path
   const workspaceName = workspaceRootPath
-    ? workspaceRootPath.split("/").pop() || "Workspace"
+    ? getFileName(workspaceRootPath) || "Workspace"
     : null;
 
   // Show empty state if no root path available

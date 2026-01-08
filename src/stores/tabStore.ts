@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getFileName } from "@/utils/paths";
 
 // Tab representation
 export interface Tab {
@@ -57,7 +58,7 @@ const getTabTitle = (filePath: string | null, untitledNum?: number): string => {
     return untitledNum ? `Untitled-${untitledNum}` : "Untitled";
   }
   // Extract filename without extension for .md files
-  const name = filePath.split("/").pop() || filePath;
+  const name = getFileName(filePath) || filePath;
   return name.endsWith(".md") ? name.slice(0, -3) : name;
 };
 

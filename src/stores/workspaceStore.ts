@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { isPathExcluded as checkPathExcluded } from "@/utils/paths";
 
 // Workspace configuration stored in .vmark file
 export interface WorkspaceConfig {
@@ -126,15 +127,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
         const { config, rootPath } = get();
         if (!config || !rootPath) return false;
 
-        // Check if any segment of the path matches excluded folders
-        const relativePath = path.startsWith(rootPath)
-          ? path.slice(rootPath.length + 1)
-          : path;
-
-        const segments = relativePath.split("/");
-        return segments.some((segment) =>
-          config.excludeFolders.includes(segment)
-        );
+        return checkPathExcluded(path, rootPath, config.excludeFolders);
       },
     }),
     {
