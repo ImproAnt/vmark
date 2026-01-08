@@ -5,7 +5,17 @@ export interface FileNode {
   children?: FileNode[];
 }
 
+/**
+ * File system change event from watcher.
+ * Includes watchId to scope events to their originating watcher.
+ */
 export interface FsChangeEvent {
-  path: string;
+  /** Unique identifier for this watcher (window label) */
+  watchId: string;
+  /** Root path being watched */
+  rootPath: string;
+  /** Changed paths (may be multiple for batch operations) */
+  paths: string[];
+  /** Event kind */
   kind: "create" | "modify" | "remove" | "rename";
 }

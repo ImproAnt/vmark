@@ -74,13 +74,15 @@ const mdFilter = (name: string, isFolder: boolean): boolean => {
 
 interface UseFileTreeOptions {
   excludeFolders?: string[];
+  /** Window label used as watchId for scoped file system events */
+  watchId?: string;
 }
 
 export function useFileTree(
   rootPath: string | null,
   options: UseFileTreeOptions = {}
 ) {
-  const { excludeFolders = [] } = options;
+  const { excludeFolders = [], watchId = "main" } = options;
   const [tree, setTree] = useState<FileNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const requestIdRef = useRef(0);
@@ -128,8 +130,8 @@ export function useFileTree(
 
     loadTree();
 
-    // Start file watcher
-    invoke("start_watching", { path: rootPath }).catch((err) => {
+    // Start file watcher with watchId for scoping
+    invoke("start_watching", { watchId, path: rootPath }).catch((err) => {
       console.warn("[FileTree] Failed to start watcher:", err);
     });
 
@@ -137,8 +139,13 @@ export function useFileTree(
     let cancelled = false;
     listen<FsChangeEvent>("fs:changed", (event) => {
       if (cancelled) return;
-      // Only refresh if the change is within our root
-      if (event.payload.path.startsWith(rootPath)) {
+      // Only refresh if the event is for our watcher
+      if (event.payload.watchId !== watchId) return;
+      // Check if any changed path is within our root
+      const hasRelevantChange = event.payload.paths.some((p) =>
+        p.startsWith(rootPath)
+      );
+      if (hasRelevantChange) {
         loadTree();
       }
     }).then((unlisten) => {
@@ -155,11 +162,11 @@ export function useFileTree(
         unlistenRef.current();
         unlistenRef.current = null;
       }
-      invoke("stop_watching").catch(() => {
+      invoke("stop_watching", { watchId }).catch(() => {
         // Ignore errors on cleanup
       });
     };
-  }, [rootPath, loadTree]);
+  }, [rootPath, loadTree, watchId]);
 
   return { tree, isLoading, refresh: loadTree };
 }

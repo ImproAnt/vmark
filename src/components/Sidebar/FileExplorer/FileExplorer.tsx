@@ -6,6 +6,7 @@ import { useExplorerOperations } from "./useExplorerOperations";
 import { FileNode } from "./FileNode";
 import { ContextMenu, type ContextMenuType, type ContextMenuPosition } from "./ContextMenu";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useWindowLabel } from "@/contexts/WindowContext";
 import { getFileName } from "@/utils/paths";
 import type { FileNode as FileNodeType } from "./types";
 import "./FileExplorer.css";
@@ -32,6 +33,7 @@ export function FileExplorer({ currentFilePath }: FileExplorerProps) {
   const excludeFolders = useWorkspaceStore(
     (s) => s.config?.excludeFolders ?? EMPTY_FOLDERS
   );
+  const windowLabel = useWindowLabel();
 
   const [inferredRootPath, setInferredRootPath] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -49,6 +51,7 @@ export function FileExplorer({ currentFilePath }: FileExplorerProps) {
 
   const { tree, isLoading, refresh } = useFileTree(rootPath, {
     excludeFolders: isWorkspaceMode ? excludeFolders : [],
+    watchId: windowLabel,
   });
   const {
     createFile,
