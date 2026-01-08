@@ -200,7 +200,7 @@ export const testSourceModeToggle = `
 // 1. Initial state (WYSIWYG)
 await tauri_webview_execute_js({
   label: "main",
-  script: "!!document.querySelector('.milkdown')"
+  script: "!!document.querySelector('.tiptap-editor')"
 });
 
 // 2. Toggle to source mode
@@ -217,10 +217,10 @@ await tauri_webview_execute_js({
 await tauri_webview_keyboard({ keys: ["Meta", "/"], label: "main" });
 await sleep(${DELAY.MEDIUM});
 
-// 5. Verify Milkdown visible
+// 5. Verify WYSIWYG visible
 await tauri_webview_execute_js({
   label: "main",
-  script: "!!document.querySelector('.milkdown')"
+  script: "!!document.querySelector('.tiptap-editor')"
 });
 `;
 

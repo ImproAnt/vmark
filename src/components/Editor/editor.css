@@ -16,8 +16,7 @@
 }
 
 /* WYSIWYG Editor Styles - GitHub Theme */
-/* Note: `.milkdown` is a legacy style-scope class applied to the Tiptap wrapper. */
-.milkdown,
+/* Note: `.tiptap-editor` is the style-scope class applied to the Tiptap wrapper. */
 .tiptap-editor {
   width: 100%;
   height: 100%;
@@ -33,50 +32,50 @@
   min-height: 100%;
 }
 
-.milkdown > *:first-child,
-.milkdown .editor > *:first-child,
-.milkdown .ProseMirror > *:first-child {
+.tiptap-editor > *:first-child,
+.tiptap-editor .editor > *:first-child,
+.tiptap-editor .ProseMirror > *:first-child {
   margin-top: 0 !important;
 }
 
-.milkdown .ProseMirror {
+.tiptap-editor .ProseMirror {
   margin: 0;
   padding: 0;
   min-height: 100%;
   outline: none;
 }
 
-.milkdown .ProseMirror .pm-selection-persist {
+.tiptap-editor .ProseMirror .pm-selection-persist {
   background-color: var(--selection-color, rgba(0, 102, 204, 0.2));
 }
 
-.milkdown .ProseMirror.ProseMirror-focused .pm-selection-persist {
+.tiptap-editor .ProseMirror.ProseMirror-focused .pm-selection-persist {
   background-color: transparent;
 }
 
-.milkdown .editor {
+.tiptap-editor .editor {
   outline: none;
   margin: 0;
   padding: 0;
 }
 
 /* Normalize cursor height */
-.milkdown .ProseMirror {
+.tiptap-editor .ProseMirror {
   caret-color: var(--text-color);
 }
 
-.milkdown .ProseMirror p,
-.milkdown .ProseMirror li {
+.tiptap-editor .ProseMirror p,
+.tiptap-editor .ProseMirror li {
   line-height: var(--editor-line-height, 1.6);
 }
 
 /* Headings */
-.milkdown h1,
-.milkdown h2,
-.milkdown h3,
-.milkdown h4,
-.milkdown h5,
-.milkdown h6 {
+.tiptap-editor h1,
+.tiptap-editor h2,
+.tiptap-editor h3,
+.tiptap-editor h4,
+.tiptap-editor h5,
+.tiptap-editor h6 {
   position: relative;
   margin-top: 1rem;
   margin-bottom: 1rem;
@@ -85,103 +84,103 @@
   cursor: text;
 }
 
-.milkdown h1 {
+.tiptap-editor h1 {
   font-size: 2.25em;
   line-height: 1.5;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--border-color);
 }
 
-.milkdown h2 {
+.tiptap-editor h2 {
   font-size: 1.75em;
   line-height: 1.45;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--border-color);
 }
 
-.milkdown h3 {
+.tiptap-editor h3 {
   font-size: 1.5em;
   line-height: 1.4;
 }
 
-.milkdown h4 {
+.tiptap-editor h4 {
   font-size: 1.25em;
 }
 
-.milkdown h5 {
+.tiptap-editor h5 {
   font-size: 1em;
 }
 
-.milkdown h6 {
+.tiptap-editor h6 {
   font-size: 1em;
   color: var(--meta-content-color);
 }
 
 /* Code in headings inherits font size */
-.milkdown h1 code,
-.milkdown h2 code,
-.milkdown h3 code,
-.milkdown h4 code,
-.milkdown h5 code,
-.milkdown h6 code {
+.tiptap-editor h1 code,
+.tiptap-editor h2 code,
+.tiptap-editor h3 code,
+.tiptap-editor h4 code,
+.tiptap-editor h5 code,
+.tiptap-editor h6 code {
   font-size: inherit;
 }
 
 /* Paragraphs */
-.milkdown p {
+.tiptap-editor p {
   margin: 0 0 var(--editor-paragraph-spacing, 1em) 0;
 }
 
-.milkdown p:last-child {
+.tiptap-editor p:last-child {
   margin-bottom: 0;
 }
 
 /* Links */
-.milkdown a {
+.tiptap-editor a {
   color: var(--primary-color);
   text-decoration: none;
 }
 
-.milkdown a:hover {
+.tiptap-editor a:hover {
   text-decoration: underline;
 }
 
 /* Lists */
-.milkdown ul,
-.milkdown ol {
+.tiptap-editor ul,
+.tiptap-editor ol {
   margin: 0.8em 0;
   padding-left: 30px;
 }
 
-.milkdown ul:first-child,
-.milkdown ol:first-child {
+.tiptap-editor ul:first-child,
+.tiptap-editor ol:first-child {
   margin-top: 0;
 }
 
-.milkdown ul:last-child,
-.milkdown ol:last-child {
+.tiptap-editor ul:last-child,
+.tiptap-editor ol:last-child {
   margin-bottom: 0;
 }
 
-.milkdown li > ul,
-.milkdown li > ol {
+.tiptap-editor li > ul,
+.tiptap-editor li > ol {
   margin: 0;
 }
 
-.milkdown li {
+.tiptap-editor li {
   margin: 0.25em 0;
 }
 
-.milkdown ul {
+.tiptap-editor ul {
   list-style-type: disc;
 }
 
-.milkdown ol {
+.tiptap-editor ol {
   list-style-type: decimal;
 }
 
 /* Code - inline */
-.milkdown code {
+.tiptap-editor code {
   font-family: var(--font-mono);
   font-size: 0.9em;
   background-color: var(--code-bg-color);
@@ -192,7 +191,7 @@
 }
 
 /* Code blocks */
-.milkdown pre {
+.tiptap-editor pre {
   font-family: var(--font-mono);
   font-size: 0.9em;
   background-color: var(--code-bg-color);
@@ -205,26 +204,26 @@
   margin: 15px 0;
 }
 
-.milkdown pre code {
+.tiptap-editor pre code {
   background: none;
   border: none;
   padding: 0;
 }
 
 /* Blockquotes */
-.milkdown blockquote {
+.tiptap-editor blockquote {
   border-left: 4px solid var(--table-border-color);
   margin: 0.8em 0;
   padding: 0 15px;
   color: var(--meta-content-color);
 }
 
-.milkdown blockquote blockquote {
+.tiptap-editor blockquote blockquote {
   padding-right: 0;
 }
 
 /* Horizontal rule */
-.milkdown hr {
+.tiptap-editor hr {
   height: 2px;
   padding: 0;
   margin: 16px 0;
@@ -235,7 +234,7 @@
 }
 
 /* Tables */
-.milkdown table {
+.tiptap-editor table {
   padding: 0;
   word-break: initial;
   border-collapse: collapse;
@@ -243,13 +242,13 @@
   margin: 0.8em 0;
 }
 
-.milkdown table tr {
+.tiptap-editor table tr {
   border: 1px solid var(--table-border-color);
   margin: 0;
   padding: 0;
 }
 
-.milkdown th {
+.tiptap-editor th {
   font-weight: bold;
   border: 1px solid var(--table-border-color);
   border-bottom: 0;
@@ -259,35 +258,35 @@
   background-color: var(--bg-secondary);
 }
 
-.milkdown td {
+.tiptap-editor td {
   border: 1px solid var(--table-border-color);
   margin: 0;
   padding: 4px 10px;
   line-height: 1.4;
 }
 
-.milkdown th:first-child,
-.milkdown td:first-child {
+.tiptap-editor th:first-child,
+.tiptap-editor td:first-child {
   margin-top: 0;
 }
 
-.milkdown th:last-child,
-.milkdown td:last-child {
+.tiptap-editor th:last-child,
+.tiptap-editor td:last-child {
   margin-bottom: 0;
 }
 
 /* Task lists */
-.milkdown .task-list-item {
+.tiptap-editor .task-list-item {
   list-style-type: none;
   margin-left: -1.3em;
 }
 
-.milkdown .task-list-item input[type="checkbox"] {
+.tiptap-editor .task-list-item input[type="checkbox"] {
   margin-right: 0.5em;
 }
 
 /* Images */
-.milkdown img {
+.tiptap-editor img {
   max-width: 100%;
   height: auto;
   border-radius: 4px;
@@ -296,53 +295,53 @@
 }
 
 /* Inline images - override Tailwind's display: block */
-.milkdown img.inline-image {
+.tiptap-editor img.inline-image {
   display: inline;
   vertical-align: middle;
 }
 
 /* Selected inline image styling */
-.milkdown img.inline-image.ProseMirror-selectednode {
+.tiptap-editor img.inline-image.ProseMirror-selectednode {
   border-bottom: 2px solid var(--primary-color);
 }
 
 /* Media border styles - applied to editor container */
-.media-border-always .milkdown img,
+.media-border-always .tiptap-editor img,
 .media-border-always .mermaid-block,
 .media-border-always .math-block {
   border: 1px solid var(--border-color);
 }
 
-.media-border-hover .milkdown img:hover,
+.media-border-hover .tiptap-editor img:hover,
 .media-border-hover .mermaid-block:hover,
 .media-border-hover .math-block:hover {
   border: 1px solid var(--border-color);
 }
 
 /* Strong and emphasis */
-.milkdown strong {
+.tiptap-editor strong {
   font-weight: bold;
   color: var(--strong-color);
 }
 
-.milkdown em {
+.tiptap-editor em {
   font-style: italic;
   color: var(--emphasis-color);
 }
 
 /* Strikethrough */
-.milkdown del {
+.tiptap-editor del {
   text-decoration: line-through;
   color: var(--meta-content-color);
 }
 
 /* HTML Comments - hidden in WYSIWYG mode */
-.milkdown span[data-type="html"] {
+.tiptap-editor span[data-type="html"] {
   display: none;
 }
 
 /* Footnotes */
-.milkdown sup[data-type="footnote_reference"] {
+.tiptap-editor sup[data-type="footnote_reference"] {
   color: var(--primary-color);
   cursor: pointer;
   font-size: 0.65em;
@@ -353,26 +352,26 @@
   font-weight: 500;
 }
 
-.milkdown sup[data-type="footnote_reference"]:hover {
+.tiptap-editor sup[data-type="footnote_reference"]:hover {
   text-decoration: underline;
 }
 
-.milkdown sup[data-type="footnote_reference"]::before {
+.tiptap-editor sup[data-type="footnote_reference"]::before {
   content: "[";
 }
 
-.milkdown sup[data-type="footnote_reference"]::after {
+.tiptap-editor sup[data-type="footnote_reference"]::after {
   content: "]";
 }
 
-.milkdown dl[data-type="footnote_definition"] {
+.tiptap-editor dl[data-type="footnote_definition"] {
   margin: 0.5em 0;
   padding: 0;
   font-size: 0.85em;
   color: var(--text-secondary);
 }
 
-.milkdown dl[data-type="footnote_definition"] dt {
+.tiptap-editor dl[data-type="footnote_definition"] dt {
   display: inline;
   font-weight: 500;
   color: var(--primary-color);
@@ -380,24 +379,24 @@
   cursor: pointer;
 }
 
-.milkdown dl[data-type="footnote_definition"] dt:hover {
+.tiptap-editor dl[data-type="footnote_definition"] dt:hover {
   text-decoration: underline;
 }
 
-.milkdown dl[data-type="footnote_definition"] dt::before {
+.tiptap-editor dl[data-type="footnote_definition"] dt::before {
   content: "[";
 }
 
-.milkdown dl[data-type="footnote_definition"] dt::after {
+.tiptap-editor dl[data-type="footnote_definition"] dt::after {
   content: "]: ";
 }
 
-.milkdown dl[data-type="footnote_definition"] dd {
+.tiptap-editor dl[data-type="footnote_definition"] dd {
   display: inline;
   margin: 0;
 }
 
-.milkdown dl[data-type="footnote_definition"] dd::after {
+.tiptap-editor dl[data-type="footnote_definition"] dd::after {
   content: " ↩";
   color: var(--primary-color);
   font-size: 0.9em;
@@ -405,11 +404,11 @@
   opacity: 0.7;
 }
 
-.milkdown dl[data-type="footnote_definition"] dd:hover::after {
+.tiptap-editor dl[data-type="footnote_definition"] dd:hover::after {
   opacity: 1;
 }
 
-.milkdown dl[data-type="footnote_definition"] dd > *:first-child {
+.tiptap-editor dl[data-type="footnote_definition"] dd > *:first-child {
   display: inline;
 }
 
@@ -727,140 +726,140 @@
  * =========================================== */
 
 /* Light theme */
-.milkdown pre code .token.keyword,
-.milkdown pre code .token.important,
-.milkdown pre code .token.atrule {
+.tiptap-editor pre code .token.keyword,
+.tiptap-editor pre code .token.important,
+.tiptap-editor pre code .token.atrule {
   color: #d73a49;
 }
 
-.milkdown pre code .token.function,
-.milkdown pre code .token.class-name,
-.milkdown pre code .token.attr-name {
+.tiptap-editor pre code .token.function,
+.tiptap-editor pre code .token.class-name,
+.tiptap-editor pre code .token.attr-name {
   color: #6f42c1;
 }
 
-.milkdown pre code .token.property,
-.milkdown pre code .token.number,
-.milkdown pre code .token.constant,
-.milkdown pre code .token.symbol,
-.milkdown pre code .token.boolean {
+.tiptap-editor pre code .token.property,
+.tiptap-editor pre code .token.number,
+.tiptap-editor pre code .token.constant,
+.tiptap-editor pre code .token.symbol,
+.tiptap-editor pre code .token.boolean {
   color: #005cc5;
 }
 
-.milkdown pre code .token.string,
-.milkdown pre code .token.char,
-.milkdown pre code .token.attr-value,
-.milkdown pre code .token.regex {
+.tiptap-editor pre code .token.string,
+.tiptap-editor pre code .token.char,
+.tiptap-editor pre code .token.attr-value,
+.tiptap-editor pre code .token.regex {
   color: #032f62;
 }
 
-.milkdown pre code .token.comment,
-.milkdown pre code .token.prolog,
-.milkdown pre code .token.doctype,
-.milkdown pre code .token.cdata {
+.tiptap-editor pre code .token.comment,
+.tiptap-editor pre code .token.prolog,
+.tiptap-editor pre code .token.doctype,
+.tiptap-editor pre code .token.cdata {
   color: #6a737d;
   font-style: italic;
 }
 
-.milkdown pre code .token.operator,
-.milkdown pre code .token.entity,
-.milkdown pre code .token.url {
+.tiptap-editor pre code .token.operator,
+.tiptap-editor pre code .token.entity,
+.tiptap-editor pre code .token.url {
   color: #d73a49;
 }
 
-.milkdown pre code .token.punctuation {
+.tiptap-editor pre code .token.punctuation {
   color: #24292e;
 }
 
-.milkdown pre code .token.tag,
-.milkdown pre code .token.selector {
+.tiptap-editor pre code .token.tag,
+.tiptap-editor pre code .token.selector {
   color: #22863a;
 }
 
-.milkdown pre code .token.builtin,
-.milkdown pre code .token.inserted {
+.tiptap-editor pre code .token.builtin,
+.tiptap-editor pre code .token.inserted {
   color: #22863a;
 }
 
-.milkdown pre code .token.deleted {
+.tiptap-editor pre code .token.deleted {
   color: #cb2431;
 }
 
-.milkdown pre code .token.variable {
+.tiptap-editor pre code .token.variable {
   color: #e36209;
 }
 
 /* Dark theme */
-.dark-theme .milkdown pre code .token.keyword,
-.dark-theme .milkdown pre code .token.important,
-.dark-theme .milkdown pre code .token.atrule {
+.dark-theme .tiptap-editor pre code .token.keyword,
+.dark-theme .tiptap-editor pre code .token.important,
+.dark-theme .tiptap-editor pre code .token.atrule {
   color: #ff7b72;
 }
 
-.dark-theme .milkdown pre code .token.function,
-.dark-theme .milkdown pre code .token.class-name,
-.dark-theme .milkdown pre code .token.attr-name {
+.dark-theme .tiptap-editor pre code .token.function,
+.dark-theme .tiptap-editor pre code .token.class-name,
+.dark-theme .tiptap-editor pre code .token.attr-name {
   color: #d2a8ff;
 }
 
-.dark-theme .milkdown pre code .token.property,
-.dark-theme .milkdown pre code .token.number,
-.dark-theme .milkdown pre code .token.constant,
-.dark-theme .milkdown pre code .token.symbol,
-.dark-theme .milkdown pre code .token.boolean {
+.dark-theme .tiptap-editor pre code .token.property,
+.dark-theme .tiptap-editor pre code .token.number,
+.dark-theme .tiptap-editor pre code .token.constant,
+.dark-theme .tiptap-editor pre code .token.symbol,
+.dark-theme .tiptap-editor pre code .token.boolean {
   color: #79c0ff;
 }
 
-.dark-theme .milkdown pre code .token.string,
-.dark-theme .milkdown pre code .token.char,
-.dark-theme .milkdown pre code .token.attr-value,
-.dark-theme .milkdown pre code .token.regex {
+.dark-theme .tiptap-editor pre code .token.string,
+.dark-theme .tiptap-editor pre code .token.char,
+.dark-theme .tiptap-editor pre code .token.attr-value,
+.dark-theme .tiptap-editor pre code .token.regex {
   color: #a5d6ff;
 }
 
-.dark-theme .milkdown pre code .token.comment,
-.dark-theme .milkdown pre code .token.prolog,
-.dark-theme .milkdown pre code .token.doctype,
-.dark-theme .milkdown pre code .token.cdata {
+.dark-theme .tiptap-editor pre code .token.comment,
+.dark-theme .tiptap-editor pre code .token.prolog,
+.dark-theme .tiptap-editor pre code .token.doctype,
+.dark-theme .tiptap-editor pre code .token.cdata {
   color: #8b949e;
   font-style: italic;
 }
 
-.dark-theme .milkdown pre code .token.operator,
-.dark-theme .milkdown pre code .token.entity,
-.dark-theme .milkdown pre code .token.url {
+.dark-theme .tiptap-editor pre code .token.operator,
+.dark-theme .tiptap-editor pre code .token.entity,
+.dark-theme .tiptap-editor pre code .token.url {
   color: #ff7b72;
 }
 
-.dark-theme .milkdown pre code .token.punctuation {
+.dark-theme .tiptap-editor pre code .token.punctuation {
   color: #c9d1d9;
 }
 
-.dark-theme .milkdown pre code .token.tag,
-.dark-theme .milkdown pre code .token.selector {
+.dark-theme .tiptap-editor pre code .token.tag,
+.dark-theme .tiptap-editor pre code .token.selector {
   color: #7ee787;
 }
 
-.dark-theme .milkdown pre code .token.builtin,
-.dark-theme .milkdown pre code .token.inserted {
+.dark-theme .tiptap-editor pre code .token.builtin,
+.dark-theme .tiptap-editor pre code .token.inserted {
   color: #7ee787;
 }
 
-.dark-theme .milkdown pre code .token.deleted {
+.dark-theme .tiptap-editor pre code .token.deleted {
   color: #f85149;
 }
 
-.dark-theme .milkdown pre code .token.variable {
+.dark-theme .tiptap-editor pre code .token.variable {
   color: #ffa657;
 }
 
 /* Print styles */
 @media print {
-  .milkdown {
+  .tiptap-editor {
     font-size: 13px;
   }
 
-  .milkdown pre {
+  .tiptap-editor pre {
     page-break-inside: avoid;
     word-wrap: break-word;
   }

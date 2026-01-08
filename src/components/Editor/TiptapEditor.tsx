@@ -245,7 +245,7 @@ export function TiptapEditorInner() {
 
   return (
     <>
-      <div className="tiptap-editor milkdown">
+      <div className="tiptap-editor">
         <EditorContent editor={editor} />
       </div>
       <ImageContextMenu onAction={handleImageContextMenuAction} />
