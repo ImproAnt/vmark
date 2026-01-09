@@ -1,19 +1,25 @@
 /**
  * Hook for handling drag-and-drop file opening
  *
- * Listens to Tauri's drag-drop events and opens dropped markdown files
- * in new tabs in the current window.
+ * Listens to Tauri's drag-drop events and opens dropped markdown files.
+ * Files within the current workspace open in new tabs; files outside
+ * the workspace open in a new window.
  *
  * @module hooks/useDragDropOpen
  */
 import { useEffect, useRef } from "react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 import { useWindowLabel } from "@/contexts/WindowContext";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { filterMarkdownPaths } from "@/utils/dropPaths";
+import { shouldClaimFile } from "@/utils/fileOwnership";
+import { getDirectory } from "@/utils/pathUtils";
+import { isWithinRoot } from "@/utils/paths";
 
 /**
  * Opens a file in a new tab.
@@ -63,9 +69,51 @@ export function useDragDropOpen(): void {
         const paths = event.payload.paths;
         const markdownPaths = filterMarkdownPaths(paths);
 
-        // Open each markdown file in a new tab (concurrently but tracked)
+        // Get current workspace state to determine ownership
+        const { isWorkspaceMode, rootPath } = useWorkspaceStore.getState();
+
+        // Get current file's folder as implicit boundary when not in workspace mode
+        const activeTabId = useTabStore.getState().activeTabId[windowLabel];
+        const currentDoc = activeTabId
+          ? useDocumentStore.getState().getDocument(activeTabId)
+          : null;
+        const currentFileFolder = currentDoc?.filePath
+          ? getDirectory(currentDoc.filePath)
+          : null;
+
+        // Open each markdown file, respecting workspace/folder boundaries
         await Promise.all(
-          markdownPaths.map((path) => openFileInNewTab(windowLabel, path))
+          markdownPaths.map(async (path) => {
+            let shouldOpenHere = false;
+
+            if (isWorkspaceMode && rootPath) {
+              // Explicit workspace mode - use workspace boundary
+              const ownership = shouldClaimFile({
+                filePath: path,
+                isWorkspaceMode,
+                workspaceRoot: rootPath,
+              });
+              shouldOpenHere = ownership.shouldClaim;
+            } else if (currentFileFolder) {
+              // No workspace but have a file open - use file's folder as boundary
+              shouldOpenHere = isWithinRoot(currentFileFolder, path);
+            } else {
+              // No workspace, no file open - accept all drops
+              shouldOpenHere = true;
+            }
+
+            if (shouldOpenHere) {
+              // File is within boundary - open in this window
+              await openFileInNewTab(windowLabel, path);
+            } else {
+              // File is outside boundary - open in a new window
+              try {
+                await invoke("open_file_in_new_window", { path });
+              } catch (error) {
+                console.error("[DragDrop] Failed to open in new window:", path, error);
+              }
+            }
+          })
         );
       });
 
