@@ -13,9 +13,11 @@ import {
   resolveWorkspaceRootForExternalFile,
   resolveMissingFileSaveAction,
   resolveExternalChangeAction,
+  resolvePostSaveWorkspaceAction,
   type OpenActionContext,
   type MissingFileSaveContext,
   type ExternalChangeContext,
+  type PostSaveWorkspaceContext,
 } from "./openPolicy";
 
 describe("resolveOpenAction", () => {
@@ -279,5 +281,91 @@ describe("resolveExternalChangeAction", () => {
     const result = resolveExternalChangeAction(context);
 
     expect(result).toBe("no_op");
+  });
+});
+
+describe("resolvePostSaveWorkspaceAction", () => {
+  describe("when not in workspace mode", () => {
+    it("returns open_workspace when previously untitled file is saved", () => {
+      const context: PostSaveWorkspaceContext = {
+        isWorkspaceMode: false,
+        hadPathBeforeSave: false,
+        savedFilePath: "/Users/test/project/file.md",
+      };
+
+      const result = resolvePostSaveWorkspaceAction(context);
+
+      expect(result).toEqual({
+        action: "open_workspace",
+        workspaceRoot: "/Users/test/project",
+      });
+    });
+
+    it("returns no_op when file was already saved (has path)", () => {
+      const context: PostSaveWorkspaceContext = {
+        isWorkspaceMode: false,
+        hadPathBeforeSave: true,
+        savedFilePath: "/Users/test/project/file.md",
+      };
+
+      const result = resolvePostSaveWorkspaceAction(context);
+
+      expect(result).toEqual({ action: "no_op" });
+    });
+
+    it("returns no_op for empty saved path", () => {
+      const context: PostSaveWorkspaceContext = {
+        isWorkspaceMode: false,
+        hadPathBeforeSave: false,
+        savedFilePath: "",
+      };
+
+      const result = resolvePostSaveWorkspaceAction(context);
+
+      expect(result).toEqual({ action: "no_op" });
+    });
+  });
+
+  describe("when in workspace mode", () => {
+    it("returns no_op regardless of path state", () => {
+      const context: PostSaveWorkspaceContext = {
+        isWorkspaceMode: true,
+        hadPathBeforeSave: false,
+        savedFilePath: "/workspace/project/file.md",
+      };
+
+      const result = resolvePostSaveWorkspaceAction(context);
+
+      expect(result).toEqual({ action: "no_op" });
+    });
+  });
+
+  describe("edge cases", () => {
+    it("handles Windows paths", () => {
+      const context: PostSaveWorkspaceContext = {
+        isWorkspaceMode: false,
+        hadPathBeforeSave: false,
+        savedFilePath: "C:\\Users\\test\\project\\file.md",
+      };
+
+      const result = resolvePostSaveWorkspaceAction(context);
+
+      expect(result).toEqual({
+        action: "open_workspace",
+        workspaceRoot: "C:/Users/test/project",
+      });
+    });
+
+    it("returns no_op for root-level file", () => {
+      const context: PostSaveWorkspaceContext = {
+        isWorkspaceMode: false,
+        hadPathBeforeSave: false,
+        savedFilePath: "/file.md",
+      };
+
+      const result = resolvePostSaveWorkspaceAction(context);
+
+      expect(result).toEqual({ action: "no_op" });
+    });
   });
 });

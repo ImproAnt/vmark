@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Tree, type TreeApi } from "react-arborist";
 import { FilePlus, FolderPlus, Folder } from "lucide-react";
-import { useFileTree, getDirectory } from "./useFileTree";
+import { useFileTree } from "./useFileTree";
 import { useExplorerOperations } from "./useExplorerOperations";
 import { FileNode } from "./FileNode";
 import { ContextMenu, type ContextMenuType, type ContextMenuPosition } from "./ContextMenu";
@@ -27,7 +27,7 @@ interface FileExplorerProps {
 }
 
 export function FileExplorer({ currentFilePath }: FileExplorerProps) {
-  // Workspace mode takes precedence
+  // Workspace-only: file tree only shows when in workspace mode
   const workspaceRootPath = useWorkspaceStore((s) => s.rootPath);
   const isWorkspaceMode = useWorkspaceStore((s) => s.isWorkspaceMode);
   const excludeFolders = useWorkspaceStore(
@@ -35,7 +35,6 @@ export function FileExplorer({ currentFilePath }: FileExplorerProps) {
   );
   const windowLabel = useWindowLabel();
 
-  const [inferredRootPath, setInferredRootPath] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     visible: false,
     type: "empty",
@@ -46,11 +45,11 @@ export function FileExplorer({ currentFilePath }: FileExplorerProps) {
   const treeRef = useRef<TreeApi<FileNodeType> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Use workspace root when in workspace mode, otherwise infer from file
-  const rootPath = isWorkspaceMode ? workspaceRootPath : inferredRootPath;
+  // Workspace-only: no inferred root from file path
+  const rootPath = isWorkspaceMode ? workspaceRootPath : null;
 
   const { tree, isLoading, refresh } = useFileTree(rootPath, {
-    excludeFolders: isWorkspaceMode ? excludeFolders : [],
+    excludeFolders,
     watchId: windowLabel,
   });
   const {
@@ -64,26 +63,6 @@ export function FileExplorer({ currentFilePath }: FileExplorerProps) {
     copyPath,
     revealInFinder,
   } = useExplorerOperations();
-
-  // Update inferred root path when not in workspace mode
-  // This keeps the explorer stable when clicking files within the tree
-  useEffect(() => {
-    // Skip if in workspace mode - workspace root is used instead
-    if (isWorkspaceMode) return;
-
-    if (!currentFilePath) {
-      setInferredRootPath(null);
-      return;
-    }
-
-    // If we have a root and the new file is within it, don't change root
-    if (inferredRootPath && currentFilePath.startsWith(inferredRootPath + "/")) {
-      return; // File is within current folder, keep root stable
-    }
-
-    // New file is outside current folder (or no folder yet) - update root
-    getDirectory(currentFilePath).then(setInferredRootPath);
-  }, [currentFilePath, inferredRootPath, isWorkspaceMode]);
 
   // Close context menu
   const closeContextMenu = useCallback(() => {
@@ -287,14 +266,12 @@ export function FileExplorer({ currentFilePath }: FileExplorerProps) {
     ? getFileName(workspaceRootPath) || "Workspace"
     : null;
 
-  // Show empty state if no root path available
+  // Show empty state if no workspace is open
   if (!rootPath) {
     return (
       <div className="file-explorer">
         <div className="file-explorer-empty">
-          {isWorkspaceMode
-            ? "No workspace open"
-            : "Save document to browse files"}
+          No workspace open
         </div>
       </div>
     );

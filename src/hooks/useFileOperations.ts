@@ -14,7 +14,7 @@ import { isWindowFocused } from "@/hooks/useWindowFocus";
 import { getDefaultSaveFolderWithFallback } from "@/hooks/useDefaultSaveFolder";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
-import { resolveOpenAction } from "@/utils/openPolicy";
+import { resolveOpenAction, resolvePostSaveWorkspaceAction } from "@/utils/openPolicy";
 import { createUntitledTab } from "@/utils/newFile";
 import { getDirectory } from "@/utils/pathUtils";
 import { normalizePath } from "@/utils/paths";
@@ -158,8 +158,13 @@ export function useFileOperations() {
       const doc = useDocumentStore.getState().getDocument(tabId);
       if (!doc) return;
 
+      // Track whether file was untitled before save (for auto-workspace logic)
+      const hadPathBeforeSave = Boolean(doc.filePath);
+      let savedPath: string | null = null;
+
       if (doc.filePath) {
-        await saveToPath(tabId, doc.filePath, doc.content, "manual");
+        const success = await saveToPath(tabId, doc.filePath, doc.content, "manual");
+        if (success) savedPath = doc.filePath;
       } else {
         // Use workspace root, another saved file's folder, or home
         const defaultFolder = await getDefaultSaveFolderWithFallback(windowLabel);
@@ -168,7 +173,26 @@ export function useFileOperations() {
           filters: [{ name: "Markdown", extensions: ["md"] }],
         });
         if (path) {
-          await saveToPath(tabId, path, doc.content, "manual");
+          const success = await saveToPath(tabId, path, doc.content, "manual");
+          if (success) savedPath = path;
+        }
+      }
+
+      // Auto-open workspace after first save of untitled file (if not already in workspace)
+      if (savedPath) {
+        const { isWorkspaceMode } = useWorkspaceStore.getState();
+        const postSaveAction = resolvePostSaveWorkspaceAction({
+          isWorkspaceMode,
+          hadPathBeforeSave,
+          savedFilePath: savedPath,
+        });
+
+        if (postSaveAction.action === "open_workspace") {
+          try {
+            await useWorkspaceStore.getState().openWorkspace(postSaveAction.workspaceRoot);
+          } catch (error) {
+            console.error("[FileOps] Failed to open workspace after save:", error);
+          }
         }
       }
     });

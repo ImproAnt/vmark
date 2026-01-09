@@ -253,3 +253,82 @@ export function resolveExternalChangeAction(
   // Clean docs auto-reload
   return "auto_reload";
 }
+
+// -----------------------------------------------------------------------------
+// resolvePostSaveWorkspaceAction
+// -----------------------------------------------------------------------------
+
+/**
+ * Context for post-save workspace decisions.
+ */
+export interface PostSaveWorkspaceContext {
+  /** Whether the window is currently in workspace mode */
+  isWorkspaceMode: boolean;
+  /** Whether the document had a file path before save (was it untitled?) */
+  hadPathBeforeSave: boolean;
+  /** The path where the file was just saved */
+  savedFilePath: string;
+}
+
+/**
+ * Result of post-save workspace decision.
+ */
+export type PostSaveWorkspaceAction =
+  | { action: "open_workspace"; workspaceRoot: string }
+  | { action: "no_op" };
+
+/**
+ * Determine if a workspace should be opened after saving an untitled file.
+ *
+ * Policy:
+ * - If not in workspace mode AND file was untitled AND save succeeded,
+ *   auto-open the file's containing folder as a workspace.
+ * - Otherwise, do nothing.
+ *
+ * @param context - Post-save context
+ * @returns Action to take after save
+ *
+ * @example
+ * // Untitled file saved while not in workspace mode - open workspace
+ * resolvePostSaveWorkspaceAction({
+ *   isWorkspaceMode: false,
+ *   hadPathBeforeSave: false,
+ *   savedFilePath: "/Users/test/project/file.md"
+ * }); // { action: "open_workspace", workspaceRoot: "/Users/test/project" }
+ *
+ * @example
+ * // Already in workspace mode - no action
+ * resolvePostSaveWorkspaceAction({
+ *   isWorkspaceMode: true,
+ *   hadPathBeforeSave: false,
+ *   savedFilePath: "/workspace/file.md"
+ * }); // { action: "no_op" }
+ */
+export function resolvePostSaveWorkspaceAction(
+  context: PostSaveWorkspaceContext
+): PostSaveWorkspaceAction {
+  const { isWorkspaceMode, hadPathBeforeSave, savedFilePath } = context;
+
+  // Already in workspace mode - no need to open workspace
+  if (isWorkspaceMode) {
+    return { action: "no_op" };
+  }
+
+  // File was already saved (had path) - not a first-save scenario
+  if (hadPathBeforeSave) {
+    return { action: "no_op" };
+  }
+
+  // No saved path - edge case, shouldn't happen
+  if (!savedFilePath) {
+    return { action: "no_op" };
+  }
+
+  // Get parent folder to use as workspace root
+  const workspaceRoot = resolveWorkspaceRootForExternalFile(savedFilePath);
+  if (!workspaceRoot) {
+    return { action: "no_op" };
+  }
+
+  return { action: "open_workspace", workspaceRoot };
+}
