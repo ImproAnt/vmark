@@ -3,6 +3,7 @@ import {
   isImageFile,
   getFilename,
   generateUniqueFilename,
+  buildAssetRelativePath,
   IMAGE_EXTENSIONS,
 } from "./imageUtils";
 
@@ -129,6 +130,17 @@ describe("imageUtils", () => {
       // When no extension found, the whole filename becomes the "extension"
       // This is expected behavior - caller should provide proper filenames
       expect(result).toMatch(/^noextension-\d+-[a-z0-9]{4}\.noextension$/);
+    });
+  });
+
+  describe("buildAssetRelativePath", () => {
+    it("builds relative path to assets folder", () => {
+      expect(buildAssetRelativePath("image.png")).toBe("./assets/images/image.png");
+    });
+
+    it("works with generated filenames", () => {
+      const filename = "photo-1234567890-abcd.jpg";
+      expect(buildAssetRelativePath(filename)).toBe("./assets/images/photo-1234567890-abcd.jpg");
     });
   });
 });

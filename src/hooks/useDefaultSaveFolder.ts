@@ -1,0 +1,58 @@
+/**
+ * Default save folder hook
+ *
+ * Gathers data from stores and Tauri APIs, then calls
+ * the pure resolver in utils/defaultSaveFolder.
+ *
+ * @module hooks/useDefaultSaveFolder
+ */
+import { homeDir } from "@tauri-apps/api/path";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useTabStore } from "@/stores/tabStore";
+import { useDocumentStore } from "@/stores/documentStore";
+import { resolveDefaultSaveFolder } from "@/utils/defaultSaveFolder";
+
+/**
+ * Get the default save folder with fallback logic.
+ *
+ * Gathers workspace state, tab paths, and home directory,
+ * then delegates to pure resolver.
+ *
+ * Precedence:
+ * 1. Workspace root - if the window is in workspace mode
+ * 2. Saved tab folder - folder of any saved file in the window
+ * 3. Home directory - user's home folder
+ *
+ * @param windowLabel - The window label to check for saved tabs
+ * @returns The resolved default folder path
+ *
+ * @example
+ * const folder = await getDefaultSaveFolderWithFallback("main");
+ */
+export async function getDefaultSaveFolderWithFallback(
+  windowLabel: string
+): Promise<string> {
+  // Gather workspace state
+  const { isWorkspaceMode, rootPath } = useWorkspaceStore.getState();
+
+  // Gather saved file paths from tabs
+  const tabs = useTabStore.getState().tabs[windowLabel] ?? [];
+  const savedFilePaths: string[] = [];
+  for (const tab of tabs) {
+    const doc = useDocumentStore.getState().getDocument(tab.id);
+    if (doc?.filePath) {
+      savedFilePaths.push(doc.filePath);
+    }
+  }
+
+  // Get home directory from Tauri
+  const homeDirectory = await homeDir();
+
+  // Delegate to pure resolver
+  return resolveDefaultSaveFolder({
+    isWorkspaceMode,
+    workspaceRoot: rootPath,
+    savedFilePaths,
+    homeDirectory,
+  });
+}

@@ -6,7 +6,7 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { withReentryGuard } from "@/utils/reentryGuard";
 import { getWindowLabel } from "@/utils/windowFocus";
-import { saveImageToAssets, insertBlockImageNode } from "@/utils/imageUtils";
+import { saveImageToAssets, insertBlockImageNode } from "@/hooks/useImageOperations";
 
 const imageHandlerPluginKey = new PluginKey("imageHandler");
 const CLIPBOARD_IMAGE_GUARD = "clipboard-image";

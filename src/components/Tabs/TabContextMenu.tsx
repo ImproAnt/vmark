@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTabStore, type Tab } from "@/stores/tabStore";
-import { closeTabWithDirtyCheck, closeTabsWithDirtyCheck } from "@/utils/tabUtils";
+import { closeTabWithDirtyCheck, closeTabsWithDirtyCheck } from "@/hooks/useTabOperations";
 
 export interface ContextMenuPosition {
   x: number;

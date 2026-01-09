@@ -1,64 +1,72 @@
 /**
  * Default save folder resolution
  *
- * Determines the default folder for Save dialogs with a three-tier precedence:
+ * Pure helpers for determining the default folder for Save dialogs.
+ * The async wrapper that gathers data from stores/Tauri lives in hooks layer.
+ *
+ * Precedence:
  * 1. Workspace root (if in workspace mode)
  * 2. First saved tab's folder in the window
  * 3. Home directory
  *
  * @module utils/defaultSaveFolder
  */
-import { homeDir } from "@tauri-apps/api/path";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
-import { useTabStore } from "@/stores/tabStore";
-import { useDocumentStore } from "@/stores/documentStore";
 import { getDirectory } from "@/utils/pathUtils";
 
 /**
- * Get the default save folder with fallback logic.
+ * Input for default save folder resolution.
+ * All data is pre-gathered by the caller (hook layer).
+ */
+export interface DefaultSaveFolderInput {
+  /** Whether the window is in workspace mode */
+  isWorkspaceMode: boolean;
+  /** Workspace root path (if in workspace mode) */
+  workspaceRoot: string | null;
+  /** File paths of saved tabs in this window (in order) */
+  savedFilePaths: string[];
+  /** User's home directory */
+  homeDirectory: string;
+}
+
+/**
+ * Resolve the default save folder using three-tier precedence.
+ *
+ * Pure function - takes all data as input, no side effects.
  *
  * Precedence:
- * 1. Workspace root - if the window is in workspace mode
- * 2. Saved tab folder - folder of any saved file in the window
+ * 1. Workspace root - if in workspace mode
+ * 2. Saved tab folder - folder of first saved file
  * 3. Home directory - user's home folder
  *
- * @param windowLabel - The window label to check for saved tabs
+ * @param input - Pre-gathered workspace and tab data
  * @returns The resolved default folder path
  *
  * @example
  * // In workspace mode - returns workspace root
- * const folder = await getDefaultSaveFolderWithFallback("main");
- * // Returns "/workspace/project"
- *
- * @example
- * // No workspace but has saved tab
- * const folder = await getDefaultSaveFolderWithFallback("main");
- * // Returns "/docs/notes" (from saved file "/docs/notes/file.md")
- *
- * @example
- * // New window with no saved tabs
- * const folder = await getDefaultSaveFolderWithFallback("doc-1");
- * // Returns "/Users/username"
+ * resolveDefaultSaveFolder({
+ *   isWorkspaceMode: true,
+ *   workspaceRoot: "/workspace/project",
+ *   savedFilePaths: [],
+ *   homeDirectory: "/Users/test"
+ * }); // Returns "/workspace/project"
  */
-export async function getDefaultSaveFolderWithFallback(
-  windowLabel: string
-): Promise<string> {
-  // 1. Check workspace root first
-  const { isWorkspaceMode, rootPath } = useWorkspaceStore.getState();
-  if (isWorkspaceMode && rootPath) {
-    return rootPath;
+export function resolveDefaultSaveFolder(input: DefaultSaveFolderInput): string {
+  const { isWorkspaceMode, workspaceRoot, savedFilePaths, homeDirectory } = input;
+
+  // 1. Workspace root first
+  if (isWorkspaceMode && workspaceRoot) {
+    return workspaceRoot;
   }
 
-  // 2. Check for any saved tab in this window
-  const tabs = useTabStore.getState().tabs[windowLabel] ?? [];
-  for (const tab of tabs) {
-    const doc = useDocumentStore.getState().getDocument(tab.id);
-    if (doc?.filePath) {
-      const dir = getDirectory(doc.filePath);
-      if (dir) return dir;
-    }
+  // 2. First saved tab's folder
+  for (const filePath of savedFilePaths) {
+    const dir = getDirectory(filePath);
+    if (dir) return dir;
   }
 
-  // 3. Fall back to home directory
-  return await homeDir();
+  // 3. Home directory
+  return homeDirectory;
 }
+
+// Note: The async wrapper getDefaultSaveFolderWithFallback is now in
+// @/hooks/useDefaultSaveFolder. Import from there for Tauri/store integration.

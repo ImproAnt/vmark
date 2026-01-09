@@ -8,7 +8,7 @@ import { useWindowLabel } from "../contexts/WindowContext";
 import { useDocumentStore } from "../stores/documentStore";
 import { useTabStore } from "../stores/tabStore";
 import { useRecentFilesStore } from "../stores/recentFilesStore";
-import { getDefaultSaveFolderWithFallback } from "@/utils/defaultSaveFolder";
+import { getDefaultSaveFolderWithFallback } from "@/hooks/useDefaultSaveFolder";
 
 /**
  * Handle window close with save confirmation dialog.

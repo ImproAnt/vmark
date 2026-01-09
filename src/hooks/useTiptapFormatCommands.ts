@@ -6,7 +6,7 @@ import type { Node as PMNode, Mark as PMMark } from "@tiptap/pm/model";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { expandedToggleMarkTiptap } from "@/plugins/editorPlugins.tiptap";
-import { copyImageToAssets, insertBlockImageNode } from "@/utils/imageUtils";
+import { copyImageToAssets, insertBlockImageNode } from "@/hooks/useImageOperations";
 import { withReentryGuard } from "@/utils/reentryGuard";
 import { getWindowLabel, isWindowFocused } from "@/utils/windowFocus";
 

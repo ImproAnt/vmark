@@ -10,7 +10,7 @@ import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { createSnapshot } from "@/utils/historyUtils";
 import { isWindowFocused } from "@/utils/windowFocus";
-import { getDefaultSaveFolderWithFallback } from "@/utils/defaultSaveFolder";
+import { getDefaultSaveFolderWithFallback } from "@/hooks/useDefaultSaveFolder";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
 import { shouldClaimFile } from "@/utils/fileOwnership";

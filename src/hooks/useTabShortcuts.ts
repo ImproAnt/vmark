@@ -12,7 +12,7 @@ import { useWindowLabel, useIsDocumentWindow } from "@/contexts/WindowContext";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useUIStore } from "@/stores/uiStore";
-import { closeTabWithDirtyCheck } from "@/utils/tabUtils";
+import { closeTabWithDirtyCheck } from "@/hooks/useTabOperations";
 
 export function useTabShortcuts() {
   const windowLabel = useWindowLabel();

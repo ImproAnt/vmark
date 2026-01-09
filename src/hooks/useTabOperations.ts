@@ -1,8 +1,13 @@
 /**
- * Tab Utility Functions
+ * Tab Operations (Hooks Layer)
  *
- * Shared functions for tab operations including dirty state checks
- * and confirmation dialogs before closing tabs with unsaved changes.
+ * Async functions for tab operations with side effects:
+ * - Dialogs for confirmation prompts
+ * - File system writes for saving
+ * - Store mutations for closing tabs
+ *
+ * These functions belong in hooks layer because they have Tauri/store
+ * side effects. Pure decision logic should go in utils.
  */
 
 import { ask } from "@tauri-apps/plugin-dialog";
@@ -11,7 +16,7 @@ import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
-import { getDefaultSaveFolderWithFallback } from "@/utils/defaultSaveFolder";
+import { getDefaultSaveFolderWithFallback } from "@/hooks/useDefaultSaveFolder";
 
 /**
  * Close a tab with dirty check. If the document has unsaved changes,

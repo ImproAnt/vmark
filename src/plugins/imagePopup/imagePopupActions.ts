@@ -3,7 +3,7 @@ import { open, message } from "@tauri-apps/plugin-dialog";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useImagePopupStore } from "@/stores/imagePopupStore";
-import { copyImageToAssets } from "@/utils/imageUtils";
+import { copyImageToAssets } from "@/hooks/useImageOperations";
 import { withReentryGuard } from "@/utils/reentryGuard";
 import { getWindowLabel } from "@/utils/windowFocus";
 

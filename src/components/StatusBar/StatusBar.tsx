@@ -9,7 +9,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { useWindowLabel, useIsDocumentWindow } from "@/contexts/WindowContext";
 import { useTabStore, type Tab as TabType } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
-import { closeTabWithDirtyCheck } from "@/utils/tabUtils";
+import { closeTabWithDirtyCheck } from "@/hooks/useTabOperations";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import {
   useDocumentContent,

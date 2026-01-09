@@ -14,7 +14,7 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { dirname, join } from "@tauri-apps/api/path";
 import type { EditorView } from "@tiptap/pm/view";
 import { useImageContextMenuStore } from "@/stores/imageContextMenuStore";
-import { copyImageToAssets } from "@/utils/imageUtils";
+import { copyImageToAssets } from "@/hooks/useImageOperations";
 import { useDocumentFilePath } from "@/hooks/useDocumentState";
 
 type GetEditorView = () => EditorView | null;
