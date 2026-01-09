@@ -197,6 +197,10 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
         rootPath: state.rootPath,
         isWorkspaceMode: state.isWorkspaceMode,
       }),
+      // CRITICAL: Skip auto-hydration on store creation.
+      // WindowContext will call setCurrentWindowLabel() first, then rehydrate()
+      // to ensure each window reads from its own storage key.
+      skipHydration: true,
     }
   )
 );

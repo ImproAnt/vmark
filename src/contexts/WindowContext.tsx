@@ -79,6 +79,12 @@ export function WindowProvider({ children }: WindowProviderProps) {
               }
             }
 
+            // If opening fresh (no file), clear any persisted workspace
+            // This ensures a clean slate when launching the app without a file
+            if (!filePath && label === "main") {
+              useWorkspaceStore.getState().closeWorkspace();
+            }
+
             // Create the initial tab
             const tabId = useTabStore.getState().createTab(label, filePath);
 
