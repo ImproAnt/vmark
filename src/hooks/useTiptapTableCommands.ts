@@ -5,7 +5,7 @@ import type { EditorView } from "@tiptap/pm/view";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { CellSelection } from "@tiptap/pm/tables";
 import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn } from "@/plugins/tableUI/tableActions.tiptap";
-import { isWindowFocused } from "@/utils/windowFocus";
+import { isWindowFocused } from "@/hooks/useWindowFocus";
 
 function clearSelectedCells(view: EditorView): boolean {
   const selection = view.state.selection;

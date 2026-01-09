@@ -8,7 +8,7 @@ import { useTabStore } from "@/stores/tabStore";
 import { expandedToggleMarkTiptap } from "@/plugins/editorPlugins.tiptap";
 import { copyImageToAssets, insertBlockImageNode } from "@/hooks/useImageOperations";
 import { withReentryGuard } from "@/utils/reentryGuard";
-import { getWindowLabel, isWindowFocused } from "@/utils/windowFocus";
+import { getWindowLabel, isWindowFocused } from "@/hooks/useWindowFocus";
 
 const INSERT_IMAGE_GUARD = "menu-insert-image";
 

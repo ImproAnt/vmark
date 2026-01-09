@@ -5,7 +5,7 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabStore } from "@/stores/tabStore";
 import { collapseNewlines, formatMarkdown, formatSelection, removeTrailingSpaces } from "@/lib/cjkFormatter";
-import { getWindowLabel, isWindowFocused } from "@/utils/windowFocus";
+import { getWindowLabel, isWindowFocused } from "@/hooks/useWindowFocus";
 
 function getActiveTabIdForCurrentWindow(): string | null {
   try {

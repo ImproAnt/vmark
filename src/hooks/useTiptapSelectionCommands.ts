@@ -3,7 +3,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { isWindowFocused } from "@/utils/windowFocus";
+import { isWindowFocused } from "@/hooks/useWindowFocus";
 
 const MAX_LINE_SEARCH_ITERATIONS = 500;
 

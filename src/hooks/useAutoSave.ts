@@ -12,7 +12,7 @@ import { useWindowLabel } from "@/contexts/WindowContext";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { createSnapshot } from "@/utils/historyUtils";
+import { createSnapshot } from "@/hooks/useHistoryOperations";
 import { autoSaveLog } from "@/utils/debug";
 
 export function useAutoSave() {

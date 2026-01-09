@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { liftListItem, sinkListItem } from "@tiptap/pm/schema-list";
-import { isWindowFocused } from "@/utils/windowFocus";
+import { isWindowFocused } from "@/hooks/useWindowFocus";
 import { ALERT_TYPES, type AlertType } from "@/plugins/alertBlock/tiptap";
 import { convertSelectionToTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
 

@@ -5,7 +5,7 @@ import { message } from "@tauri-apps/plugin-dialog";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { withReentryGuard } from "@/utils/reentryGuard";
-import { getWindowLabel } from "@/utils/windowFocus";
+import { getWindowLabel } from "@/hooks/useWindowFocus";
 import { saveImageToAssets, insertBlockImageNode } from "@/hooks/useImageOperations";
 
 const imageHandlerPluginKey = new PluginKey("imageHandler");

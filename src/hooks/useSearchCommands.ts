@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useSearchStore } from "@/stores/searchStore";
-import { isWindowFocused } from "@/utils/windowFocus";
+import { isWindowFocused } from "@/hooks/useWindowFocus";
 
 export function useSearchCommands() {
   const unlistenRefs = useRef<UnlistenFn[]>([]);

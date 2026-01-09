@@ -17,7 +17,7 @@ import {
   getSnapshots,
   revertToSnapshot,
   type Snapshot,
-} from "@/utils/historyUtils";
+} from "@/hooks/useHistoryOperations";
 import { formatSnapshotTime, groupByDay } from "@/utils/dateUtils";
 
 export function HistoryView() {

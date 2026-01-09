@@ -5,7 +5,7 @@ import { useTabStore } from "@/stores/tabStore";
 import { useImagePopupStore } from "@/stores/imagePopupStore";
 import { copyImageToAssets } from "@/hooks/useImageOperations";
 import { withReentryGuard } from "@/utils/reentryGuard";
-import { getWindowLabel } from "@/utils/windowFocus";
+import { getWindowLabel } from "@/hooks/useWindowFocus";
 
 export async function browseAndReplaceImage(view: EditorView, imageNodePos: number): Promise<boolean> {
   const windowLabel = getWindowLabel();

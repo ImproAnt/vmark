@@ -1,3 +1,10 @@
+/**
+ * Window Focus (Hooks Layer)
+ *
+ * Thin wrappers around Tauri window APIs.
+ * No pure logic - these are inherently about Tauri access.
+ */
+
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 /**

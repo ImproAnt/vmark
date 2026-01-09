@@ -13,7 +13,7 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useImageContextMenuStore } from "@/stores/imageContextMenuStore";
 import { useImagePopupStore } from "@/stores/imagePopupStore";
-import { getWindowLabel } from "@/utils/windowFocus";
+import { getWindowLabel } from "@/hooks/useWindowFocus";
 import { isRelativePath, isAbsolutePath, isExternalUrl, validateImagePath } from "./security";
 
 function getActiveTabIdForCurrentWindow(): string | null {

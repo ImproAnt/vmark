@@ -1,8 +1,12 @@
 /**
- * Document History Utilities
+ * History Operations (Hooks Layer)
  *
- * Manages document version history stored in a global location (~/.vmark/history/)
- * that survives file deletion and enables recovery.
+ * Async functions for document history management:
+ * - Index CRUD operations
+ * - Snapshot create/load/prune
+ *
+ * Uses Tauri APIs for file system access.
+ * Types and pure helpers are in utils/historyTypes.
  */
 
 import {
@@ -10,66 +14,25 @@ import {
   exists,
   readTextFile,
   writeTextFile,
-  readDir,
   remove,
 } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
-import { getFileName } from "./pathUtils";
-import { historyLog } from "./debug";
+import { historyLog } from "@/utils/debug";
+import {
+  type Snapshot,
+  type HistoryIndex,
+  type HistorySettings,
+  HISTORY_FOLDER,
+  INDEX_FILE,
+  generatePreview,
+  getDocumentName,
+  hashPath,
+} from "@/utils/historyTypes";
 
-// Types
+// Re-export types for consumers
+export type { Snapshot, HistoryIndex, HistorySettings };
 
-export interface Snapshot {
-  id: string; // Timestamp as string
-  timestamp: number;
-  type: "manual" | "auto" | "revert";
-  size: number;
-  preview: string;
-}
-
-export interface HistoryIndex {
-  documentPath: string;
-  documentName: string;
-  pathHash: string;
-  status: "active" | "deleted" | "orphaned";
-  deletedAt: number | null;
-  snapshots: Snapshot[];
-  settings: {
-    maxSnapshots: number;
-    maxAgeDays: number;
-  };
-}
-
-export interface DeletedDocument {
-  pathHash: string;
-  documentName: string;
-  lastPath: string;
-  deletedAt: number;
-  snapshotCount: number;
-  latestPreview: string;
-}
-
-// Constants
-
-const HISTORY_FOLDER = "history";
-const INDEX_FILE = "index.json";
-const PREVIEW_LENGTH = 200;
-
-// Helper functions
-
-/**
- * Generate a 16-character hex hash from a document path
- */
-async function hashPath(documentPath: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(documentPath);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray
-    .slice(0, 8)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+// Path helpers
 
 /**
  * Get the base history directory path (~/.vmark/history/)
@@ -99,21 +62,7 @@ async function ensureHistoryDir(documentPath: string): Promise<string> {
   return historyDir;
 }
 
-/**
- * Generate a preview from content (first N characters)
- */
-function generatePreview(content: string): string {
-  return content.slice(0, PREVIEW_LENGTH).replace(/\n/g, " ").trim();
-}
-
-/**
- * Get the document name from a path
- */
-function getDocumentName(documentPath: string): string {
-  return getFileName(documentPath) || "Untitled";
-}
-
-// Core functions
+// Index operations
 
 /**
  * Get or create the index for a document
@@ -149,6 +98,8 @@ async function saveHistoryIndex(
   await writeTextFile(indexPath, JSON.stringify(index, null, 2));
 }
 
+// Snapshot operations
+
 /**
  * Create a new snapshot of the document
  */
@@ -156,7 +107,7 @@ export async function createSnapshot(
   documentPath: string,
   content: string,
   type: "manual" | "auto" | "revert",
-  settings: { maxSnapshots: number; maxAgeDays: number }
+  settings: HistorySettings
 ): Promise<void> {
   try {
     const historyDir = await ensureHistoryDir(documentPath);
@@ -223,10 +174,6 @@ export async function getSnapshots(documentPath: string): Promise<Snapshot[]> {
 
 /**
  * Load a specific snapshot's content
- *
- * @public Exported for external use: snapshot preview, diff view,
- * testing, and potential future features like side-by-side comparison.
- * Currently used internally by revertToSnapshot.
  */
 export async function loadSnapshot(
   documentPath: string,
@@ -255,7 +202,7 @@ export async function revertToSnapshot(
   documentPath: string,
   snapshotId: string,
   currentContent: string,
-  settings: { maxSnapshots: number; maxAgeDays: number }
+  settings: HistorySettings
 ): Promise<string | null> {
   // Save current state before reverting
   await createSnapshot(documentPath, currentContent, "revert", settings);
@@ -333,126 +280,5 @@ export async function markAsDeleted(documentPath: string): Promise<void> {
   }
 }
 
-/**
- * Get all deleted documents that have history
- */
-export async function getDeletedDocuments(): Promise<DeletedDocument[]> {
-  try {
-    const baseDir = await getHistoryBaseDir();
-    if (!(await exists(baseDir))) return [];
-
-    const entries = await readDir(baseDir);
-    const deleted: DeletedDocument[] = [];
-
-    for (const entry of entries) {
-      if (!entry.isDirectory) continue;
-
-      try {
-        const indexPath = await join(baseDir, entry.name, INDEX_FILE);
-        if (!(await exists(indexPath))) continue;
-
-        const content = await readTextFile(indexPath);
-        const index = JSON.parse(content) as HistoryIndex;
-
-        if (index.status === "deleted" && index.snapshots.length > 0) {
-          const latestSnapshot = index.snapshots[index.snapshots.length - 1];
-          deleted.push({
-            pathHash: index.pathHash,
-            documentName: index.documentName,
-            lastPath: index.documentPath,
-            deletedAt: index.deletedAt || 0,
-            snapshotCount: index.snapshots.length,
-            latestPreview: latestSnapshot.preview,
-          });
-        }
-      } catch {
-        // Skip invalid entries
-      }
-    }
-
-    // Sort by deletion date descending
-    return deleted.sort((a, b) => b.deletedAt - a.deletedAt);
-  } catch (error) {
-    console.error("[History] Failed to get deleted documents:", error);
-    return [];
-  }
-}
-
-/**
- * Restore a deleted document's latest version to a new path
- */
-export async function restoreDeletedDocument(
-  pathHash: string,
-  newPath: string
-): Promise<string | null> {
-  try {
-    const baseDir = await getHistoryBaseDir();
-    const historyDir = await join(baseDir, pathHash);
-    const indexPath = await join(historyDir, INDEX_FILE);
-
-    if (!(await exists(indexPath))) {
-      console.error("[History] No history found for hash:", pathHash);
-      return null;
-    }
-
-    const content = await readTextFile(indexPath);
-    const index = JSON.parse(content) as HistoryIndex;
-
-    if (index.snapshots.length === 0) {
-      console.error("[History] No snapshots to restore");
-      return null;
-    }
-
-    // Get latest snapshot
-    const latestSnapshot = index.snapshots[index.snapshots.length - 1];
-    const snapshotPath = await join(historyDir, `${latestSnapshot.id}.md`);
-    const snapshotContent = await readTextFile(snapshotPath);
-
-    // Update index with new path
-    index.documentPath = newPath;
-    index.documentName = getDocumentName(newPath);
-    index.status = "active";
-    index.deletedAt = null;
-
-    // Save updated index (note: still at old hash location)
-    await writeTextFile(indexPath, JSON.stringify(index, null, 2));
-
-    historyLog("Restored document to:", newPath);
-    return snapshotContent;
-  } catch (error) {
-    console.error("[History] Failed to restore document:", error);
-    return null;
-  }
-}
-
-/**
- * Permanently delete history for a document
- */
-export async function deleteHistory(pathHash: string): Promise<void> {
-  try {
-    const baseDir = await getHistoryBaseDir();
-    const historyDir = await join(baseDir, pathHash);
-
-    if (await exists(historyDir)) {
-      await remove(historyDir, { recursive: true });
-      historyLog("Deleted history for:", pathHash);
-    }
-  } catch (error) {
-    console.error("[History] Failed to delete history:", error);
-  }
-}
-
-/**
- * Clear all history
- */
-export async function clearAllHistory(): Promise<void> {
-  try {
-    const baseDir = await getHistoryBaseDir();
-    if (await exists(baseDir)) {
-      await remove(baseDir, { recursive: true });
-      historyLog("Cleared all history");
-    }
-  } catch (error) {
-    console.error("[History] Failed to clear all history:", error);
-  }
-}
+// Export the base dir getter for recovery operations
+export { getHistoryBaseDir };

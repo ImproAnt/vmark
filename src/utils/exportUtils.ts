@@ -1,16 +1,12 @@
 /**
- * Export Utilities
+ * Export Utilities (Pure)
  *
- * Handles conversion of markdown to HTML and various export formats.
+ * Pure functions for markdown-to-HTML conversion and styling.
+ * Async operations (file saving, clipboard) are in hooks/useExportOperations.
  */
 
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import html2pdf from "html2pdf.js";
 
 // Configure marked for GFM (GitHub Flavored Markdown)
 marked.setOptions({
@@ -21,7 +17,7 @@ marked.setOptions({
 /**
  * GitHub-style CSS for exported HTML
  */
-const EXPORT_CSS = `
+export const EXPORT_CSS = `
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   font-size: 16px;
@@ -153,6 +149,18 @@ img {
 `.trim();
 
 /**
+ * Escape HTML special characters
+ */
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Convert markdown to HTML (sanitized to prevent XSS)
  */
 export function markdownToHtml(markdown: string): string {
@@ -185,146 +193,9 @@ ${htmlContent}
 }
 
 /**
- * Escape HTML special characters
- */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/**
- * Export markdown to HTML file
- */
-export async function exportToHtml(
-  markdown: string,
-  defaultName: string = "document"
-): Promise<boolean> {
-  try {
-    const path = await save({
-      defaultPath: `${defaultName}.html`,
-      filters: [{ name: "HTML", extensions: ["html", "htm"] }],
-    });
-
-    if (!path) return false;
-
-    const title = defaultName.replace(/\.[^.]+$/, "");
-    const html = generateHtmlDocument(markdown, title);
-
-    await writeTextFile(path, html);
-    return true;
-  } catch (error) {
-    console.error("Failed to export HTML:", error);
-    return false;
-  }
-}
-
-/**
- * Export markdown to PDF via print dialog
- * Opens a preview window that the user can print to PDF
- */
-export async function exportToPdf(
-  markdown: string,
-  title: string = "Document"
-): Promise<void> {
-  try {
-    // Check if preview window already exists
-    const existing = await WebviewWindow.getByLabel("print-preview");
-    if (existing) {
-      await existing.close();
-    }
-
-    // Store content in localStorage for print preview window to read
-    localStorage.setItem("vmark-print-content", markdown);
-
-    // Create new print preview window
-    new WebviewWindow("print-preview", {
-      url: "/print-preview",
-      title: `Print - ${title}`,
-      width: 800,
-      height: 900,
-      center: true,
-      resizable: true,
-    });
-  } catch (error) {
-    console.error("Failed to export PDF:", error);
-  }
-}
-
-/**
- * Copy HTML to clipboard
- */
-export async function copyAsHtml(markdown: string): Promise<boolean> {
-  try {
-    const html = markdownToHtml(markdown);
-    await writeText(html);
-    return true;
-  } catch (error) {
-    console.error("Failed to copy HTML:", error);
-    return false;
-  }
-}
-
-/**
- * Export markdown to PDF file directly (using html2pdf.js)
- */
-export async function savePdf(
-  markdown: string,
-  defaultName: string = "document"
-): Promise<boolean> {
-  try {
-    const path = await save({
-      defaultPath: `${defaultName}.pdf`,
-      filters: [{ name: "PDF", extensions: ["pdf"] }],
-    });
-
-    if (!path) return false;
-
-    // Create a temporary container for rendering
-    const container = document.createElement("div");
-    container.innerHTML = markdownToHtml(markdown);
-    container.style.cssText = `
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #1f2328;
-      padding: 20px;
-      max-width: 100%;
-    `;
-
-    // Apply inline styles to elements for PDF rendering
-    applyPdfStyles(container);
-
-    // Generate PDF blob
-    const pdfBlob = await html2pdf()
-      .set({
-        margin: [15, 15, 15, 15],
-        filename: defaultName,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(container)
-      .outputPdf("blob");
-
-    // Convert blob to Uint8Array and save via Tauri
-    const arrayBuffer = await pdfBlob.arrayBuffer();
-    await writeFile(path, new Uint8Array(arrayBuffer));
-
-    return true;
-  } catch (error) {
-    console.error("Failed to save PDF:", error);
-    return false;
-  }
-}
-
-/**
  * Apply inline styles for PDF rendering
  */
-function applyPdfStyles(container: HTMLElement): void {
+export function applyPdfStyles(container: HTMLElement): void {
   // Headings
   container.querySelectorAll("h1").forEach((el) => {
     (el as HTMLElement).style.cssText =
