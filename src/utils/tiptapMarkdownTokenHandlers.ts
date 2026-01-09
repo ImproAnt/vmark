@@ -1,3 +1,7 @@
+/**
+ * @deprecated This file is slated for removal once the remark pipeline is fully validated.
+ * Use the new pipeline in `src/utils/markdownPipeline/` instead.
+ */
 type StackEntry = { type: unknown; attrs: unknown; content: unknown[]; marks: unknown };
 
 type MarkdownParseStateLike = {

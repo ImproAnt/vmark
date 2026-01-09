@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file is slated for removal once the remark pipeline is fully validated.
+ * Use the new pipeline in `src/utils/markdownPipeline/` instead.
+ * See: `setUseRemarkPipeline(true)` to enable the new pipeline via feature flag.
+ */
 import MarkdownIt from "markdown-it";
 
 type InlineStateLike = {

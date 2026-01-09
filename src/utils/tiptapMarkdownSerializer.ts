@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file is slated for replacement by the remark pipeline adapter.
+ * Use `serializeMarkdown` from `src/utils/markdownPipeline/` with `setUseRemarkPipeline(true)`.
+ * This file remains for backward compatibility during migration.
+ */
 import { MarkdownSerializer } from "prosemirror-markdown";
 import type { Node as PMNode } from "@tiptap/pm/model";
 
