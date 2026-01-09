@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { open, save, ask } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { useWindowLabel } from "@/contexts/WindowContext";
 import { useDocumentStore } from "@/stores/documentStore";
@@ -13,9 +14,10 @@ import { isWindowFocused } from "@/hooks/useWindowFocus";
 import { getDefaultSaveFolderWithFallback } from "@/hooks/useDefaultSaveFolder";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
-import { shouldClaimFile } from "@/utils/fileOwnership";
+import { resolveOpenAction } from "@/utils/openPolicy";
 import { createUntitledTab } from "@/utils/newFile";
 import { getDirectory } from "@/utils/pathUtils";
+import { normalizePath } from "@/utils/paths";
 
 async function saveToPath(
   tabId: string,
@@ -54,33 +56,46 @@ async function saveToPath(
   }
 }
 
+/**
+ * Find an existing tab for a file path in the current window.
+ */
+function findExistingTabForPath(windowLabel: string, filePath: string): string | null {
+  const tabs = useTabStore.getState().getTabsByWindow(windowLabel);
+  const normalizedTarget = normalizePath(filePath);
+
+  for (const tab of tabs) {
+    const doc = useDocumentStore.getState().getDocument(tab.id);
+    if (doc?.filePath && normalizePath(doc.filePath) === normalizedTarget) {
+      return tab.id;
+    }
+  }
+  return null;
+}
+
 export function useFileOperations() {
   const windowLabel = useWindowLabel();
 
-  const openPathInTab = useCallback(
-    async (path: string, options?: { preferNewTab?: boolean; forceReuse?: boolean }) => {
-      const preferNewTab = options?.preferNewTab ?? false;
-      const forceReuse = options?.forceReuse ?? false;
-      let tabId = useTabStore.getState().activeTabId[windowLabel];
-      const activeDoc = tabId ? useDocumentStore.getState().getDocument(tabId) : null;
-
-      const shouldOpenInNewTab =
-        preferNewTab || !tabId || (!forceReuse && activeDoc?.isDirty);
-      if (shouldOpenInNewTab) {
-        tabId = useTabStore.getState().createTab(windowLabel, path);
+  /**
+   * Open a file in a new tab. Always creates a new tab unless an existing
+   * tab for the same file already exists (in which case it activates that tab).
+   */
+  const openFileInNewTab = useCallback(
+    async (path: string): Promise<void> => {
+      // Check for existing tab first
+      const existingTabId = findExistingTabForPath(windowLabel, path);
+      if (existingTabId) {
+        useTabStore.getState().setActiveTab(windowLabel, existingTabId);
+        return;
       }
 
+      // Create new tab
+      const tabId = useTabStore.getState().createTab(windowLabel, path);
       try {
         const content = await readTextFile(path);
-        if (shouldOpenInNewTab && tabId) {
-          useDocumentStore.getState().initDocument(tabId, content, path);
-        } else if (tabId) {
-          useDocumentStore.getState().loadContent(tabId, content, path);
-          useTabStore.getState().updateTabPath(tabId, path);
-        }
+        useDocumentStore.getState().initDocument(tabId, content, path);
         useRecentFilesStore.getState().addFile(path);
       } catch (error) {
-        console.error("Failed to open file:", error);
+        console.error("[FileOps] Failed to open file:", path, error);
       }
     },
     [windowLabel]
@@ -91,32 +106,45 @@ export function useFileOperations() {
     if (!(await isWindowFocused())) return;
 
     await withReentryGuard(windowLabel, "open", async () => {
-      const tabId = useTabStore.getState().activeTabId[windowLabel];
-      if (!tabId) return;
-
-      const doc = useDocumentStore.getState().getDocument(tabId);
-      if (doc?.isDirty) {
-        const confirmed = await ask("You have unsaved changes. Discard them?", {
-          title: "Unsaved Changes",
-          kind: "warning",
-        });
-        if (!confirmed) return;
-      }
       const path = await open({
         filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
       });
-      if (path) {
-        try {
-          const content = await readTextFile(path);
-          useDocumentStore.getState().loadContent(tabId, content, path);
-          useTabStore.getState().updateTabPath(tabId, path);
-          useRecentFilesStore.getState().addFile(path);
-        } catch (error) {
-          console.error("Failed to open file:", error);
-        }
+      if (!path) return;
+
+      // Use policy to decide where to open
+      const { isWorkspaceMode, rootPath } = useWorkspaceStore.getState();
+      const existingTabId = findExistingTabForPath(windowLabel, path);
+
+      const decision = resolveOpenAction({
+        filePath: path,
+        workspaceRoot: rootPath,
+        isWorkspaceMode,
+        existingTabId,
+      });
+
+      switch (decision.action) {
+        case "activate_tab":
+          useTabStore.getState().setActiveTab(windowLabel, decision.tabId);
+          break;
+        case "create_tab":
+          await openFileInNewTab(path);
+          break;
+        case "open_workspace_in_new_window":
+          try {
+            await invoke("open_workspace_in_new_window", {
+              workspaceRoot: decision.workspaceRoot,
+              filePath: decision.filePath,
+            });
+          } catch (error) {
+            console.error("[FileOps] Failed to open workspace in new window:", error);
+          }
+          break;
+        case "no_op":
+          // Nothing to do
+          break;
       }
     });
-  }, [windowLabel]);
+  }, [windowLabel, openFileInNewTab]);
 
   const handleSave = useCallback(async () => {
     // Only respond if this window is focused
@@ -174,49 +202,66 @@ export function useFileOperations() {
 
   // menu:close now handled by useWindowClose hook via Rust window event
 
-  // Handle opening file from FileExplorer
+  // Handle opening file from FileExplorer - always opens in new tab
   const handleOpenFile = useCallback(
     async (event: { payload: { path: string } }) => {
       // Only respond if this window is focused
       if (!(await isWindowFocused())) return;
 
-      const tabId = useTabStore.getState().activeTabId[windowLabel];
-      if (!tabId) return;
-
       const { path } = event.payload;
-      const doc = useDocumentStore.getState().getDocument(tabId);
 
-      if (doc?.isDirty) {
-        const confirmed = await ask("You have unsaved changes. Discard them?", {
-          title: "Unsaved Changes",
-          kind: "warning",
-        });
-        if (!confirmed) return;
+      // Check for existing tab and activate, otherwise create new
+      const existingTabId = findExistingTabForPath(windowLabel, path);
+      if (existingTabId) {
+        useTabStore.getState().setActiveTab(windowLabel, existingTabId);
+      } else {
+        await openFileInNewTab(path);
       }
-
-      await openPathInTab(path, { forceReuse: true });
     },
-    [openPathInTab, windowLabel]
+    [openFileInNewTab, windowLabel]
   );
 
   const handleAppOpenFile = useCallback(
     async (event: { payload: string }) => {
       const filePath = event.payload;
+      if (!filePath) return;
 
-      // Check if this window should claim the file
+      // Use policy to decide where to open
       const { isWorkspaceMode, rootPath } = useWorkspaceStore.getState();
-      const ownership = shouldClaimFile({
+      const existingTabId = findExistingTabForPath(windowLabel, filePath);
+
+      const decision = resolveOpenAction({
         filePath,
-        isWorkspaceMode,
         workspaceRoot: rootPath,
+        isWorkspaceMode,
+        existingTabId,
       });
 
-      // Only open if this window should claim the file
-      if (ownership.shouldClaim) {
-        await openPathInTab(filePath);
+      switch (decision.action) {
+        case "activate_tab":
+          useTabStore.getState().setActiveTab(windowLabel, decision.tabId);
+          break;
+        case "create_tab":
+          await openFileInNewTab(filePath);
+          break;
+        case "open_workspace_in_new_window":
+          // Only the first window to handle this should open the new window
+          // Other windows will get the same event but should ignore it
+          // This is handled by the Rust side - we just attempt the operation
+          try {
+            await invoke("open_workspace_in_new_window", {
+              workspaceRoot: decision.workspaceRoot,
+              filePath: decision.filePath,
+            });
+          } catch (error) {
+            console.error("[FileOps] Failed to open workspace in new window:", error);
+          }
+          break;
+        case "no_op":
+          break;
       }
     },
-    [openPathInTab]
+    [windowLabel, openFileInNewTab]
   );
 
   const handleNew = useCallback(async () => {

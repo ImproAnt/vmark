@@ -3,7 +3,7 @@
  *
  * Listens to Tauri's drag-drop events and opens dropped markdown files.
  * Files within the current workspace open in new tabs; files outside
- * the workspace open in a new window.
+ * the workspace open in a new window with the file's folder as workspace.
  *
  * @module hooks/useDragDropOpen
  */
@@ -17,17 +17,39 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { filterMarkdownPaths } from "@/utils/dropPaths";
-import { shouldClaimFile } from "@/utils/fileOwnership";
-import { getDirectory } from "@/utils/pathUtils";
-import { isWithinRoot } from "@/utils/paths";
+import { resolveOpenAction } from "@/utils/openPolicy";
+import { normalizePath } from "@/utils/paths";
 
 /**
- * Opens a file in a new tab.
+ * Find an existing tab for a file path in the current window.
+ */
+function findExistingTabForPath(windowLabel: string, filePath: string): string | null {
+  const tabs = useTabStore.getState().getTabsByWindow(windowLabel);
+  const normalizedTarget = normalizePath(filePath);
+
+  for (const tab of tabs) {
+    const doc = useDocumentStore.getState().getDocument(tab.id);
+    if (doc?.filePath && normalizePath(doc.filePath) === normalizedTarget) {
+      return tab.id;
+    }
+  }
+  return null;
+}
+
+/**
+ * Opens a file in a new tab (or activates existing tab if already open).
  *
  * @param windowLabel - The window to open the file in
  * @param path - The file path to open
  */
 async function openFileInNewTab(windowLabel: string, path: string): Promise<void> {
+  // Check for existing tab first
+  const existingTabId = findExistingTabForPath(windowLabel, path);
+  if (existingTabId) {
+    useTabStore.getState().setActiveTab(windowLabel, existingTabId);
+    return;
+  }
+
   try {
     const content = await readTextFile(path);
     const tabId = useTabStore.getState().createTab(windowLabel, path);
@@ -69,49 +91,40 @@ export function useDragDropOpen(): void {
         const paths = event.payload.paths;
         const markdownPaths = filterMarkdownPaths(paths);
 
-        // Get current workspace state to determine ownership
+        // Get current workspace state for policy decisions
         const { isWorkspaceMode, rootPath } = useWorkspaceStore.getState();
 
-        // Get current file's folder as implicit boundary when not in workspace mode
-        const activeTabId = useTabStore.getState().activeTabId[windowLabel];
-        const currentDoc = activeTabId
-          ? useDocumentStore.getState().getDocument(activeTabId)
-          : null;
-        const currentFileFolder = currentDoc?.filePath
-          ? getDirectory(currentDoc.filePath)
-          : null;
-
-        // Open each markdown file, respecting workspace/folder boundaries
+        // Open each markdown file using the policy
         await Promise.all(
           markdownPaths.map(async (path) => {
-            let shouldOpenHere = false;
+            const existingTabId = findExistingTabForPath(windowLabel, path);
 
-            if (isWorkspaceMode && rootPath) {
-              // Explicit workspace mode - use workspace boundary
-              const ownership = shouldClaimFile({
-                filePath: path,
-                isWorkspaceMode,
-                workspaceRoot: rootPath,
-              });
-              shouldOpenHere = ownership.shouldClaim;
-            } else if (currentFileFolder) {
-              // No workspace but have a file open - use file's folder as boundary
-              shouldOpenHere = isWithinRoot(currentFileFolder, path);
-            } else {
-              // No workspace, no file open - accept all drops
-              shouldOpenHere = true;
-            }
+            const decision = resolveOpenAction({
+              filePath: path,
+              workspaceRoot: rootPath,
+              isWorkspaceMode,
+              existingTabId,
+            });
 
-            if (shouldOpenHere) {
-              // File is within boundary - open in this window
-              await openFileInNewTab(windowLabel, path);
-            } else {
-              // File is outside boundary - open in a new window
-              try {
-                await invoke("open_file_in_new_window", { path });
-              } catch (error) {
-                console.error("[DragDrop] Failed to open in new window:", path, error);
-              }
+            switch (decision.action) {
+              case "activate_tab":
+                useTabStore.getState().setActiveTab(windowLabel, decision.tabId);
+                break;
+              case "create_tab":
+                await openFileInNewTab(windowLabel, path);
+                break;
+              case "open_workspace_in_new_window":
+                try {
+                  await invoke("open_workspace_in_new_window", {
+                    workspaceRoot: decision.workspaceRoot,
+                    filePath: decision.filePath,
+                  });
+                } catch (error) {
+                  console.error("[DragDrop] Failed to open workspace in new window:", path, error);
+                }
+                break;
+              case "no_op":
+                break;
             }
           })
         );
