@@ -28,7 +28,10 @@ import type {
   Break,
   PhrasingContent,
   BlockContent,
+  FootnoteReference,
+  FootnoteDefinition,
 } from "mdast";
+import type { InlineMath } from "mdast-util-math";
 
 /**
  * Convert ProseMirror document to MDAST root.
@@ -104,6 +107,14 @@ class PMToMdastConverter {
         return this.convertHardBreak();
       case "image":
         return this.convertImage(node);
+
+      // Custom nodes
+      case "math_inline":
+        return this.convertMathInline(node);
+      case "footnote_reference":
+        return this.convertFootnoteReference(node);
+      case "footnote_definition":
+        return this.convertFootnoteDefinition(node);
 
       default:
         // Unknown node type - skip with warning in dev
@@ -231,6 +242,10 @@ class PMToMdastConverter {
       } else if (child.type.name === "image") {
         const img = this.convertImage(child);
         result.push(img);
+      } else if (child.type.name === "math_inline") {
+        result.push(this.convertMathInline(child));
+      } else if (child.type.name === "footnote_reference") {
+        result.push(this.convertFootnoteReference(child));
       }
     });
 
@@ -296,5 +311,43 @@ class PMToMdastConverter {
         }
         return content;
     }
+  }
+
+  // Custom node converters
+
+  private convertMathInline(node: PMNode): InlineMath {
+    return {
+      type: "inlineMath",
+      value: node.textContent,
+    };
+  }
+
+  private convertFootnoteReference(node: PMNode): FootnoteReference {
+    return {
+      type: "footnoteReference",
+      identifier: String(node.attrs.label ?? "1"),
+      label: String(node.attrs.label ?? "1"),
+    };
+  }
+
+  private convertFootnoteDefinition(node: PMNode): FootnoteDefinition {
+    const children: BlockContent[] = [];
+    node.forEach((child) => {
+      const converted = this.convertNode(child);
+      if (converted) {
+        if (Array.isArray(converted)) {
+          children.push(...(converted as BlockContent[]));
+        } else {
+          children.push(converted as BlockContent);
+        }
+      }
+    });
+
+    return {
+      type: "footnoteDefinition",
+      identifier: String(node.attrs.label ?? "1"),
+      label: String(node.attrs.label ?? "1"),
+      children,
+    };
   }
 }

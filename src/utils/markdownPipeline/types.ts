@@ -81,6 +81,23 @@ export interface WikiEmbed {
   alias?: string;
 }
 
+// Alert block types (GitHub-style markdown alerts)
+export type AlertType = "NOTE" | "TIP" | "IMPORTANT" | "WARNING" | "CAUTION";
+
+export interface Alert {
+  type: "alert";
+  alertType: AlertType;
+  children: import("mdast").BlockContent[];
+}
+
+// Details block types (HTML <details>/<summary>)
+export interface Details {
+  type: "details";
+  open?: boolean;
+  summary?: string;
+  children: import("mdast").BlockContent[];
+}
+
 // Union type for all phrasing (inline) content
 // Note: mdast PhrasingContent already includes InlineMath via mdast-util-math augmentation
 export type PhrasingContent =
@@ -96,7 +113,9 @@ export type PhrasingContent =
 export type BlockContent =
   | import("mdast").BlockContent
   | Yaml
-  | WikiEmbed;
+  | WikiEmbed
+  | Alert
+  | Details;
 
 // Augment MDAST module for custom VMark types
 // Note: math and inlineMath are already augmented by mdast-util-math
@@ -104,6 +123,8 @@ declare module "mdast" {
   interface RootContentMap {
     yaml: Yaml;
     wikiEmbed: WikiEmbed;
+    alert: Alert;
+    details: Details;
   }
 
   interface PhrasingContentMap {

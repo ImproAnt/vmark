@@ -46,6 +46,37 @@ const testSchema = new Schema({
       inline: true,
       group: "inline",
     },
+    // Custom nodes
+    math_inline: {
+      content: "text*",
+      marks: "",
+      inline: true,
+      group: "inline",
+    },
+    footnote_reference: {
+      attrs: { label: { default: "1" } },
+      inline: true,
+      group: "inline",
+      atom: true,
+    },
+    footnote_definition: {
+      attrs: { label: { default: "1" } },
+      content: "paragraph",
+      group: "block",
+    },
+    alertBlock: {
+      attrs: { alertType: { default: "NOTE" } },
+      content: "block+",
+      group: "block",
+    },
+    detailsBlock: {
+      attrs: { open: { default: false } },
+      content: "detailsSummary block+",
+      group: "block",
+    },
+    detailsSummary: {
+      content: "inline*",
+    },
   },
   marks: {
     bold: {},
@@ -190,6 +221,42 @@ describe("mdastToProseMirror", () => {
       expect(img?.type.name).toBe("image");
       expect(img?.attrs.src).toBe("image.png");
       expect(img?.attrs.alt).toBe("alt text");
+    });
+  });
+
+  describe("math", () => {
+    it("converts inline math", () => {
+      const mdast = parseMarkdownToMdast("$E=mc^2$");
+      const doc = mdastToProseMirror(testSchema, mdast);
+
+      const para = doc.firstChild;
+      const math = para?.firstChild;
+      expect(math?.type.name).toBe("math_inline");
+      expect(math?.textContent).toBe("E=mc^2");
+    });
+  });
+
+  describe("footnotes", () => {
+    it("converts footnote references", () => {
+      // Footnote references require a matching definition to be parsed
+      const mdast = parseMarkdownToMdast(
+        "Some text[^1]\n\n[^1]: This is the footnote"
+      );
+      const doc = mdastToProseMirror(testSchema, mdast);
+
+      const para = doc.firstChild;
+      // Footnote reference is the second child after "Some text"
+      const fnRef = para?.lastChild;
+      expect(fnRef?.type.name).toBe("footnote_reference");
+      expect(fnRef?.attrs.label).toBe("1");
+    });
+
+    it("converts footnote definitions", () => {
+      const mdast = parseMarkdownToMdast("[^1]: This is the footnote");
+      const doc = mdastToProseMirror(testSchema, mdast);
+
+      expect(doc.firstChild?.type.name).toBe("footnote_definition");
+      expect(doc.firstChild?.attrs.label).toBe("1");
     });
   });
 });

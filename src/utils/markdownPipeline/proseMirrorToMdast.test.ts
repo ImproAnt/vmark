@@ -46,6 +46,24 @@ const testSchema = new Schema({
       inline: true,
       group: "inline",
     },
+    // Custom nodes
+    math_inline: {
+      content: "text*",
+      marks: "",
+      inline: true,
+      group: "inline",
+    },
+    footnote_reference: {
+      attrs: { label: { default: "1" } },
+      inline: true,
+      group: "inline",
+      atom: true,
+    },
+    footnote_definition: {
+      attrs: { label: { default: "1" } },
+      content: "paragraph",
+      group: "block",
+    },
   },
   marks: {
     bold: {},
@@ -240,6 +258,44 @@ describe("proseMirrorToMdast", () => {
       ]);
 
       expect(md).toContain("![alt text](image.png)");
+    });
+  });
+
+  describe("math", () => {
+    it("converts inline math", () => {
+      const md = pmToMarkdown([
+        testSchema.node("paragraph", null, [
+          testSchema.node("math_inline", null, [testSchema.text("E=mc^2")]),
+        ]),
+      ]);
+
+      expect(md).toContain("$E=mc^2$");
+    });
+  });
+
+  describe("footnotes", () => {
+    it("converts footnote references", () => {
+      const md = pmToMarkdown([
+        testSchema.node("paragraph", null, [
+          testSchema.text("Some text"),
+          testSchema.node("footnote_reference", { label: "1" }),
+        ]),
+      ]);
+
+      expect(md).toContain("[^1]");
+    });
+
+    it("converts footnote definitions", () => {
+      const md = pmToMarkdown([
+        testSchema.node("footnote_definition", { label: "1" }, [
+          testSchema.node("paragraph", null, [
+            testSchema.text("This is the footnote"),
+          ]),
+        ]),
+      ]);
+
+      expect(md).toContain("[^1]:");
+      expect(md).toContain("This is the footnote");
     });
   });
 });

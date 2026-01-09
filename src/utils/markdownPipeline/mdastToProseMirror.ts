@@ -24,7 +24,10 @@ import type {
   InlineCode,
   Link,
   Image,
+  FootnoteReference,
+  FootnoteDefinition,
 } from "mdast";
+import type { InlineMath } from "mdast-util-math";
 
 /**
  * Convert MDAST root to ProseMirror document.
@@ -113,6 +116,17 @@ class MdastToPMConverter {
         return this.convertImage(node);
       case "break":
         return this.convertBreak();
+
+      // Custom nodes
+      case "inlineMath":
+        return this.convertInlineMath(node as unknown as InlineMath);
+      case "footnoteReference":
+        return this.convertFootnoteReference(node as unknown as FootnoteReference);
+      case "footnoteDefinition":
+        return this.convertFootnoteDefinition(
+          node as unknown as FootnoteDefinition,
+          marks
+        );
 
       // Skip frontmatter and other non-content nodes
       case "yaml":
@@ -258,5 +272,33 @@ class MdastToPMConverter {
     const type = this.schema.nodes.hardBreak;
     if (!type) return null;
     return type.create();
+  }
+
+  // Custom node converters
+
+  private convertInlineMath(node: InlineMath): PMNode | null {
+    const type = this.schema.nodes.math_inline;
+    if (!type) return null;
+
+    const text = node.value ? this.schema.text(node.value) : null;
+    return type.create(null, text ? [text] : []);
+  }
+
+  private convertFootnoteReference(node: FootnoteReference): PMNode | null {
+    const type = this.schema.nodes.footnote_reference;
+    if (!type) return null;
+
+    return type.create({ label: node.identifier });
+  }
+
+  private convertFootnoteDefinition(
+    node: FootnoteDefinition,
+    marks: Mark[]
+  ): PMNode | null {
+    const type = this.schema.nodes.footnote_definition;
+    if (!type) return null;
+
+    const children = this.convertChildren(node.children, marks);
+    return type.create({ label: node.identifier }, children);
   }
 }
