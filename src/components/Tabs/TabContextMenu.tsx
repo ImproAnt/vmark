@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
 import { useTabStore, type Tab } from "@/stores/tabStore";
 import { closeTabWithDirtyCheck, closeTabsWithDirtyCheck } from "@/hooks/useTabOperations";
+import "./TabContextMenu.css";
 
 export interface ContextMenuPosition {
   x: number;
@@ -45,14 +45,44 @@ export function TabContextMenu({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, true);
     document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside, true);
       document.removeEventListener("keydown", handleEscape);
     };
   }, [onClose]);
+
+  // Position adjustment to keep menu in viewport
+  useEffect(() => {
+    if (!menuRef.current) return;
+
+    const menu = menuRef.current;
+    const rect = menu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let adjustedX = position.x;
+    let adjustedY = position.y;
+
+    // Adjust horizontal position
+    if (position.x + rect.width > viewportWidth - 10) {
+      adjustedX = viewportWidth - rect.width - 10;
+    }
+
+    // Adjust vertical position - show above if would overflow bottom
+    if (position.y + rect.height > viewportHeight - 10) {
+      adjustedY = position.y - rect.height - 5;
+      // If still overflows top, pin to top with margin
+      if (adjustedY < 10) {
+        adjustedY = 10;
+      }
+    }
+
+    menu.style.left = `${adjustedX}px`;
+    menu.style.top = `${adjustedY}px`;
+  }, [position]);
 
   const handleClose = useCallback(async () => {
     await closeTabWithDirtyCheck(windowLabel, tab.id);
@@ -121,30 +151,17 @@ export function TabContextMenu({
   return (
     <div
       ref={menuRef}
-      className={cn(
-        "fixed z-50 min-w-[160px] py-1",
-        "bg-[var(--bg-primary)] border border-[var(--border-primary)]",
-        "rounded-md shadow-lg"
-      )}
+      className="tab-context-menu"
       style={{ left: position.x, top: position.y }}
     >
       {menuItems.map((item, index) =>
         item.separator ? (
-          <div
-            key={`separator-${index}`}
-            className="h-px my-1 bg-[var(--border-primary)]"
-          />
+          <div key={`separator-${index}`} className="tab-context-menu-separator" />
         ) : (
           <button
             key={item.label}
             type="button"
-            className={cn(
-              "w-full px-3 py-1.5 text-left text-sm",
-              "text-[var(--text-primary)]",
-              item.disabled
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-[var(--bg-tertiary)]"
-            )}
+            className="tab-context-menu-item"
             onClick={item.action}
             disabled={item.disabled}
           >
