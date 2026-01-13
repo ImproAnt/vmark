@@ -62,6 +62,12 @@ pnpm tauri build
 | `pnpm build` | Build frontend for production |
 | `pnpm tauri build` | Build desktop application |
 
+## Documentation
+
+- `AGENTS.md`: working agreement and required practices.
+- `docs/README.md`: documentation map (start here for architecture + testing).
+- `docs/dev-reference.md`: developer reference (architecture + workflows).
+
 ## Project Structure
 
 ```
