@@ -97,6 +97,18 @@ export class SlashMenuView {
       return false;
     }
 
+    // Tab acts like ArrowDown (next item), Shift+Tab like ArrowUp (previous item)
+    if (event.key === "Tab") {
+      event.preventDefault();
+      if (event.shiftKey) {
+        const next = level.selectedIndex - 1 < 0 ? level.items.length - 1 : level.selectedIndex - 1;
+        this.setSelectedIndex(levelIndex, next);
+      } else {
+        this.setSelectedIndex(levelIndex, (level.selectedIndex + 1) % level.items.length);
+      }
+      return true;
+    }
+
     if (event.key === "ArrowRight" || event.key === "Enter") {
       const item = level.items[level.selectedIndex];
       if (!item) return false;
