@@ -117,6 +117,22 @@ Content`;
       const hasMath = result.children.some((c) => c.type === "math");
       expect(hasMath).toBe(true);
     });
+
+    it("rejects invalid inline math with trailing space", () => {
+      // $100 and $200 should NOT be parsed as math
+      // remark-math incorrectly parses this as $100 and $ being math
+      const result = parseMarkdownToMdast("$100 and $200");
+      const para = result.children[0] as Paragraph;
+      const hasMath = para.children.some((c) => c.type === "inlineMath");
+      expect(hasMath).toBe(false);
+    });
+
+    it("single dollar sign is not math", () => {
+      const result = parseMarkdownToMdast("$100");
+      const para = result.children[0] as Paragraph;
+      const hasMath = para.children.some((c) => c.type === "inlineMath");
+      expect(hasMath).toBe(false);
+    });
   });
 
   describe("wiki links", () => {

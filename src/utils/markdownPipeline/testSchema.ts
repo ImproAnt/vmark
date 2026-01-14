@@ -53,10 +53,10 @@ export const testSchema = new Schema({
       tableRole: "header",
     },
     math_inline: {
-      content: "text*",
-      marks: "",
+      attrs: { content: { default: "" } },
       inline: true,
       group: "inline",
+      atom: true,
     },
     footnote_reference: {
       attrs: { label: { default: "1" } },

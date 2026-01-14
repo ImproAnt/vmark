@@ -1,113 +1,104 @@
 import { Node } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
-import { TextSelection } from "@tiptap/pm/state";
-import type { EditorView, NodeView } from "@tiptap/pm/view";
+import type { NodeView } from "@tiptap/pm/view";
 import { loadKatex } from "./katexLoader";
 
-class MathInlineNodeView implements NodeView {
+/**
+ * NodeView for inline math rendering.
+ * Displays KaTeX-rendered math with the source stored as an attribute.
+ */
+class MathInlineAtomView implements NodeView {
   dom: HTMLElement;
-  contentDOM: HTMLElement;
-
-  private preview: HTMLElement;
-  private view: EditorView;
-  private getPos: (() => number) | false;
   private renderToken = 0;
 
-  constructor(node: PMNode, view: EditorView, getPos: (() => number) | false) {
-    this.view = view;
-    this.getPos = getPos;
-
+  constructor(node: PMNode) {
     this.dom = document.createElement("span");
     this.dom.className = "math-inline";
     this.dom.dataset.type = "math_inline";
 
-    this.preview = document.createElement("span");
-    this.preview.className = "math-inline-preview";
-    this.preview.addEventListener("click", this.handlePreviewClick);
-    this.dom.appendChild(this.preview);
-
-    this.contentDOM = document.createElement("span");
-    this.contentDOM.className = "math-inline-content";
-    this.dom.appendChild(this.contentDOM);
-
-    this.renderPreview(node.textContent || "");
+    this.renderPreview(node.attrs.content || "");
   }
-
-  private handlePreviewClick = (e: MouseEvent): void => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (this.getPos === false) return;
-    const pos = this.getPos();
-
-    const { tr } = this.view.state;
-    this.view.dispatch(tr.setSelection(TextSelection.near(tr.doc.resolve(pos + 1))));
-    this.view.focus();
-  };
 
   private renderPreview(content: string): void {
     const trimmed = content.trim();
     if (!trimmed) {
-      this.preview.textContent = "";
-      this.preview.classList.remove("math-error");
+      this.dom.textContent = "";
+      this.dom.classList.remove("math-error");
       return;
     }
 
     const currentToken = ++this.renderToken;
-    this.preview.textContent = trimmed;
-    this.preview.classList.remove("math-error");
+    this.dom.textContent = trimmed;
+    this.dom.classList.remove("math-error");
 
-    loadKatex()
-      .then((katex) => {
-        if (currentToken !== this.renderToken) return;
-        try {
-          katex.default.render(trimmed, this.preview, {
-            throwOnError: false,
-            displayMode: false,
-          });
-        } catch {
-          this.preview.textContent = trimmed;
-          this.preview.classList.add("math-error");
-        }
-      })
-      .catch(() => {
-        if (currentToken !== this.renderToken) return;
-        this.preview.textContent = trimmed;
-        this.preview.classList.add("math-error");
-      });
+    // Defer KaTeX rendering to avoid blocking during document load
+    const renderWithKatex = () => {
+      loadKatex()
+        .then((katex) => {
+          if (currentToken !== this.renderToken) return;
+          try {
+            katex.default.render(trimmed, this.dom, {
+              throwOnError: false,
+              displayMode: false,
+            });
+          } catch {
+            this.dom.textContent = trimmed;
+            this.dom.classList.add("math-error");
+          }
+        })
+        .catch(() => {
+          if (currentToken !== this.renderToken) return;
+          this.dom.textContent = trimmed;
+          this.dom.classList.add("math-error");
+        });
+    };
+
+    // Use requestIdleCallback if available, otherwise setTimeout
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(renderWithKatex, { timeout: 100 });
+    } else {
+      setTimeout(renderWithKatex, 0);
+    }
   }
 
   update(node: PMNode): boolean {
     if (node.type.name !== "math_inline") return false;
-    this.renderPreview(node.textContent || "");
+    this.renderPreview(node.attrs.content || "");
     return true;
-  }
-
-  destroy(): void {
-    this.preview.removeEventListener("click", this.handlePreviewClick);
   }
 }
 
+/**
+ * Inline math extension for Tiptap.
+ *
+ * Uses an atom approach: math content is stored as an attribute,
+ * and the node displays rendered KaTeX output.
+ */
 export const mathInlineExtension = Node.create({
   name: "math_inline",
   group: "inline",
   inline: true,
-  content: "text*",
-  marks: "",
-  atom: false,
-  code: true,
+  atom: true, // Atom node - no editable content inside
+  selectable: true,
 
-  parseHTML() {
-    return [{ tag: 'span[data-type="math_inline"]', preserveWhitespace: "full" as const }];
+  addAttributes() {
+    return {
+      content: {
+        default: "",
+        parseHTML: (element) => element.textContent || "",
+      },
+    };
   },
 
-  renderHTML() {
-    return ["span", { "data-type": "math_inline", class: "math-inline" }, 0];
+  parseHTML() {
+    return [{ tag: 'span[data-type="math_inline"]' }];
+  },
+
+  renderHTML({ node }) {
+    return ["span", { "data-type": "math_inline", class: "math-inline" }, node.attrs.content];
   },
 
   addNodeView() {
-    return ({ node, view, getPos }) => {
-      return new MathInlineNodeView(node as PMNode, view as EditorView, getPos as (() => number) | false);
-    };
+    return ({ node }) => new MathInlineAtomView(node as PMNode);
   },
 });

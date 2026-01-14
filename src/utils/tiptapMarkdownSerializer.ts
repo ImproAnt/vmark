@@ -108,7 +108,10 @@ const tiptapMarkdownSerializer = new MarkdownSerializer(
       state.renderContent(node);
     },
     math_inline: (state, node) => {
-      const content = String(node.textContent ?? "").replace(/\$/g, "\\$").replace(/\n/g, " ");
+      // Support both atom nodes (with content attribute) and text-content nodes
+      const content = String(node.attrs?.content ?? node.textContent ?? "")
+        .replace(/\$/g, "\\$")
+        .replace(/\n/g, " ");
       state.write(`$${content}$`);
     },
     paragraph: (state, node) => {

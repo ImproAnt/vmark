@@ -45,8 +45,8 @@ interface PipelineState {
   readonly useRemarkPipeline: boolean;
 }
 
-// Initial state - default to markdown-it (false) for backward compatibility
-let pipelineState: PipelineState = Object.freeze({ useRemarkPipeline: false });
+// Initial state - default to remark (true) for robust parsing
+let pipelineState: PipelineState = Object.freeze({ useRemarkPipeline: true });
 
 /**
  * Set whether to use the remark pipeline or the legacy markdown-it pipeline.

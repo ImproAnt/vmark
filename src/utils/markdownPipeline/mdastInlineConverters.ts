@@ -154,13 +154,14 @@ export function convertBreak(schema: Schema): PMNode | null {
 
 /**
  * Convert inline math node.
+ * Creates an atom node with the math content stored as an attribute.
  */
 export function convertInlineMath(schema: Schema, node: InlineMath): PMNode | null {
   const type = schema.nodes.math_inline;
   if (!type) return null;
 
-  const text = node.value ? schema.text(node.value) : null;
-  return type.create(null, text ? [text] : []);
+  // Store content as an attribute (atom node approach)
+  return type.create({ content: node.value || "" });
 }
 
 /**

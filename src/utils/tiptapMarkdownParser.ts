@@ -201,7 +201,10 @@ export function parseMarkdownToTiptapDoc(schema: Schema, markdown: string): PMNo
     highlight: { mark: "highlight" },
     subscript: { mark: "subscript" },
     superscript: { mark: "superscript" },
-    math_inline: { block: "math_inline", noCloseToken: true },
+    math_inline: {
+      node: "math_inline",
+      getAttrs: (tok) => ({ content: tok.content }),
+    },
     footnote_reference: {
       node: "footnote_reference",
       getAttrs: (tok) => ({ label: tok.attrGet("label") }),

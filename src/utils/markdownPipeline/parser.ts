@@ -7,13 +7,61 @@
  * @module utils/markdownPipeline/parser
  */
 
-import { unified } from "unified";
+import { unified, type Plugin } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkFrontmatter from "remark-frontmatter";
-import type { Root } from "mdast";
+import type { Root, Parent } from "mdast";
+import type { InlineMath } from "mdast-util-math";
 import { remarkCustomInline, remarkDetailsBlock, remarkWikiLinks } from "./plugins";
+
+/**
+ * Plugin to validate inline math and convert invalid ones back to text.
+ * Invalid inline math: content with leading or trailing whitespace.
+ * This prevents `$100 and $200` from being parsed as math.
+ */
+const remarkValidateMath: Plugin<[], Root> = function () {
+  return (tree: Root) => {
+    visitAndFixMath(tree);
+  };
+};
+
+function visitAndFixMath(node: Root | Parent): void {
+  if (!("children" in node) || !Array.isArray(node.children)) return;
+
+  // Type-safe children array using unknown to avoid strict type conflicts
+  const newChildren: unknown[] = [];
+  let modified = false;
+
+  for (const child of node.children) {
+    if (child.type === "inlineMath") {
+      const mathNode = child as InlineMath;
+      const value = mathNode.value || "";
+      // Reject math with leading/trailing whitespace
+      if (/^\s/.test(value) || /\s$/.test(value)) {
+        // Convert back to text with dollar delimiters
+        newChildren.push({
+          type: "text",
+          value: `$${value}$`,
+        });
+        modified = true;
+        continue;
+      }
+    }
+
+    // Recurse into children
+    if ("children" in child && Array.isArray((child as Parent).children)) {
+      visitAndFixMath(child as Parent);
+    }
+    newChildren.push(child);
+  }
+
+  if (modified) {
+    // Use type assertion to assign the modified children array
+    (node as { children: unknown[] }).children = newChildren;
+  }
+}
 
 /**
  * Unified processor configured for VMark markdown parsing.
@@ -35,6 +83,7 @@ const processor = unified()
     singleTilde: false,
   })
   .use(remarkMath)
+  .use(remarkValidateMath) // Reject invalid inline math (with leading/trailing spaces)
   .use(remarkFrontmatter, ["yaml"])
   .use(remarkWikiLinks)
   .use(remarkDetailsBlock)

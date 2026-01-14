@@ -121,11 +121,13 @@ export function convertImage(node: PMNode): Image {
 
 /**
  * Convert an inline math node to MDAST inline math.
+ * Uses the content attribute (atom node approach).
  */
 export function convertMathInline(node: PMNode): InlineMath {
   return {
     type: "inlineMath",
-    value: node.textContent,
+    // Use content attribute for atom nodes, fallback to textContent for backwards compatibility
+    value: (node.attrs.content as string) || node.textContent,
   };
 }
 
