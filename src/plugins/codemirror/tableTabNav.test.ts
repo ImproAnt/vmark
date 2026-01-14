@@ -7,7 +7,15 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { getCellBoundaries, goToNextCell, goToPreviousCell } from "./tableTabNav";
+import {
+  getCellBoundaries,
+  goToNextCell,
+  goToPreviousCell,
+  isSourceTableFirstBlock,
+  isSourceTableLastBlock,
+  escapeTableUp,
+  escapeTableDown,
+} from "./tableTabNav";
 
 // Track views for cleanup
 const views: EditorView[] = [];
@@ -162,5 +170,125 @@ describe("goToPreviousCell", () => {
     const line = view.state.doc.lineAt(cursor);
     // Should be in the "| A | B | C |" line
     expect(line.text).toContain("A");
+  });
+});
+
+describe("isSourceTableFirstBlock", () => {
+  it("returns true when tableStart is 0", () => {
+    expect(isSourceTableFirstBlock(0)).toBe(true);
+  });
+
+  it("returns false when tableStart is greater than 0", () => {
+    expect(isSourceTableFirstBlock(10)).toBe(false);
+    expect(isSourceTableFirstBlock(1)).toBe(false);
+  });
+});
+
+describe("isSourceTableLastBlock", () => {
+  it("returns true when table ends at document end", () => {
+    expect(isSourceTableLastBlock(50, 50)).toBe(true);
+  });
+
+  it("returns false when there is content after table", () => {
+    expect(isSourceTableLastBlock(50, 100)).toBe(false);
+  });
+});
+
+describe("escapeTableUp", () => {
+  it("inserts paragraph when at first row of first-block table", () => {
+    // Table is the first block (starts at position 0)
+    const view = createView(
+      `| ^A | B | C |
+|---|---|---|
+| 1 | 2 | 3 |`
+    );
+
+    const handled = escapeTableUp(view);
+    expect(handled).toBe(true);
+
+    // Check that a newline was inserted before
+    const doc = view.state.doc.toString();
+    expect(doc.startsWith("\n")).toBe(true);
+
+    // Cursor should be at position 0
+    expect(view.state.selection.main.from).toBe(0);
+  });
+
+  it("returns false when not at first row", () => {
+    const view = createView(
+      `| A | B | C |
+|---|---|---|
+| ^1 | 2 | 3 |`
+    );
+
+    const handled = escapeTableUp(view);
+    expect(handled).toBe(false);
+  });
+
+  it("returns false when table is not first block", () => {
+    const view = createView(
+      `Some text before
+
+| ^A | B | C |
+|---|---|---|
+| 1 | 2 | 3 |`
+    );
+
+    const handled = escapeTableUp(view);
+    expect(handled).toBe(false);
+  });
+
+  it("returns false when not in a table", () => {
+    const view = createView(`^Plain text`);
+    const handled = escapeTableUp(view);
+    expect(handled).toBe(false);
+  });
+});
+
+describe("escapeTableDown", () => {
+  it("inserts paragraph when at last row of last-block table", () => {
+    // Table is the last block
+    const view = createView(
+      `| A | B | C |
+|---|---|---|
+| ^1 | 2 | 3 |`
+    );
+
+    const handled = escapeTableDown(view);
+    expect(handled).toBe(true);
+
+    // Check that a newline was inserted after
+    const doc = view.state.doc.toString();
+    expect(doc.endsWith("\n")).toBe(true);
+  });
+
+  it("returns false when not at last row", () => {
+    const view = createView(
+      `| ^A | B | C |
+|---|---|---|
+| 1 | 2 | 3 |`
+    );
+
+    const handled = escapeTableDown(view);
+    expect(handled).toBe(false);
+  });
+
+  it("returns false when table is not last block", () => {
+    const view = createView(
+      `| A | B | C |
+|---|---|---|
+| ^1 | 2 | 3 |
+
+Some text after`
+    );
+
+    const handled = escapeTableDown(view);
+    expect(handled).toBe(false);
+  });
+
+  it("returns false when not in a table", () => {
+    const view = createView(`^Plain text`);
+    const handled = escapeTableDown(view);
+    expect(handled).toBe(false);
   });
 });

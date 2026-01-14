@@ -230,3 +230,86 @@ export const tableShiftTabKeymap: KeyBinding = guardCodeMirrorKeyBinding({
   key: "Shift-Tab",
   run: goToPreviousCell,
 });
+
+/**
+ * Check if table is the first block in the document.
+ */
+export function isSourceTableFirstBlock(tableStart: number): boolean {
+  return tableStart === 0;
+}
+
+/**
+ * Check if table is the last block in the document.
+ */
+export function isSourceTableLastBlock(tableEnd: number, docLength: number): boolean {
+  return tableEnd === docLength;
+}
+
+/**
+ * Handle ArrowUp when cursor is in the first row of a table.
+ * If table is the first block, insert a paragraph before it.
+ * @returns true if handled, false to let default behavior proceed
+ */
+export function escapeTableUp(view: EditorView): boolean {
+  const info = getSourceTableInfo(view);
+  if (!info) return false;
+
+  // Only handle when in first row (header)
+  if (info.rowIndex !== 0) return false;
+
+  // Only handle when table is first block
+  if (!isSourceTableFirstBlock(info.start)) return false;
+
+  // Insert newline before table
+  view.dispatch({
+    changes: { from: 0, to: 0, insert: "\n" },
+    selection: { anchor: 0 },
+    scrollIntoView: true,
+  });
+
+  return true;
+}
+
+/**
+ * Handle ArrowDown when cursor is in the last row of a table.
+ * If table is the last block, insert a paragraph after it.
+ * @returns true if handled, false to let default behavior proceed
+ */
+export function escapeTableDown(view: EditorView): boolean {
+  const info = getSourceTableInfo(view);
+  if (!info) return false;
+
+  // Only handle when in last row
+  if (info.rowIndex !== info.lines.length - 1) return false;
+
+  // Only handle when table is last block
+  const docLength = view.state.doc.length;
+  if (!isSourceTableLastBlock(info.end, docLength)) return false;
+
+  // Insert newline after table
+  view.dispatch({
+    changes: { from: info.end, to: info.end, insert: "\n" },
+    selection: { anchor: info.end + 1 },
+    scrollIntoView: true,
+  });
+
+  return true;
+}
+
+/**
+ * ArrowUp key handler for table escape.
+ * At first row of first-block table, inserts paragraph before.
+ */
+export const tableArrowUpKeymap: KeyBinding = guardCodeMirrorKeyBinding({
+  key: "ArrowUp",
+  run: escapeTableUp,
+});
+
+/**
+ * ArrowDown key handler for table escape.
+ * At last row of last-block table, inserts paragraph after.
+ */
+export const tableArrowDownKeymap: KeyBinding = guardCodeMirrorKeyBinding({
+  key: "ArrowDown",
+  run: escapeTableDown,
+});

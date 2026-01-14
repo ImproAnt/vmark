@@ -42,6 +42,8 @@ import {
   listContinuationKeymap,
   tableTabKeymap,
   tableShiftTabKeymap,
+  tableArrowUpKeymap,
+  tableArrowDownKeymap,
   createSmartPastePlugin,
   createSourceFocusModePlugin,
   createSourceTypewriterPlugin,
@@ -151,6 +153,9 @@ export function SourceEditor() {
           // Table Tab navigation (must be before tabEscape)
           tableTabKeymap,
           tableShiftTabKeymap,
+          // Table arrow escape (first/last block handling)
+          tableArrowUpKeymap,
+          tableArrowDownKeymap,
           // Tab to jump over closing brackets (must be before default keymap)
           tabEscapeKeymap,
           // Backspace to delete both halves of markdown pairs

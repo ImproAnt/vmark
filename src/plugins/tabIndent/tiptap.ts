@@ -4,12 +4,18 @@
  * Fallback Tab handler that inserts spaces when Tab is not handled
  * by other extensions (slash menu, auto-pair jump, list indent, etc.).
  *
+ * When cursor is in a table:
+ * - Tab: moves to next cell, or adds a row at the last cell
+ * - Shift+Tab: moves to previous cell
+ *
  * This prevents Tab from moving focus outside the editor.
  */
 
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { goToNextCell, addRowAfter } from "@tiptap/pm/tables";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { isInTable, getTableInfo } from "@/plugins/tableUI/tableActions.tiptap";
 
 const tabIndentPluginKey = new PluginKey("tabIndent");
 
@@ -38,6 +44,25 @@ export const tabIndentExtension = Extension.create({
 
               // Skip IME composition
               if (event.isComposing || event.keyCode === 229) return false;
+
+              // In table: delegate to table cell navigation
+              if (isInTable(view)) {
+                event.preventDefault();
+                const direction = event.shiftKey ? -1 : 1;
+                const moved = goToNextCell(direction)(view.state, view.dispatch, view);
+
+                // If Tab (not Shift+Tab) couldn't move, we're at last cell - add new row
+                if (!moved && direction === 1) {
+                  const info = getTableInfo(view);
+                  if (info && info.rowIndex === info.numRows - 1 && info.colIndex === info.numCols - 1) {
+                    // Add row below, then move to first cell of new row
+                    addRowAfter(view.state, view.dispatch);
+                    // After adding row, move to first cell
+                    goToNextCell(1)(view.state, view.dispatch, view);
+                  }
+                }
+                return true;
+              }
 
               const { state, dispatch } = view;
               const { selection } = state;

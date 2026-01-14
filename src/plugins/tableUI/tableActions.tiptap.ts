@@ -7,7 +7,11 @@ type SelectionConstructor = {
   near: (pos: ResolvedPos, bias?: number) => Selection;
 };
 
-function setSelectionNear(
+/**
+ * Set selection to the nearest valid position.
+ * Works around TypeScript not exposing the Selection.near static method.
+ */
+export function setSelectionNear(
   view: EditorView,
   tr: { doc: { resolve: (pos: number) => ResolvedPos }; setSelection: (sel: Selection) => unknown },
   pos: number
