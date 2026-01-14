@@ -6,7 +6,7 @@ export const htmlBlockExtension = Node.create({
   name: "html_block",
   group: "block",
   atom: true,
-  selectable: false,
+  selectable: true,
   isolating: true,
 
   addAttributes() {

@@ -7,7 +7,7 @@ export const htmlInlineExtension = Node.create({
   inline: true,
   group: "inline",
   atom: true,
-  selectable: false,
+  selectable: true,
 
   addAttributes() {
     return {
