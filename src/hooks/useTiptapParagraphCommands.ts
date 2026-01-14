@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { liftListItem, sinkListItem } from "@tiptap/pm/schema-list";
-import { isWindowFocused } from "@/hooks/useWindowFocus";
 import { ALERT_TYPES, type AlertType } from "@/plugins/alertBlock/tiptap";
 import { convertSelectionToTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
 
@@ -30,10 +30,14 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
 
       if (cancelled) return;
 
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
       for (let level = 1; level <= 6; level++) {
         if (cancelled) break;
-        const unlisten = await listen(`menu:heading-${level}`, async () => {
-          if (!(await isWindowFocused())) return;
+        const unlisten = await currentWindow.listen<string>(`menu:heading-${level}`, (event) => {
+          if (event.payload !== windowLabel) return;
           const editor = editorRef.current;
           if (!editor) return;
           editor.chain().focus().setHeading({ level: level as 1 | 2 | 3 | 4 | 5 | 6 }).run();
@@ -45,8 +49,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
         unlistenRefs.current.push(unlisten);
       }
 
-      const unlistenParagraph = await listen("menu:paragraph", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenParagraph = await currentWindow.listen<string>("menu:paragraph", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.chain().focus().setParagraph().run();
@@ -57,8 +61,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenParagraph);
 
-      const unlistenIncreaseHeading = await listen("menu:increase-heading", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenIncreaseHeading = await currentWindow.listen<string>("menu:increase-heading", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -75,8 +79,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenIncreaseHeading);
 
-      const unlistenDecreaseHeading = await listen("menu:decrease-heading", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenDecreaseHeading = await currentWindow.listen<string>("menu:decrease-heading", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -94,8 +98,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenDecreaseHeading);
 
-      const unlistenQuote = await listen("menu:quote", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenQuote = await currentWindow.listen<string>("menu:quote", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.chain().focus().toggleBlockquote().run();
@@ -106,8 +110,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenQuote);
 
-      const unlistenCodeFences = await listen("menu:code-fences", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenCodeFences = await currentWindow.listen<string>("menu:code-fences", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.chain().focus().setCodeBlock().run();
@@ -118,8 +122,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenCodeFences);
 
-      const unlistenOrderedList = await listen("menu:ordered-list", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenOrderedList = await currentWindow.listen<string>("menu:ordered-list", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.chain().focus().toggleOrderedList().run();
@@ -130,8 +134,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenOrderedList);
 
-      const unlistenUnorderedList = await listen("menu:unordered-list", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenUnorderedList = await currentWindow.listen<string>("menu:unordered-list", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.chain().focus().toggleBulletList().run();
@@ -142,8 +146,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenUnorderedList);
 
-      const unlistenTaskList = await listen("menu:task-list", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenTaskList = await currentWindow.listen<string>("menu:task-list", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         convertSelectionToTaskList(editor);
@@ -154,8 +158,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenTaskList);
 
-      const unlistenIndent = await listen("menu:indent", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenIndent = await currentWindow.listen<string>("menu:indent", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -170,8 +174,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenIndent);
 
-      const unlistenOutdent = await listen("menu:outdent", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenOutdent = await currentWindow.listen<string>("menu:outdent", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -186,8 +190,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenOutdent);
 
-      const unlistenHorizontalLine = await listen("menu:horizontal-line", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenHorizontalLine = await currentWindow.listen<string>("menu:horizontal-line", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.chain().focus().setHorizontalRule().run();
@@ -201,8 +205,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       // Info Boxes (Alert Blocks)
       for (const alertType of ALERT_TYPES) {
         if (cancelled) break;
-        const unlisten = await listen(`menu:info-${alertType.toLowerCase()}`, async () => {
-          if (!(await isWindowFocused())) return;
+        const unlisten = await currentWindow.listen<string>(`menu:info-${alertType.toLowerCase()}`, (event) => {
+          if (event.payload !== windowLabel) return;
           const editor = editorRef.current;
           if (!editor) return;
           editor.commands.insertAlertBlock(alertType as AlertType);
@@ -215,8 +219,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }
 
       // Collapsible Block (Details)
-      const unlistenCollapsible = await listen("menu:collapsible-block", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenCollapsible = await currentWindow.listen<string>("menu:collapsible-block", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.commands.insertDetailsBlock();

@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "@tauri-apps/plugin-fs";
@@ -8,7 +9,6 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { useWorkspaceStore, type WorkspaceConfig } from "@/stores/workspaceStore";
-import { isWindowFocused } from "@/hooks/useWindowFocus";
 import { getDefaultSaveFolderWithFallback } from "@/hooks/useDefaultSaveFolder";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
@@ -68,9 +68,6 @@ export function useFileOperations() {
   );
 
   const handleOpen = useCallback(async () => {
-    // Only respond if this window is focused
-    if (!(await isWindowFocused())) return;
-
     await withReentryGuard(windowLabel, "open", async () => {
       const path = await open({
         filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
@@ -113,8 +110,6 @@ export function useFileOperations() {
   }, [windowLabel, openFileInNewTab]);
 
   const handleSave = useCallback(async () => {
-    // Only respond if this window is focused
-    if (!(await isWindowFocused())) return;
     flushActiveWysiwygNow();
 
     await withReentryGuard(windowLabel, "save", async () => {
@@ -189,8 +184,6 @@ export function useFileOperations() {
   }, [windowLabel]);
 
   const handleSaveAs = useCallback(async () => {
-    // Only respond if this window is focused
-    if (!(await isWindowFocused())) return;
     flushActiveWysiwygNow();
 
     await withReentryGuard(windowLabel, "save", async () => {
@@ -218,11 +211,7 @@ export function useFileOperations() {
 
   // Handle opening file from FileExplorer - always opens in new tab
   const handleOpenFile = useCallback(
-    async (event: { payload: { path: string } }) => {
-      // Only respond if this window is focused
-      if (!(await isWindowFocused())) return;
-
-      const { path } = event.payload;
+    async (path: string) => {
 
       // Check for existing tab and activate, otherwise create new
       const existingTabId = findExistingTabForPath(windowLabel, path);
@@ -238,9 +227,7 @@ export function useFileOperations() {
   // NOTE: app:open-file handler removed - Rust now directly creates windows via
   // create_document_window instead of broadcasting events
 
-  const handleNew = useCallback(async () => {
-    // Only respond if this window is focused
-    if (!(await isWindowFocused())) return;
+  const handleNew = useCallback(() => {
     createUntitledTab(windowLabel);
   }, [windowLabel]);
 
@@ -256,28 +243,45 @@ export function useFileOperations() {
 
       if (cancelled) return;
 
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+
       // menu:new creates a new tab in this window
       // menu:new-window (handled in Rust) creates a new window
-      const unlistenNew = await listen("menu:new", handleNew);
+      const unlistenNew = await currentWindow.listen<string>("menu:new", (event) => {
+        if (event.payload !== windowLabel) return;
+        handleNew();
+      });
       if (cancelled) { unlistenNew(); return; }
       unlistenRefs.current.push(unlistenNew);
 
-      const unlistenOpen = await listen("menu:open", handleOpen);
+      const unlistenOpen = await currentWindow.listen<string>("menu:open", async (event) => {
+        if (event.payload !== windowLabel) return;
+        await handleOpen();
+      });
       if (cancelled) { unlistenOpen(); return; }
       unlistenRefs.current.push(unlistenOpen);
 
-      const unlistenSave = await listen("menu:save", handleSave);
+      const unlistenSave = await currentWindow.listen<string>("menu:save", async (event) => {
+        if (event.payload !== windowLabel) return;
+        await handleSave();
+      });
       if (cancelled) { unlistenSave(); return; }
       unlistenRefs.current.push(unlistenSave);
 
-      const unlistenSaveAs = await listen("menu:save-as", handleSaveAs);
+      const unlistenSaveAs = await currentWindow.listen<string>("menu:save-as", async (event) => {
+        if (event.payload !== windowLabel) return;
+        await handleSaveAs();
+      });
       if (cancelled) { unlistenSaveAs(); return; }
       unlistenRefs.current.push(unlistenSaveAs);
 
-      // Listen for open-file from FileExplorer
-      const unlistenOpenFile = await listen<{ path: string }>(
+      // Listen for open-file from FileExplorer (window-local event, payload contains path)
+      const unlistenOpenFile = await currentWindow.listen<{ path: string }>(
         "open-file",
-        handleOpenFile
+        async (event) => {
+          await handleOpenFile(event.payload.path);
+        }
       );
       if (cancelled) { unlistenOpenFile(); return; }
       unlistenRefs.current.push(unlistenOpenFile);
@@ -293,5 +297,5 @@ export function useFileOperations() {
       unlistenRefs.current = [];
       fns.forEach((fn) => fn());
     };
-  }, [handleNew, handleOpen, handleSave, handleSaveAs, handleOpenFile]);
+  }, [handleNew, handleOpen, handleSave, handleSaveAs, handleOpenFile, windowLabel]);
 }

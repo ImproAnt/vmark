@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useSearchStore } from "@/stores/searchStore";
-import { isWindowFocused } from "@/hooks/useWindowFocus";
 
 export function useSearchCommands() {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
@@ -16,16 +16,20 @@ export function useSearchCommands() {
 
       if (cancelled) return;
 
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
       // Find and Replace (Cmd+F) - toggle
-      const unlistenFindReplace = await listen("menu:find-replace", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenFindReplace = await currentWindow.listen<string>("menu:find-replace", (event) => {
+        if (event.payload !== windowLabel) return;
         useSearchStore.getState().toggle();
       });
       if (cancelled) { unlistenFindReplace(); return; }
       unlistenRefs.current.push(unlistenFindReplace);
 
-      const unlistenFindNext = await listen("menu:find-next", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenFindNext = await currentWindow.listen<string>("menu:find-next", (event) => {
+        if (event.payload !== windowLabel) return;
         const { isOpen } = useSearchStore.getState();
         if (!isOpen) {
           useSearchStore.getState().open();
@@ -36,8 +40,8 @@ export function useSearchCommands() {
       if (cancelled) { unlistenFindNext(); return; }
       unlistenRefs.current.push(unlistenFindNext);
 
-      const unlistenFindPrev = await listen("menu:find-prev", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenFindPrev = await currentWindow.listen<string>("menu:find-prev", (event) => {
+        if (event.payload !== windowLabel) return;
         const { isOpen } = useSearchStore.getState();
         if (!isOpen) {
           useSearchStore.getState().open();
@@ -48,8 +52,8 @@ export function useSearchCommands() {
       if (cancelled) { unlistenFindPrev(); return; }
       unlistenRefs.current.push(unlistenFindPrev);
 
-      const unlistenUseSelection = await listen("menu:use-selection-find", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenUseSelection = await currentWindow.listen<string>("menu:use-selection-find", (event) => {
+        if (event.payload !== windowLabel) return;
         // This will be implemented by the editor components
         // They will get the selection and set it as the query
         window.dispatchEvent(new CustomEvent("use-selection-for-find"));

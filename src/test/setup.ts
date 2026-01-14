@@ -44,3 +44,20 @@ vi.mock("@tauri-apps/api/window", () => ({
     isFocused: vi.fn(() => Promise.resolve(true)),
   })),
 }));
+
+vi.mock("@tauri-apps/api/webviewWindow", () => {
+  const mockUnlisten = vi.fn();
+  return {
+    getCurrentWebviewWindow: vi.fn(() => ({
+      label: "main",
+      isFocused: vi.fn(() => Promise.resolve(true)),
+      listen: vi.fn(() => Promise.resolve(mockUnlisten)),
+      emit: vi.fn(),
+      close: vi.fn(),
+      onDragDropEvent: vi.fn(() => Promise.resolve(() => {})),
+    })),
+    WebviewWindow: {
+      getByLabel: vi.fn(() => Promise.resolve(null)),
+    },
+  };
+});

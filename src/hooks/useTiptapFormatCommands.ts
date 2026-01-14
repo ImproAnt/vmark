@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open, message } from "@tauri-apps/plugin-dialog";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import type { Node as PMNode, Mark as PMMark } from "@tiptap/pm/model";
@@ -8,13 +9,11 @@ import { useTabStore } from "@/stores/tabStore";
 import { expandedToggleMarkTiptap } from "@/plugins/editorPlugins.tiptap";
 import { copyImageToAssets, insertBlockImageNode } from "@/hooks/useImageOperations";
 import { withReentryGuard } from "@/utils/reentryGuard";
-import { getWindowLabel, isWindowFocused } from "@/hooks/useWindowFocus";
 
 const INSERT_IMAGE_GUARD = "menu-insert-image";
 
-function getActiveFilePathForCurrentWindow(): string | null {
+function getActiveFilePathForWindow(windowLabel: string): string | null {
   try {
-    const windowLabel = getWindowLabel();
     const tabId = useTabStore.getState().activeTabId[windowLabel] ?? null;
     if (!tabId) return null;
     return useDocumentStore.getState().getDocument(tabId)?.filePath ?? null;
@@ -44,9 +43,13 @@ export function useTiptapFormatCommands(editor: TiptapEditor | null) {
 
       if (cancelled) return;
 
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
       const createMarkListener = async (eventName: string, markType: string) => {
-        const unlisten = await listen(eventName, async () => {
-          if (!(await isWindowFocused())) return;
+        const unlisten = await currentWindow.listen<string>(eventName, (event) => {
+          if (event.payload !== windowLabel) return;
           const editor = editorRef.current;
           if (!editor) return;
           editor.commands.focus();
@@ -59,10 +62,9 @@ export function useTiptapFormatCommands(editor: TiptapEditor | null) {
         return unlisten;
       };
 
-      const unlistenImage = await listen("menu:image", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenImage = await currentWindow.listen<string>("menu:image", async (event) => {
+        if (event.payload !== windowLabel) return;
 
-        const windowLabel = getWindowLabel();
         await withReentryGuard(windowLabel, INSERT_IMAGE_GUARD, async () => {
           const editor = editorRef.current;
           if (!editor) return;
@@ -79,7 +81,7 @@ export function useTiptapFormatCommands(editor: TiptapEditor | null) {
           const sourcePath = normalizeDialogPath(selected);
           if (!sourcePath) return;
 
-          const filePath = getActiveFilePathForCurrentWindow();
+          const filePath = getActiveFilePathForWindow(windowLabel);
 
           if (!filePath) {
             await message(
@@ -99,8 +101,8 @@ export function useTiptapFormatCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenImage);
 
-      const unlistenClearFormat = await listen("menu:clear-format", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenClearFormat = await currentWindow.listen<string>("menu:clear-format", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 

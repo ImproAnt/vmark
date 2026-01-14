@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import type { EditorView } from "@tiptap/pm/view";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { CellSelection } from "@tiptap/pm/tables";
 import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn } from "@/plugins/tableUI/tableActions.tiptap";
-import { isWindowFocused } from "@/hooks/useWindowFocus";
 
 function clearSelectedCells(view: EditorView): boolean {
   const selection = view.state.selection;
@@ -51,8 +51,12 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
 
       if (cancelled) return;
 
-      const unlistenInsertTable = await listen("menu:insert-table", async () => {
-        if (!(await isWindowFocused())) return;
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
+      const unlistenInsertTable = await currentWindow.listen<string>("menu:insert-table", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run();
@@ -63,8 +67,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenInsertTable);
 
-      const unlistenAddRowBefore = await listen("menu:add-row-before", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenAddRowBefore = await currentWindow.listen<string>("menu:add-row-before", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         addRowAbove(editor.view as unknown as EditorView);
@@ -75,8 +79,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenAddRowBefore);
 
-      const unlistenAddRowAfter = await listen("menu:add-row-after", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenAddRowAfter = await currentWindow.listen<string>("menu:add-row-after", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         addRowBelow(editor.view as unknown as EditorView);
@@ -87,8 +91,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenAddRowAfter);
 
-      const unlistenAddColBefore = await listen("menu:add-col-before", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenAddColBefore = await currentWindow.listen<string>("menu:add-col-before", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         addColLeft(editor.view as unknown as EditorView);
@@ -99,8 +103,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenAddColBefore);
 
-      const unlistenAddColAfter = await listen("menu:add-col-after", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenAddColAfter = await currentWindow.listen<string>("menu:add-col-after", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         addColRight(editor.view as unknown as EditorView);
@@ -111,8 +115,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenAddColAfter);
 
-      const unlistenDeleteCells = await listen("menu:delete-selected-cells", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenDeleteCells = await currentWindow.listen<string>("menu:delete-selected-cells", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -129,8 +133,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenDeleteCells);
 
-      const unlistenAlignLeft = await listen("menu:align-left", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenAlignLeft = await currentWindow.listen<string>("menu:align-left", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         alignColumn(editor.view as unknown as EditorView, "left", false);
@@ -141,8 +145,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenAlignLeft);
 
-      const unlistenAlignCenter = await listen("menu:align-center", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenAlignCenter = await currentWindow.listen<string>("menu:align-center", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         alignColumn(editor.view as unknown as EditorView, "center", false);
@@ -153,8 +157,8 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenAlignCenter);
 
-      const unlistenAlignRight = await listen("menu:align-right", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenAlignRight = await currentWindow.listen<string>("menu:align-right", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
         alignColumn(editor.view as unknown as EditorView, "right", false);

@@ -1,29 +1,28 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabStore } from "@/stores/tabStore";
 import { collapseNewlines, formatMarkdown, formatSelection, removeTrailingSpaces } from "@/lib/cjkFormatter";
-import { getWindowLabel, isWindowFocused } from "@/hooks/useWindowFocus";
 
-function getActiveTabIdForCurrentWindow(): string | null {
+function getActiveTabIdForWindow(windowLabel: string): string | null {
   try {
-    const windowLabel = getWindowLabel();
     return useTabStore.getState().activeTabId[windowLabel] ?? null;
   } catch {
     return null;
   }
 }
 
-function getActiveMarkdown(): string {
-  const tabId = getActiveTabIdForCurrentWindow();
+function getActiveMarkdown(windowLabel: string): string {
+  const tabId = getActiveTabIdForWindow(windowLabel);
   if (!tabId) return "";
   return useDocumentStore.getState().getDocument(tabId)?.content ?? "";
 }
 
-function setActiveMarkdown(markdown: string) {
-  const tabId = getActiveTabIdForCurrentWindow();
+function setActiveMarkdown(windowLabel: string, markdown: string) {
+  const tabId = getActiveTabIdForWindow(windowLabel);
   if (!tabId) return;
   useDocumentStore.getState().setContent(tabId, markdown);
 }
@@ -43,8 +42,12 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
 
       if (cancelled) return;
 
-      const unlistenFormatCJK = await listen("menu:format-cjk", async () => {
-        if (!(await isWindowFocused())) return;
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
+      const unlistenFormatCJK = await currentWindow.listen<string>("menu:format-cjk", (event) => {
+        if (event.payload !== windowLabel) return;
         const config = useSettingsStore.getState().cjkFormatting;
 
         const editor = editorRef.current;
@@ -61,10 +64,10 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
           return;
         }
 
-        const content = getActiveMarkdown();
+        const content = getActiveMarkdown(windowLabel);
         const formatted = formatMarkdown(content, config);
         if (formatted !== content) {
-          setActiveMarkdown(formatted);
+          setActiveMarkdown(windowLabel, formatted);
         }
       });
       if (cancelled) {
@@ -73,13 +76,13 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenFormatCJK);
 
-      const unlistenFormatFile = await listen("menu:format-cjk-file", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenFormatFile = await currentWindow.listen<string>("menu:format-cjk-file", (event) => {
+        if (event.payload !== windowLabel) return;
         const config = useSettingsStore.getState().cjkFormatting;
-        const content = getActiveMarkdown();
+        const content = getActiveMarkdown(windowLabel);
         const formatted = formatMarkdown(content, config);
         if (formatted !== content) {
-          setActiveMarkdown(formatted);
+          setActiveMarkdown(windowLabel, formatted);
         }
       });
       if (cancelled) {
@@ -88,12 +91,12 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenFormatFile);
 
-      const unlistenTrailingSpaces = await listen("menu:remove-trailing-spaces", async () => {
-        if (!(await isWindowFocused())) return;
-        const content = getActiveMarkdown();
+      const unlistenTrailingSpaces = await currentWindow.listen<string>("menu:remove-trailing-spaces", (event) => {
+        if (event.payload !== windowLabel) return;
+        const content = getActiveMarkdown(windowLabel);
         const formatted = removeTrailingSpaces(content);
         if (formatted !== content) {
-          setActiveMarkdown(formatted);
+          setActiveMarkdown(windowLabel, formatted);
         }
       });
       if (cancelled) {
@@ -102,12 +105,12 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenTrailingSpaces);
 
-      const unlistenCollapseLines = await listen("menu:collapse-blank-lines", async () => {
-        if (!(await isWindowFocused())) return;
-        const content = getActiveMarkdown();
+      const unlistenCollapseLines = await currentWindow.listen<string>("menu:collapse-blank-lines", (event) => {
+        if (event.payload !== windowLabel) return;
+        const content = getActiveMarkdown(windowLabel);
         const formatted = collapseNewlines(content);
         if (formatted !== content) {
-          setActiveMarkdown(formatted);
+          setActiveMarkdown(windowLabel, formatted);
         }
       });
       if (cancelled) {

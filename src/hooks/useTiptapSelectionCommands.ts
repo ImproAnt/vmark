@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { isWindowFocused } from "@/hooks/useWindowFocus";
 
 const MAX_LINE_SEARCH_ITERATIONS = 500;
 
@@ -64,8 +64,12 @@ export function useTiptapSelectionCommands(editor: TiptapEditor | null) {
 
       if (cancelled) return;
 
-      const unlistenSelectWord = await listen("menu:select-word", async () => {
-        if (!(await isWindowFocused())) return;
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
+      const unlistenSelectWord = await currentWindow.listen<string>("menu:select-word", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -92,8 +96,8 @@ export function useTiptapSelectionCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenSelectWord);
 
-      const unlistenSelectLine = await listen("menu:select-line", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenSelectLine = await currentWindow.listen<string>("menu:select-line", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -111,8 +115,8 @@ export function useTiptapSelectionCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenSelectLine);
 
-      const unlistenSelectBlock = await listen("menu:select-block", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenSelectBlock = await currentWindow.listen<string>("menu:select-block", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 
@@ -142,8 +146,8 @@ export function useTiptapSelectionCommands(editor: TiptapEditor | null) {
       }
       unlistenRefs.current.push(unlistenSelectBlock);
 
-      const unlistenExpandSelection = await listen("menu:expand-selection", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenExpandSelection = await currentWindow.listen<string>("menu:expand-selection", (event) => {
+        if (event.payload !== windowLabel) return;
         const editor = editorRef.current;
         if (!editor) return;
 

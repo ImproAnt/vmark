@@ -25,7 +25,11 @@ function createZustandMock<T extends object>(state: T) {
 
 // Mock Tauri APIs
 vi.mock("@tauri-apps/api/webviewWindow", () => ({
-  getCurrentWebviewWindow: () => ({ label: "main" }),
+  getCurrentWebviewWindow: () => ({
+    label: "main",
+    listen: vi.fn(() => Promise.resolve(() => {})),
+    emit: vi.fn(),
+  }),
 }));
 
 // Mock useEditorStore

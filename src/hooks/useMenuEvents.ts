@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
 import { WebviewWindow, getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "@tauri-apps/plugin-fs";
@@ -11,7 +11,6 @@ import { useTabStore } from "@/stores/tabStore";
 import { clearAllHistory } from "@/hooks/useHistoryRecovery";
 import { historyLog } from "@/utils/debug";
 import { exportToHtml, exportToPdf, savePdf, copyAsHtml } from "@/hooks/useExportOperations";
-import { isWindowFocused } from "@/hooks/useWindowFocus";
 import { getFileNameWithoutExtension } from "@/utils/pathUtils";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
@@ -33,51 +32,56 @@ export function useMenuEvents() {
 
       if (cancelled) return;
 
-      // View menu events - only respond in focused window
-      const unlistenSourceMode = await listen("menu:source-mode", async () => {
-        if (!(await isWindowFocused())) return;
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
+      // View menu events - only respond when this window is the target
+      const unlistenSourceMode = await currentWindow.listen<string>("menu:source-mode", (event) => {
+        if (event.payload !== windowLabel) return;
         flushActiveWysiwygNow();
         useEditorStore.getState().toggleSourceMode();
       });
       if (cancelled) { unlistenSourceMode(); return; }
       unlistenRefs.current.push(unlistenSourceMode);
 
-      const unlistenFocusMode = await listen("menu:focus-mode", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenFocusMode = await currentWindow.listen<string>("menu:focus-mode", (event) => {
+        if (event.payload !== windowLabel) return;
         useEditorStore.getState().toggleFocusMode();
       });
       if (cancelled) { unlistenFocusMode(); return; }
       unlistenRefs.current.push(unlistenFocusMode);
 
-      const unlistenTypewriterMode = await listen("menu:typewriter-mode", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenTypewriterMode = await currentWindow.listen<string>("menu:typewriter-mode", (event) => {
+        if (event.payload !== windowLabel) return;
         useEditorStore.getState().toggleTypewriterMode();
       });
       if (cancelled) { unlistenTypewriterMode(); return; }
       unlistenRefs.current.push(unlistenTypewriterMode);
 
-      const unlistenSidebar = await listen("menu:sidebar", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenSidebar = await currentWindow.listen<string>("menu:sidebar", (event) => {
+        if (event.payload !== windowLabel) return;
         useUIStore.getState().toggleSidebar();
       });
       if (cancelled) { unlistenSidebar(); return; }
       unlistenRefs.current.push(unlistenSidebar);
 
-      const unlistenOutline = await listen("menu:outline", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenOutline = await currentWindow.listen<string>("menu:outline", (event) => {
+        if (event.payload !== windowLabel) return;
         useUIStore.getState().toggleOutline();
       });
       if (cancelled) { unlistenOutline(); return; }
       unlistenRefs.current.push(unlistenOutline);
 
-      const unlistenWordWrap = await listen("menu:word-wrap", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenWordWrap = await currentWindow.listen<string>("menu:word-wrap", (event) => {
+        if (event.payload !== windowLabel) return;
         useEditorStore.getState().toggleWordWrap();
       });
       if (cancelled) { unlistenWordWrap(); return; }
       unlistenRefs.current.push(unlistenWordWrap);
 
-      const unlistenPreferences = await listen("menu:preferences", async () => {
+      const unlistenPreferences = await currentWindow.listen<string>("menu:preferences", async (event) => {
+        if (event.payload !== windowLabel) return;
         // Check if settings window already exists
         const existing = await WebviewWindow.getByLabel("settings");
         if (existing) {
@@ -102,16 +106,15 @@ export function useMenuEvents() {
       unlistenRefs.current.push(unlistenPreferences);
 
       // History menu events
-      const unlistenViewHistory = await listen("menu:view-history", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenViewHistory = await currentWindow.listen<string>("menu:view-history", (event) => {
+        if (event.payload !== windowLabel) return;
         useUIStore.getState().showSidebarWithView("history");
       });
       if (cancelled) { unlistenViewHistory(); return; }
       unlistenRefs.current.push(unlistenViewHistory);
 
-      const unlistenClearHistory = await listen("menu:clear-history", async () => {
-        if (!(await isWindowFocused())) return;
-        const windowLabel = getCurrentWebviewWindow().label;
+      const unlistenClearHistory = await currentWindow.listen<string>("menu:clear-history", async (event) => {
+        if (event.payload !== windowLabel) return;
 
         await withReentryGuard(windowLabel, "clear-history", async () => {
           const confirmed = await ask(
@@ -135,9 +138,8 @@ export function useMenuEvents() {
       unlistenRefs.current.push(unlistenClearHistory);
 
       // Clear Recent Files
-      const unlistenClearRecent = await listen("menu:clear-recent", async () => {
-        if (!(await isWindowFocused())) return;
-        const windowLabel = getCurrentWebviewWindow().label;
+      const unlistenClearRecent = await currentWindow.listen<string>("menu:clear-recent", async (event) => {
+        if (event.payload !== windowLabel) return;
 
         const { files } = useRecentFilesStore.getState();
         if (files.length === 0) return;
@@ -159,11 +161,11 @@ export function useMenuEvents() {
       unlistenRefs.current.push(unlistenClearRecent);
 
       // Open Recent File from menu - uses workspace boundary policy
-      const unlistenOpenRecent = await listen<number>("menu:open-recent-file", async (event) => {
-        if (!(await isWindowFocused())) return;
-        const windowLabel = getCurrentWebviewWindow().label;
+      // Payload is [index, targetWindowLabel] tuple from Rust
+      const unlistenOpenRecent = await currentWindow.listen<[number, string]>("menu:open-recent-file", async (event) => {
+        const [index, targetLabel] = event.payload;
+        if (targetLabel !== windowLabel) return;
 
-        const index = event.payload;
         const { files } = useRecentFilesStore.getState();
         if (index < 0 || index >= files.length) return;
 
@@ -225,10 +227,9 @@ export function useMenuEvents() {
       unlistenRefs.current.push(unlistenOpenRecent);
 
       // Export menu events - share single "export" guard per window
-      const unlistenExportHtml = await listen("menu:export-html", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenExportHtml = await currentWindow.listen<string>("menu:export-html", async (event) => {
+        if (event.payload !== windowLabel) return;
         flushActiveWysiwygNow();
-        const windowLabel = getCurrentWebviewWindow().label;
 
         await withReentryGuard(windowLabel, "export", async () => {
           const doc = getActiveDocument(windowLabel);
@@ -246,10 +247,9 @@ export function useMenuEvents() {
       if (cancelled) { unlistenExportHtml(); return; }
       unlistenRefs.current.push(unlistenExportHtml);
 
-      const unlistenSavePdf = await listen("menu:save-pdf", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenSavePdf = await currentWindow.listen<string>("menu:save-pdf", async (event) => {
+        if (event.payload !== windowLabel) return;
         flushActiveWysiwygNow();
-        const windowLabel = getCurrentWebviewWindow().label;
 
         await withReentryGuard(windowLabel, "export", async () => {
           const doc = getActiveDocument(windowLabel);
@@ -267,10 +267,9 @@ export function useMenuEvents() {
       if (cancelled) { unlistenSavePdf(); return; }
       unlistenRefs.current.push(unlistenSavePdf);
 
-      const unlistenExportPdf = await listen("menu:export-pdf", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenExportPdf = await currentWindow.listen<string>("menu:export-pdf", async (event) => {
+        if (event.payload !== windowLabel) return;
         flushActiveWysiwygNow();
-        const windowLabel = getCurrentWebviewWindow().label;
 
         await withReentryGuard(windowLabel, "export", async () => {
           const doc = getActiveDocument(windowLabel);
@@ -288,10 +287,9 @@ export function useMenuEvents() {
       if (cancelled) { unlistenExportPdf(); return; }
       unlistenRefs.current.push(unlistenExportPdf);
 
-      const unlistenCopyHtml = await listen("menu:copy-html", async () => {
-        if (!(await isWindowFocused())) return;
+      const unlistenCopyHtml = await currentWindow.listen<string>("menu:copy-html", async (event) => {
+        if (event.payload !== windowLabel) return;
         flushActiveWysiwygNow();
-        const windowLabel = getCurrentWebviewWindow().label;
 
         await withReentryGuard(windowLabel, "export", async () => {
           const doc = getActiveDocument(windowLabel);

@@ -4,9 +4,16 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
     let id = event.id().as_ref();
 
     // Handle recent file clicks specially - extract index and emit with payload
+    // Emit to focused window with (index, windowLabel) tuple
     if let Some(index_str) = id.strip_prefix("recent-file-") {
         if let Ok(index) = index_str.parse::<usize>() {
-            let _ = app.emit("menu:open-recent-file", index);
+            if let Some(focused) = app
+                .webview_windows()
+                .values()
+                .find(|w| w.is_focused().unwrap_or(false))
+            {
+                let _ = focused.emit("menu:open-recent-file", (index, focused.label()));
+            }
             return;
         }
     }
@@ -29,7 +36,28 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         }
     }
 
-    // All other menu events are emitted to the frontend
-    let event_name = format!("menu:{id}");
-    let _ = app.emit(&event_name, ());
+    // "close" (Cmd+W) should only affect the focused window
+    // Note: window.emit() broadcasts to all windows, so include target label in payload
+    if id == "close" {
+        if let Some(focused) = app
+            .webview_windows()
+            .values()
+            .find(|w| w.is_focused().unwrap_or(false))
+        {
+            let _ = focused.emit("menu:close", focused.label());
+        }
+        return;
+    }
+
+    // All other menu events are emitted only to the focused window
+    // Note: window.emit() broadcasts to all windows, so include target label in payload
+    // Frontend filters by checking event.payload === windowLabel
+    if let Some(focused) = app
+        .webview_windows()
+        .values()
+        .find(|w| w.is_focused().unwrap_or(false))
+    {
+        let event_name = format!("menu:{id}");
+        let _ = focused.emit(&event_name, focused.label());
+    }
 }

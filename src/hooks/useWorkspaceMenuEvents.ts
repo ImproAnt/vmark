@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { type UnlistenFn } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { readTextFile } from "@tauri-apps/plugin-fs";
@@ -26,8 +26,13 @@ export function useWorkspaceMenuEvents() {
 
       if (cancelled) return;
 
+      // Get current window for filtering - menu events include target window label
+      const currentWindow = getCurrentWebviewWindow();
+      const windowLabel = currentWindow.label;
+
       // Open Folder
-      const unlistenOpenFolder = await listen("menu:open-folder", async () => {
+      const unlistenOpenFolder = await currentWindow.listen<string>("menu:open-folder", async (event) => {
+        if (event.payload !== windowLabel) return;
         try {
           // Use JS dialog API directly - supports both files and folders
           const selected = await open({
@@ -51,8 +56,6 @@ export function useWorkspaceMenuEvents() {
 
           // Restore tabs from lastOpenTabs if available
           if (existing?.lastOpenTabs && existing.lastOpenTabs.length > 0) {
-            const windowLabel = getCurrentWebviewWindow().label;
-
             for (const filePath of existing.lastOpenTabs) {
               try {
                 const content = await readTextFile(filePath);
@@ -75,15 +78,15 @@ export function useWorkspaceMenuEvents() {
       unlistenRefs.current.push(unlistenOpenFolder);
 
       // Close Workspace - save open tabs before closing
-      const unlistenCloseWorkspace = await listen(
+      const unlistenCloseWorkspace = await currentWindow.listen<string>(
         "menu:close-workspace",
-        async () => {
+        async (event) => {
+          if (event.payload !== windowLabel) return;
           const { rootPath, config, isWorkspaceMode } =
             useWorkspaceStore.getState();
 
           if (isWorkspaceMode && rootPath && config) {
             // Save current open tabs
-            const windowLabel = getCurrentWebviewWindow().label;
             const tabs = useTabStore.getState().getTabsByWindow(windowLabel);
             const openPaths = tabs
               .filter((t) => t.filePath !== null)
