@@ -10,23 +10,26 @@
   padding-right: 0;
 }
 
-/* Resize handle - 6px hit area, invisible until hovered */
+/* Resize handle - 2px hit area, invisible until hovered/held */
 .sidebar-resize-handle {
-  width: 6px;
+  width: 2px;
   height: 100%;
   cursor: col-resize;
   background: transparent;
   position: relative;
   flex-shrink: 0;
-  margin-left: -3px;
   z-index: 10;
   transition: background-color 0.15s ease;
 }
 
 .sidebar-resize-handle:hover,
-.sidebar-resize-handle:focus {
-  background-color: var(--primary-color);
-  opacity: 0.3;
+.sidebar-resize-handle:active {
+  background-color: var(--border-color);
+}
+
+/* In source mode, match editor background so gap is invisible */
+.app-layout:has(.source-editor) .sidebar-resize-handle {
+  background-color: var(--source-mode-bg, rgba(0, 0, 0, 0.02));
 }
 
 /* Header */

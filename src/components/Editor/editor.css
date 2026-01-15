@@ -557,11 +557,21 @@
   min-height: 100%;
 }
 
-/* Source mode indicator - subtle background */
-.editor-content:has(.source-editor) {
+/* Source mode indicator - subtle background, extends left to cover resize handle gap */
+.editor-container:has(.source-editor) {
   background-color: var(--source-mode-bg, rgba(0, 0, 0, 0.02));
-  /* Remove bottom padding in source mode - CodeMirror handles its own scrolling */
+  box-shadow: -6px 0 0 0 var(--source-mode-bg, rgba(0, 0, 0, 0.02));
+}
+
+.editor-content:has(.source-editor) {
+  /* Remove left/bottom padding in source mode - background extends to edge */
+  padding-left: 0;
   padding-bottom: 0;
+}
+
+/* Add left padding inside source editor to compensate */
+.source-editor {
+  padding-left: 8px;
 }
 
 .source-editor .cm-editor {
