@@ -599,6 +599,7 @@
 
 .source-editor .cm-content {
   color: var(--text-color);
+  line-height: var(--editor-line-height, 1.6) !important;
 }
 
 .source-editor .cm-focused {
