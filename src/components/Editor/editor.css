@@ -15,7 +15,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden; /* Prevent horizontal overflow */
-  padding: 0 8px 28px; /* top: 0, left/right: 8px, bottom: statusbar height */
+  padding: 0 2em 28px; /* top: 0, left/right: 2em, bottom: statusbar height */
   transition: padding-bottom 0.15s ease-out;
   /* Flexbox centering for narrow editor width settings */
   display: flex;
@@ -571,7 +571,7 @@
 
 /* Add left padding inside source editor to compensate */
 .source-editor {
-  padding-left: 8px;
+  padding-left: 2em;
 }
 
 .source-editor .cm-editor {
