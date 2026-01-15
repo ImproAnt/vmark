@@ -16,6 +16,7 @@ interface UIState {
   activeHeadingLine: number | null; // Current heading line for outline highlight
   statusBarPinned: boolean; // When true, status bar stays visible
   universalToolbarVisible: boolean; // Ctrl+E universal formatting toolbar
+  lastFocusedToolbarIndex: number; // Last focused button index in universal toolbar
 }
 
 interface UIActions {
@@ -31,6 +32,7 @@ interface UIActions {
   setStatusBarPinned: (pinned: boolean) => void;
   toggleUniversalToolbar: () => void;
   setUniversalToolbarVisible: (visible: boolean) => void;
+  setLastFocusedToolbarIndex: (index: number) => void;
 }
 
 export const useUIStore = create<UIState & UIActions>((set) => ({
@@ -42,6 +44,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   activeHeadingLine: null,
   statusBarPinned: false,
   universalToolbarVisible: false,
+  lastFocusedToolbarIndex: 0,
 
   openSettings: () => set({ settingsOpen: true }),
   closeSettings: () => set({ settingsOpen: false }),
@@ -58,4 +61,5 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   toggleUniversalToolbar: () =>
     set((state) => ({ universalToolbarVisible: !state.universalToolbarVisible })),
   setUniversalToolbarVisible: (visible) => set({ universalToolbarVisible: visible }),
+  setLastFocusedToolbarIndex: (index) => set({ lastFocusedToolbarIndex: index }),
 }));

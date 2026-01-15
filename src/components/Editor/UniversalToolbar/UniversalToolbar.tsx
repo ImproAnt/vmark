@@ -32,8 +32,11 @@ import "./universal-toolbar.css";
 export function UniversalToolbar() {
   const visible = useUIStore((state) => state.universalToolbarVisible);
 
-  // Get flat button list for navigation
-  const buttons = useMemo(() => getAllButtons().filter((b) => b.type !== "separator"), []);
+  // Get flat button list for navigation (excludes separators)
+  const buttons = useMemo(
+    () => getAllButtons().filter((b) => b.type !== "separator"),
+    []
+  );
 
   // Action handler
   const handleAction = useCallback((action: string) => {
@@ -44,7 +47,7 @@ export function UniversalToolbar() {
   }, []);
 
   // Keyboard navigation
-  const { containerRef, handleKeyDown } = useToolbarKeyboard({
+  const { containerRef, handleKeyDown, focusedIndex } = useToolbarKeyboard({
     buttonCount: buttons.length,
     onActivate: (index) => {
       const button = buttons[index];
@@ -57,6 +60,9 @@ export function UniversalToolbar() {
   if (!visible) {
     return null;
   }
+
+  // Build flat index for roving tabindex
+  let flatIndex = 0;
 
   return (
     <div
@@ -72,14 +78,21 @@ export function UniversalToolbar() {
             // Skip separators for now
             if (button.type === "separator") return null;
 
-            // Buttons with enabledIn: ["never"] are disabled (not yet implemented)
-            const disabled = button.enabledIn.includes("never");
+            const currentIndex = flatIndex++;
+
+            // Buttons with enabledIn: ["never"] are not yet implemented
+            const notImplemented = button.enabledIn.includes("never");
+            // Context-based disable logic would go here (TODO)
+            const disabled = false;
 
             return (
               <ToolbarButton
                 key={button.id}
                 button={button}
                 disabled={disabled}
+                notImplemented={notImplemented}
+                focusIndex={currentIndex}
+                currentFocusIndex={focusedIndex}
                 onClick={() => handleAction(button.action)}
               />
             );

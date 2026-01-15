@@ -52,6 +52,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 }
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
+import { useSearchStore } from "@/stores/searchStore";
 import { useMenuEvents } from "@/hooks/useMenuEvents";
 import { useExportMenuEvents } from "@/hooks/useExportMenuEvents";
 import { useWorkspaceMenuEvents } from "@/hooks/useWorkspaceMenuEvents";
@@ -94,6 +95,7 @@ function MainLayout() {
   );
   const sidebarVisible = useUIStore((state) => state.sidebarVisible);
   const sidebarWidth = useUIStore((state) => state.sidebarWidth);
+  const findBarOpen = useSearchStore((state) => state.isOpen);
   const isDocumentWindow = useIsDocumentWindow();
   const handleResizeStart = useSidebarResize();
 
@@ -118,6 +120,7 @@ function MainLayout() {
     "app-layout",
     focusModeEnabled && "focus-mode",
     typewriterModeEnabled && "typewriter-mode",
+    findBarOpen && "find-bar-open",
   ]
     .filter(Boolean)
     .join(" ");

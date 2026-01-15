@@ -6,7 +6,7 @@
  *
  * @module components/Editor/UniversalToolbar/useToolbarKeyboard
  */
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import { useUIStore } from "@/stores/uiStore";
 import {
   getNextButtonIndex,
@@ -54,7 +54,18 @@ export function useToolbarKeyboard(
 ): UseToolbarKeyboardReturn {
   const { buttonCount, onActivate } = options;
   const containerRef = useRef<HTMLDivElement>(null);
-  const focusedIndexRef = useRef(0);
+
+  // Get initial focus from store (persisted across opens)
+  const lastFocusedIndex = useUIStore((state) => state.lastFocusedToolbarIndex);
+  const [focusedIndex, setFocusedIndexState] = useState(() =>
+    Math.min(lastFocusedIndex, buttonCount - 1)
+  );
+
+  // Persist focus index to store
+  const setFocusedIndex = useCallback((index: number) => {
+    setFocusedIndexState(index);
+    useUIStore.getState().setLastFocusedToolbarIndex(index);
+  }, []);
 
   // Close toolbar action
   const closeToolbar = useCallback(() => {
@@ -63,21 +74,21 @@ export function useToolbarKeyboard(
 
   // Move focus to a button
   const focusButton = useCallback((index: number) => {
-    focusedIndexRef.current = index;
+    setFocusedIndex(index);
     const container = containerRef.current;
     if (!container) return;
 
     const buttons = container.querySelectorAll<HTMLButtonElement>(
-      ".universal-toolbar-btn:not(:disabled)"
+      ".universal-toolbar-btn"
     );
     if (buttons[index]) {
       buttons[index].focus();
     }
-  }, []);
+  }, [setFocusedIndex]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      const current = focusedIndexRef.current;
+      const current = focusedIndex;
       const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
       const groupModifier = isMac ? e.altKey : e.ctrlKey;
 
@@ -131,29 +142,31 @@ export function useToolbarKeyboard(
           break;
       }
     },
-    [buttonCount, focusButton, onActivate, closeToolbar]
+    [buttonCount, focusButton, focusedIndex, onActivate, closeToolbar]
   );
 
-  // Focus first button when toolbar opens
+  // Focus button when toolbar opens
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Focus first enabled button
-    const firstButton = container.querySelector<HTMLButtonElement>(
-      ".universal-toolbar-btn:not(:disabled)"
-    );
-    if (firstButton) {
-      focusedIndexRef.current = 0;
-      firstButton.focus();
-    }
-  }, []);
+    // Delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      const buttons = container.querySelectorAll<HTMLButtonElement>(
+        ".universal-toolbar-btn"
+      );
+      const targetIndex = Math.min(focusedIndex, buttons.length - 1);
+      if (buttons[targetIndex]) {
+        buttons[targetIndex].focus();
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [focusedIndex]);
 
   return {
-    focusedIndex: focusedIndexRef.current,
-    setFocusedIndex: (index: number) => {
-      focusedIndexRef.current = index;
-    },
+    focusedIndex,
+    setFocusedIndex,
     containerRef: containerRef as React.RefObject<HTMLDivElement>,
     handleKeyDown,
   };

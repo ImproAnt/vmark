@@ -6,6 +6,8 @@
  * - Padding: 6px 12px
  * - Row height: 28px
  * - Z-index: 102 (above FindBar at 101, StatusBar at 100)
+ *
+ * Uses existing theme tokens from src/styles/index.css
  */
 
 .universal-toolbar {
@@ -23,11 +25,16 @@
   align-items: center;
   gap: 8px;
 
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
 
   /* Slide-up animation matching FindBar */
   animation: universal-toolbar-slide-up 0.15s ease-out;
+}
+
+/* Hide toolbar when FindBar is open to prevent overlap */
+.find-bar-open .universal-toolbar {
+  display: none;
 }
 
 @keyframes universal-toolbar-slide-up {
@@ -53,7 +60,7 @@
 .universal-toolbar-separator {
   width: 1px;
   height: 20px;
-  background-color: var(--color-border);
+  background-color: var(--border-color);
   margin: 0 4px;
 }
 
@@ -68,22 +75,22 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--color-text);
+  color: var(--text-color);
   cursor: pointer;
   transition: background-color 0.1s ease;
 }
 
 .universal-toolbar-btn:hover:not(:disabled) {
-  background-color: var(--color-hover);
+  background-color: var(--bg-tertiary);
 }
 
 .universal-toolbar-btn:active:not(:disabled) {
-  background-color: var(--color-active);
+  background-color: var(--bg-secondary);
 }
 
 .universal-toolbar-btn.active {
-  background-color: var(--color-accent-muted);
-  color: var(--color-accent);
+  background-color: var(--accent-bg);
+  color: var(--accent-primary);
 }
 
 .universal-toolbar-btn:disabled {
@@ -92,7 +99,7 @@
 }
 
 .universal-toolbar-btn:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--primary-color);
   outline-offset: 1px;
 }
 

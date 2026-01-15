@@ -12,6 +12,9 @@ interface ToolbarButtonProps {
   button: ButtonDef;
   disabled?: boolean;
   active?: boolean;
+  notImplemented?: boolean;
+  focusIndex?: number;
+  currentFocusIndex?: number;
   onClick: () => void;
 }
 
@@ -21,27 +24,42 @@ interface ToolbarButtonProps {
  * @param button - Button definition from toolbarGroups
  * @param disabled - Whether the button is disabled
  * @param active - Whether the button represents an active format
+ * @param notImplemented - Whether the button is not yet implemented
+ * @param focusIndex - This button's index in the focus order
+ * @param currentFocusIndex - The currently focused button index (for roving tabindex)
  * @param onClick - Click handler
  */
 export function ToolbarButton({
   button,
   disabled = false,
   active = false,
+  notImplemented = false,
+  focusIndex,
+  currentFocusIndex,
   onClick,
 }: ToolbarButtonProps) {
-  const title = button.shortcut
+  // Show "Not available yet" tooltip for unimplemented buttons
+  let title = button.shortcut
     ? `${button.label} (${button.shortcut})`
     : button.label;
+
+  if (notImplemented) {
+    title = `${button.label} — Not available yet`;
+  }
+
+  // Roving tabindex: only focused button has tabIndex=0
+  const tabIndex = focusIndex === currentFocusIndex ? 0 : -1;
 
   return (
     <button
       type="button"
       className={`universal-toolbar-btn${active ? " active" : ""}`}
       title={title}
-      disabled={disabled}
+      disabled={disabled || notImplemented}
       onClick={onClick}
-      tabIndex={-1} // Roving tabindex managed by parent
+      tabIndex={tabIndex}
       data-action={button.action}
+      data-focus-index={focusIndex}
     >
       <span
         className="universal-toolbar-icon"

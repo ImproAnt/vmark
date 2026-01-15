@@ -97,14 +97,19 @@ const TABLE_GROUP: ToolbarGroup = {
   label: "Table",
   buttons: [
     { id: "insert-table", type: "button", icon: icons.table, label: "Insert Table", action: "insertTable", enabledIn: ["textblock"] },
-    { id: "add-row", type: "button", icon: icons.rowBelow, label: "Add Row", action: "addRow", enabledIn: ["table"] },
+    { id: "add-row-above", type: "button", icon: icons.rowAbove, label: "Row Above", action: "addRowAbove", enabledIn: ["table"] },
+    { id: "add-row", type: "button", icon: icons.rowBelow, label: "Row Below", action: "addRow", enabledIn: ["table"] },
+    { id: "add-col-left", type: "button", icon: icons.colLeft, label: "Column Left", action: "addColLeft", enabledIn: ["table"] },
+    { id: "add-col", type: "button", icon: icons.colRight, label: "Column Right", action: "addCol", enabledIn: ["table"] },
     { id: "delete-row", type: "button", icon: icons.deleteRow, label: "Delete Row", action: "deleteRow", enabledIn: ["table"] },
-    { id: "add-col", type: "button", icon: icons.colRight, label: "Add Column", action: "addCol", enabledIn: ["table"] },
     { id: "delete-col", type: "button", icon: icons.deleteCol, label: "Delete Column", action: "deleteCol", enabledIn: ["table"] },
     { id: "delete-table", type: "button", icon: icons.deleteTable, label: "Delete Table", action: "deleteTable", enabledIn: ["table"] },
     { id: "align-left", type: "button", icon: icons.alignLeft, label: "Align Left", action: "alignLeft", enabledIn: ["table"] },
     { id: "align-center", type: "button", icon: icons.alignCenter, label: "Align Center", action: "alignCenter", enabledIn: ["table"] },
     { id: "align-right", type: "button", icon: icons.alignRight, label: "Align Right", action: "alignRight", enabledIn: ["table"] },
+    { id: "align-all-left", type: "button", icon: icons.alignAllLeft, label: "Align All Left", action: "alignAllLeft", enabledIn: ["table"] },
+    { id: "align-all-center", type: "button", icon: icons.alignAllCenter, label: "Align All Center", action: "alignAllCenter", enabledIn: ["table"] },
+    { id: "align-all-right", type: "button", icon: icons.alignAllRight, label: "Align All Right", action: "alignAllRight", enabledIn: ["table"] },
   ],
 };
 
@@ -129,6 +134,9 @@ const INSERT_GROUP: ToolbarGroup = {
     { id: "insert-blockquote", type: "button", icon: icons.blockquote, label: "Blockquote", action: "insertBlockquote", enabledIn: ["textblock"] },
     { id: "insert-divider", type: "button", icon: icons.divider, label: "Divider", action: "insertDivider", enabledIn: ["textblock"] },
     { id: "insert-math", type: "button", icon: icons.math, label: "Math Block", action: "insertMath", enabledIn: ["textblock"] },
+    { id: "insert-table-block", type: "button", icon: icons.table, label: "Table", action: "insertTableBlock", enabledIn: ["textblock"] },
+    { id: "insert-bullet-list", type: "button", icon: icons.unorderedList, label: "Bullet List", action: "insertBulletList", enabledIn: ["textblock"] },
+    { id: "insert-ordered-list", type: "button", icon: icons.orderedList, label: "Ordered List", action: "insertOrderedList", enabledIn: ["textblock"] },
   ],
 };
 

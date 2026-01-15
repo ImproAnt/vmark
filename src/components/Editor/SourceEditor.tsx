@@ -52,7 +52,6 @@ import {
 import { toggleTaskList } from "@/plugins/sourceFormatPopup/taskListActions";
 import {
   sourceFormatExtension,
-  SourceFormatPopup,
   toggleTablePopup,
   applyFormat,
 } from "@/plugins/sourceFormatPopup";
@@ -397,12 +396,7 @@ export function SourceEditor() {
     };
   }, []);
 
-  return (
-    <>
-      <div ref={containerRef} className="source-editor" />
-      <SourceFormatPopup />
-    </>
-  );
+  return <div ref={containerRef} className="source-editor" />;
 }
 
 export default SourceEditor;
