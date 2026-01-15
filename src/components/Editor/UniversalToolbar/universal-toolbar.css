@@ -80,6 +80,10 @@
   transition: background-color 0.1s ease;
 }
 
+.universal-toolbar-btn.dropdown {
+  width: 34px;
+}
+
 .universal-toolbar-btn:hover:not(:disabled) {
   background-color: var(--bg-tertiary);
 }
@@ -130,6 +134,7 @@
   color: var(--text-color);
   cursor: pointer;
   text-align: left;
+  gap: 8px;
 }
 
 .universal-toolbar-dropdown-item:hover,
@@ -143,6 +148,40 @@
   color: var(--accent-primary);
 }
 
+.universal-toolbar-dropdown-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.universal-toolbar-dropdown-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.universal-toolbar-dropdown-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.universal-toolbar-dropdown-label {
+  flex: 1;
+  font-size: 12px;
+}
+
+.universal-toolbar-dropdown-shortcut {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 /* Icon container */
 .universal-toolbar-icon {
   display: flex;
@@ -150,6 +189,21 @@
   justify-content: center;
   width: 16px;
   height: 16px;
+}
+
+.universal-toolbar-caret {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  opacity: 0.7;
+}
+
+.universal-toolbar-btn .universal-toolbar-icon + .universal-toolbar-caret svg {
+  width: 10px;
+  height: 10px;
 }
 
 .universal-toolbar-icon svg {

@@ -1,13 +1,17 @@
 import type { EditorView as TiptapEditorView } from "@tiptap/pm/view";
-import type { ToolbarButton } from "@/components/Editor/UniversalToolbar/toolbarGroups";
+import type { ToolbarGroupButton, ToolbarMenuItem } from "@/components/Editor/UniversalToolbar/toolbarGroups";
 import type { CursorContext as WysiwygContext } from "@/plugins/toolbarContext/types";
 import type { CursorContext as SourceContext } from "@/types/cursorContext";
 import type { ToolbarContext } from "./types";
 
-interface ToolbarButtonState {
+export interface ToolbarItemState {
   disabled: boolean;
   notImplemented: boolean;
   active: boolean;
+}
+
+interface ToolbarButtonState extends ToolbarItemState {
+  itemStates?: ToolbarItemState[];
 }
 
 const SOURCE_UNIMPLEMENTED_ACTIONS = new Set<string>([
@@ -48,6 +52,13 @@ function isWysiwygMarkActive(view: TiptapEditorView, markName: string): boolean 
 function isWysiwygActionActive(action: string, context: WysiwygContext | null, view: TiptapEditorView | null): boolean {
   if (!context || !view) return false;
 
+  if (action.startsWith("heading:")) {
+    const level = Number(action.split(":")[1]);
+    if (Number.isNaN(level)) return false;
+    const currentLevel = context.inHeading?.level ?? 0;
+    return currentLevel === level;
+  }
+
   switch (action) {
     case "bold":
       return isWysiwygMarkActive(view, "bold");
@@ -83,6 +94,13 @@ function isWysiwygActionActive(action: string, context: WysiwygContext | null, v
 function isSourceActionActive(action: string, context: SourceContext | null): boolean {
   if (!context) return false;
 
+  if (action.startsWith("heading:")) {
+    const level = Number(action.split(":")[1]);
+    if (Number.isNaN(level)) return false;
+    const currentLevel = context.inHeading?.level ?? 0;
+    return currentLevel === level;
+  }
+
   switch (action) {
     case "bold":
     case "italic":
@@ -107,7 +125,7 @@ function isSourceActionActive(action: string, context: SourceContext | null): bo
   }
 }
 
-function matchesEnabledContext(enabled: ToolbarButton["enabledIn"], ctx: WysiwygContext | SourceContext | null): boolean {
+function matchesEnabledContext(enabled: ToolbarMenuItem["enabledIn"], ctx: WysiwygContext | SourceContext | null): boolean {
   if (!ctx) return false;
 
   for (const rule of enabled) {
@@ -159,9 +177,22 @@ function shouldRequireSelection(action: string, surface: ToolbarContext["surface
 }
 
 export function getToolbarButtonState(
-  button: ToolbarButton,
+  button: ToolbarGroupButton,
   context: ToolbarContext
 ): ToolbarButtonState {
+  if (button.items && button.items.length > 0) {
+    const itemStates = button.items.map((item) => getToolbarItemState(item, context));
+    const anyEnabled = itemStates.some((state) => !state.disabled);
+    const anyActive = itemStates.some((state) => state.active);
+    const allNotImplemented = itemStates.every((state) => state.notImplemented);
+    return {
+      disabled: !anyEnabled || allNotImplemented,
+      notImplemented: allNotImplemented,
+      active: anyActive,
+      itemStates,
+    };
+  }
+
   const { surface } = context;
   const notImplemented = button.enabledIn.includes("never") || !isActionImplemented(button.action, surface);
 
@@ -182,6 +213,38 @@ export function getToolbarButtonState(
         (view as TiptapEditorView | null)
       )
     : isSourceActionActive(button.action, ctx as SourceContext);
+
+  return {
+    disabled: !enabled || notImplemented,
+    notImplemented,
+    active,
+  };
+}
+
+export function getToolbarItemState(
+  item: ToolbarMenuItem,
+  context: ToolbarContext
+): ToolbarItemState {
+  const { surface } = context;
+  const notImplemented = item.enabledIn.includes("never") || !isActionImplemented(item.action, surface);
+
+  const ctx = context.context;
+  const view = context.view;
+
+  if (!view || !ctx) {
+    return { disabled: true, notImplemented, active: false };
+  }
+
+  const enabled = matchesEnabledContext(item.enabledIn, ctx) &&
+    (!shouldRequireSelection(item.action, surface) || ctx.hasSelection);
+
+  const active = surface === "wysiwyg"
+    ? isWysiwygActionActive(
+        item.action,
+        ctx as WysiwygContext,
+        (view as TiptapEditorView | null)
+      )
+    : isSourceActionActive(item.action, ctx as SourceContext);
 
   return {
     disabled: !enabled || notImplemented,

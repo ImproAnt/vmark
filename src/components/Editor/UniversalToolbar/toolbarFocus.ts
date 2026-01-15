@@ -1,4 +1,4 @@
-import type { ToolbarButton } from "./toolbarGroups";
+import type { ToolbarGroupButton } from "./toolbarGroups";
 import type { ToolbarContext } from "@/plugins/toolbarActions/types";
 
 interface ToolbarButtonState {
@@ -8,14 +8,16 @@ interface ToolbarButtonState {
 }
 
 interface FocusOptions {
-  buttons: ToolbarButton[];
+  buttons: ToolbarGroupButton[];
   states: ToolbarButtonState[];
   lastFocusedIndex: number;
   context: ToolbarContext;
 }
 
-function findActionIndex(buttons: ToolbarButton[], action: string): number {
-  return buttons.findIndex((button) => button.action === action);
+function findGroupIndexForAction(buttons: ToolbarGroupButton[], action: string): number {
+  return buttons.findIndex((button) =>
+    button.items.some((item) => item.action === action)
+  );
 }
 
 function isEnabled(states: ToolbarButtonState[], index: number): boolean {
@@ -28,12 +30,12 @@ function findFirstEnabled(states: ToolbarButtonState[]): number {
 }
 
 function findFirstActiveAction(
-  buttons: ToolbarButton[],
+  buttons: ToolbarGroupButton[],
   states: ToolbarButtonState[],
   actions: string[]
 ): number | null {
   for (const action of actions) {
-    const index = findActionIndex(buttons, action);
+    const index = findGroupIndexForAction(buttons, action);
     if (isEnabled(states, index) && states[index].active) {
       return index;
     }
@@ -85,53 +87,53 @@ export function getInitialFocusIndex(options: FocusOptions): number {
   }
 
   if (context.context?.hasSelection) {
-    const boldIndex = findActionIndex(buttons, "bold");
+    const boldIndex = findGroupIndexForAction(buttons, "bold");
     if (isEnabled(states, boldIndex)) return boldIndex;
   }
 
   if (context.context?.inHeading) {
-    const headingIndex = findActionIndex(buttons, "heading");
+    const headingIndex = findGroupIndexForAction(buttons, "heading:1");
     if (isEnabled(states, headingIndex)) return headingIndex;
   }
 
   if (context.context?.inList) {
     const listAction = getListAction(context);
-    const listIndex = findActionIndex(buttons, listAction);
+    const listIndex = findGroupIndexForAction(buttons, listAction);
     if (isEnabled(states, listIndex)) return listIndex;
   }
 
   if (context.context?.inTable) {
-    const rowIndex = findActionIndex(buttons, "addRow");
+    const rowIndex = findGroupIndexForAction(buttons, "addRow");
     if (isEnabled(states, rowIndex)) return rowIndex;
 
-    const insertTableIndex = findActionIndex(buttons, "insertTable");
+    const insertTableIndex = findGroupIndexForAction(buttons, "insertTable");
     if (isEnabled(states, insertTableIndex)) return insertTableIndex;
   }
 
   if (context.context?.inBlockquote) {
-    const unnestIndex = findActionIndex(buttons, "unnestQuote");
+    const unnestIndex = findGroupIndexForAction(buttons, "unnestQuote");
     if (isEnabled(states, unnestIndex)) return unnestIndex;
 
-    const nestIndex = findActionIndex(buttons, "nestQuote");
+    const nestIndex = findGroupIndexForAction(buttons, "nestQuote");
     if (isEnabled(states, nestIndex)) return nestIndex;
   }
 
   if (context.context?.inLink) {
-    const linkIndex = findActionIndex(buttons, "link");
+    const linkIndex = findGroupIndexForAction(buttons, "link");
     if (isEnabled(states, linkIndex)) return linkIndex;
   }
 
   if (context.context?.inCodeBlock) {
-    const codeIndex = findActionIndex(buttons, "insertCodeBlock");
+    const codeIndex = findGroupIndexForAction(buttons, "insertCodeBlock");
     if (isEnabled(states, codeIndex)) return codeIndex;
   }
 
   if (isBlankBlock(context)) {
-    const headingIndex = findActionIndex(buttons, "heading");
+    const headingIndex = findGroupIndexForAction(buttons, "heading:1");
     if (isEnabled(states, headingIndex)) return headingIndex;
   }
 
-  const boldIndex = findActionIndex(buttons, "bold");
+  const boldIndex = findGroupIndexForAction(buttons, "bold");
   if (isEnabled(states, boldIndex)) return boldIndex;
 
   return findFirstEnabled(states);

@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
 import type { EditorView as CodeMirrorView } from "@codemirror/view";
 import { getToolbarButtonState } from "./enableRules";
-import type { ToolbarButton } from "@/components/Editor/UniversalToolbar/toolbarGroups";
+import type { ToolbarGroupButton, ToolbarMenuItem } from "@/components/Editor/UniversalToolbar/toolbarGroups";
 
-function createButton(action: string, enabledIn: ToolbarButton["enabledIn"]): ToolbarButton {
+function createItem(action: string, enabledIn: ToolbarMenuItem["enabledIn"]): ToolbarMenuItem {
   return {
-    id: action,
-    type: "button",
+    id: `${action}-item`,
     icon: "",
     label: action,
     action,
@@ -14,11 +13,23 @@ function createButton(action: string, enabledIn: ToolbarButton["enabledIn"]): To
   };
 }
 
+function createGroupButton(action: string, items: ToolbarMenuItem[]): ToolbarGroupButton {
+  return {
+    id: action,
+    type: "dropdown",
+    icon: "",
+    label: action,
+    action,
+    enabledIn: ["always"],
+    items,
+  };
+}
+
 describe("getToolbarButtonState (source)", () => {
   const view = {} as CodeMirrorView;
 
   it("disables inline formats without selection", () => {
-    const button = createButton("bold", ["textblock"]);
+    const button = createGroupButton("inline", [createItem("bold", ["textblock"])]);
     const state = getToolbarButtonState(button, {
       surface: "source",
       view,
@@ -52,7 +63,7 @@ describe("getToolbarButtonState (source)", () => {
   });
 
   it("enables inline formats with selection", () => {
-    const button = createButton("bold", ["textblock"]);
+    const button = createGroupButton("inline", [createItem("bold", ["textblock"])]);
     const state = getToolbarButtonState(button, {
       surface: "source",
       view,
@@ -86,7 +97,7 @@ describe("getToolbarButtonState (source)", () => {
   });
 
   it("disables unimplemented actions in source mode", () => {
-    const button = createButton("insertDetails", ["textblock"]);
+    const button = createGroupButton("expandables", [createItem("insertDetails", ["textblock"])]);
     const state = getToolbarButtonState(button, {
       surface: "source",
       view,
@@ -121,7 +132,7 @@ describe("getToolbarButtonState (source)", () => {
   });
 
   it("enables list actions when in list", () => {
-    const button = createButton("indent", ["list"]);
+    const button = createGroupButton("list", [createItem("indent", ["list"])]);
     const state = getToolbarButtonState(button, {
       surface: "source",
       view,

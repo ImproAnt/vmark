@@ -22,9 +22,7 @@ import { TOOLBAR_GROUPS } from "./toolbarGroups";
 
 // Helper to get total button count
 function getTotalButtonCount(): number {
-  return TOOLBAR_GROUPS.flatMap((g) => g.buttons).filter(
-    (b) => b.type !== "separator"
-  ).length;
+  return TOOLBAR_GROUPS.length;
 }
 
 describe("toolbarNavigation", () => {
@@ -101,16 +99,15 @@ describe("toolbarNavigation", () => {
     });
 
     it("moves within the current group for left/right navigation", () => {
-      const groupRangeSize = TOOLBAR_GROUPS[1].buttons.length;
-      const groupStart = TOOLBAR_GROUPS[0].buttons.length;
+      const groupStart = 1;
       const current = groupStart;
       const next = getNextFocusableIndexInGroup(current, isFocusable);
       expect(next).toBeGreaterThanOrEqual(groupStart);
-      expect(next).toBeLessThan(groupStart + groupRangeSize);
+      expect(next).toBeLessThanOrEqual(groupStart);
 
       const prev = getPrevFocusableIndexInGroup(current, isFocusable);
       expect(prev).toBeGreaterThanOrEqual(groupStart);
-      expect(prev).toBeLessThan(groupStart + groupRangeSize);
+      expect(prev).toBeLessThanOrEqual(groupStart);
     });
   });
 });

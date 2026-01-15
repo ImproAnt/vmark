@@ -16,12 +16,9 @@ function getGroupRanges(): { start: number; end: number }[] {
   const ranges: { start: number; end: number }[] = [];
   let offset = 0;
 
-  for (const group of TOOLBAR_GROUPS) {
-    const buttonCount = group.buttons.filter((b) => b.type !== "separator").length;
-    if (buttonCount > 0) {
-      ranges.push({ start: offset, end: offset + buttonCount - 1 });
-      offset += buttonCount;
-    }
+  for (const _group of TOOLBAR_GROUPS) {
+    ranges.push({ start: offset, end: offset });
+    offset += 1;
   }
 
   return ranges;

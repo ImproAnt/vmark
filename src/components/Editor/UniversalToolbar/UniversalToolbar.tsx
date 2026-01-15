@@ -12,15 +12,15 @@ import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSourceCursorContextStore } from "@/stores/sourceCursorContextStore";
 import { useTiptapEditorStore } from "@/stores/tiptapEditorStore";
-import { getToolbarButtonState } from "@/plugins/toolbarActions/enableRules";
+import { getToolbarButtonState, getToolbarItemState } from "@/plugins/toolbarActions/enableRules";
 import { performSourceToolbarAction, setSourceHeadingLevel } from "@/plugins/toolbarActions/sourceAdapter";
 import { performWysiwygToolbarAction, setWysiwygHeadingLevel } from "@/plugins/toolbarActions/wysiwygAdapter";
 import type { ToolbarContext } from "@/plugins/toolbarActions/types";
-import { TOOLBAR_GROUPS, getAllButtons } from "./toolbarGroups";
+import { TOOLBAR_GROUPS, getGroupButtons } from "./toolbarGroups";
 import { ToolbarButton } from "./ToolbarButton";
 import { useToolbarKeyboard } from "./useToolbarKeyboard";
 import { getInitialFocusIndex } from "./toolbarFocus";
-import { HeadingDropdown } from "./HeadingDropdown";
+import { GroupDropdown } from "./GroupDropdown";
 import "./universal-toolbar.css";
 
 /**
@@ -48,21 +48,15 @@ export function UniversalToolbar() {
   const sourceContext = useSourceCursorContextStore((state) => state.context);
   const sourceView = useSourceCursorContextStore((state) => state.editorView);
 
-  const [headingMenuOpen, setHeadingMenuOpen] = useState(false);
-  const [headingMenuAnchor, setHeadingMenuAnchor] = useState<DOMRect | null>(null);
-  const headingMenuRef = useRef<HTMLDivElement | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wasVisibleRef = useRef(false);
 
-  // Get flat button list for navigation (excludes separators)
-  const buttons = useMemo(
-    () => getAllButtons().filter((b) => b.type !== "separator"),
-    []
-  );
-  const headingButtonIndex = useMemo(
-    () => buttons.findIndex((button) => button.action === "heading"),
-    [buttons]
-  );
+  // One toolbar button per group
+  const buttons = useMemo(() => getGroupButtons(), []);
 
   const toolbarContext = useMemo<ToolbarContext>(() => {
     if (sourceMode) {
@@ -99,7 +93,35 @@ export function UniversalToolbar() {
     useTiptapEditorStore.getState().editorView?.focus();
   }, []);
 
+  const closeMenu = useCallback((restoreFocus = true) => {
+    setMenuOpen(false);
+    setOpenGroupId(null);
+    if (!restoreFocus || !useUIStore.getState().universalToolbarVisible) return;
+    requestAnimationFrame(() => {
+      if (!useUIStore.getState().universalToolbarVisible) return;
+      const currentIndex = useUIStore.getState().lastFocusedToolbarIndex;
+      const target = containerRef.current?.querySelector<HTMLButtonElement>(
+        `.universal-toolbar-btn[data-focus-index="${currentIndex}"]`
+      );
+      target?.focus();
+    });
+  }, []);
+
   const handleAction = useCallback((action: string) => {
+    if (action.startsWith("heading:")) {
+      const level = Number(action.split(":")[1]);
+      if (Number.isNaN(level)) return;
+      const isSource = useEditorStore.getState().sourceMode;
+      if (isSource) {
+        const state = useSourceCursorContextStore.getState();
+        setSourceHeadingLevel({ surface: "source", view: state.editorView, context: state.context }, level);
+      } else {
+        const state = useTiptapEditorStore.getState();
+        setWysiwygHeadingLevel({ surface: "wysiwyg", view: state.editorView, editor: state.editor, context: state.context }, level);
+      }
+      return;
+    }
+
     const isSource = useEditorStore.getState().sourceMode;
     if (isSource) {
       const state = useSourceCursorContextStore.getState();
@@ -120,35 +142,6 @@ export function UniversalToolbar() {
     });
   }, []);
 
-  const focusHeadingButton = useCallback(() => {
-    if (headingButtonIndex < 0) return;
-    const target = containerRef.current?.querySelector<HTMLButtonElement>(
-      `.universal-toolbar-btn[data-focus-index="${headingButtonIndex}"]`
-    );
-    target?.focus();
-  }, [headingButtonIndex, containerRef]);
-
-  const closeHeadingMenu = useCallback((restoreFocus = true) => {
-    setHeadingMenuOpen(false);
-    if (!restoreFocus || !useUIStore.getState().universalToolbarVisible) return;
-    requestAnimationFrame(() => {
-      if (!useUIStore.getState().universalToolbarVisible) return;
-      focusHeadingButton();
-    });
-  }, [focusHeadingButton]);
-
-  const handleHeadingSelect = useCallback((level: number) => {
-    const isSource = useEditorStore.getState().sourceMode;
-    if (isSource) {
-      const state = useSourceCursorContextStore.getState();
-      setSourceHeadingLevel({ surface: "source", view: state.editorView, context: state.context }, level);
-    } else {
-      const state = useTiptapEditorStore.getState();
-      setWysiwygHeadingLevel({ surface: "wysiwyg", view: state.editorView, editor: state.editor, context: state.context }, level);
-    }
-    closeHeadingMenu();
-  }, [closeHeadingMenu]);
-
   // Keyboard navigation
   const { handleKeyDown, focusedIndex, setFocusedIndex } = useToolbarKeyboard({
     buttonCount: buttons.length,
@@ -157,48 +150,43 @@ export function UniversalToolbar() {
     onActivate: (index) => {
       const button = buttons[index];
       if (!button) return;
-      if (button.type === "dropdown" && button.action === "heading") {
+      if (button.type === "dropdown") {
+        if (buttonStates[index]?.disabled) return;
         const rect = containerRef.current?.querySelector<HTMLButtonElement>(
           `.universal-toolbar-btn[data-focus-index="${index}"]`
         )?.getBoundingClientRect();
         if (rect) {
-          setHeadingMenuAnchor(rect);
-          setHeadingMenuOpen(true);
+          setMenuAnchor(rect);
+          setOpenGroupId(button.id);
+          setMenuOpen(true);
         }
-        return;
       }
-      handleAction(button.action);
     },
     onOpenDropdown: (index) => {
       const button = buttons[index];
       if (!button || button.type !== "dropdown") return false;
-      if (button.action === "heading") {
-        const rect = containerRef.current?.querySelector<HTMLButtonElement>(
-          `.universal-toolbar-btn[data-focus-index="${index}"]`
-        )?.getBoundingClientRect();
-        if (rect) {
-          setHeadingMenuAnchor(rect);
-          setHeadingMenuOpen(true);
-        }
-        return true;
+      if (buttonStates[index]?.disabled) return false;
+      const rect = containerRef.current?.querySelector<HTMLButtonElement>(
+        `.universal-toolbar-btn[data-focus-index="${index}"]`
+      )?.getBoundingClientRect();
+      if (rect) {
+        setMenuAnchor(rect);
+        setOpenGroupId(button.id);
+        setMenuOpen(true);
       }
-      if (button.action === "link") {
-        handleAction(button.action);
-        return true;
-      }
-      return false;
+      return true;
     },
     onClose: () => {
       useUIStore.getState().setUniversalToolbarVisible(false);
       focusActiveEditor();
-      closeHeadingMenu(false);
+      closeMenu(false);
     },
   });
 
   useEffect(() => {
     if (!visible) {
       wasVisibleRef.current = false;
-      setHeadingMenuOpen(false);
+      closeMenu(false);
       return;
     }
 
@@ -213,21 +201,21 @@ export function UniversalToolbar() {
     }
 
     wasVisibleRef.current = true;
-  }, [visible, buttons, buttonStates, lastFocusedIndex, toolbarContext, setFocusedIndex]);
+  }, [visible, buttons, buttonStates, lastFocusedIndex, toolbarContext, setFocusedIndex, closeMenu]);
 
   useEffect(() => {
-    if (!headingMenuOpen) return;
+    if (!menuOpen) return;
 
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (headingMenuRef.current && !headingMenuRef.current.contains(target)) {
-        closeHeadingMenu();
+      if (menuRef.current && !menuRef.current.contains(target)) {
+        closeMenu();
       }
     };
 
     const handleKeyDownEvent = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        closeHeadingMenu();
+        closeMenu();
       }
     };
 
@@ -238,7 +226,19 @@ export function UniversalToolbar() {
       document.removeEventListener("mousedown", handleMouseDown);
       document.removeEventListener("keydown", handleKeyDownEvent);
     };
-  }, [headingMenuOpen, closeHeadingMenu]);
+  }, [menuOpen, closeMenu]);
+
+  const openGroup = openGroupId
+    ? TOOLBAR_GROUPS.find((group) => group.id === openGroupId) ?? null
+    : null;
+
+  const dropdownItems = useMemo(() => {
+    if (!openGroup) return [];
+    return openGroup.items.map((item) => ({
+      item,
+      state: getToolbarItemState(item, toolbarContext),
+    }));
+  }, [openGroup, toolbarContext]);
 
   if (!visible) {
     return null;
@@ -246,10 +246,6 @@ export function UniversalToolbar() {
 
   // Build flat index for roving tabindex
   let flatIndex = 0;
-
-  const headingLevel = sourceMode
-    ? sourceContext?.inHeading?.level ?? 0
-    : wysiwygContext?.inHeading?.level ?? 0;
 
   return (
     <div
@@ -261,9 +257,9 @@ export function UniversalToolbar() {
     >
       {TOOLBAR_GROUPS.map((group, groupIndex) => (
         <div key={group.id} className="universal-toolbar-group">
-          {group.buttons.map((button) => {
-            // Skip separators for now
-            if (button.type === "separator") return null;
+          {(() => {
+            const button = buttons[flatIndex];
+            if (!button) return null;
 
             const currentIndex = flatIndex++;
             const state = buttonStates[currentIndex];
@@ -281,21 +277,20 @@ export function UniversalToolbar() {
                 focusIndex={currentIndex}
                 currentFocusIndex={focusedIndex}
                 onClick={() => {
-                  if (button.type === "dropdown" && button.action === "heading") {
+                  if (button.type === "dropdown") {
                     const rect = containerRef.current?.querySelector<HTMLButtonElement>(
                       `.universal-toolbar-btn[data-focus-index="${currentIndex}"]`
                     )?.getBoundingClientRect();
                     if (rect) {
-                      setHeadingMenuAnchor(rect);
-                      setHeadingMenuOpen(true);
+                      setMenuAnchor(rect);
+                      setOpenGroupId(button.id);
+                      setMenuOpen(true);
                     }
-                    return;
                   }
-                  handleAction(button.action);
                 }}
               />
             );
-          })}
+          })()}
           {/* Separator between groups (except last) */}
           {groupIndex < TOOLBAR_GROUPS.length - 1 && (
             <div className="universal-toolbar-separator" />
@@ -303,13 +298,16 @@ export function UniversalToolbar() {
         </div>
       ))}
 
-      {headingMenuOpen && headingMenuAnchor && (
-        <HeadingDropdown
-          ref={headingMenuRef}
-          anchorRect={headingMenuAnchor}
-          currentLevel={headingLevel}
-          onSelect={handleHeadingSelect}
-          onClose={() => closeHeadingMenu()}
+      {menuOpen && menuAnchor && openGroup && (
+        <GroupDropdown
+          ref={menuRef}
+          anchorRect={menuAnchor}
+          items={dropdownItems}
+          onSelect={(action) => {
+            handleAction(action);
+            closeMenu();
+          }}
+          onClose={() => closeMenu()}
         />
       )}
     </div>

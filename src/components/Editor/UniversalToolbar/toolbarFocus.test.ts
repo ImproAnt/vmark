@@ -1,24 +1,33 @@
 import { describe, it, expect } from "vitest";
-import type { ToolbarButton } from "./toolbarGroups";
+import type { ToolbarGroupButton } from "./toolbarGroups";
 import { getInitialFocusIndex } from "./toolbarFocus";
 import type { ToolbarContext } from "@/plugins/toolbarActions/types";
 
-function makeButton(action: string): ToolbarButton {
+function makeButton(action: string, itemAction: string): ToolbarGroupButton {
   return {
     id: action,
-    type: "button",
+    type: "dropdown",
     icon: "",
     label: action,
     action,
     enabledIn: ["always"],
+    items: [
+      {
+        id: `${itemAction}-item`,
+        icon: "",
+        label: itemAction,
+        action: itemAction,
+        enabledIn: ["always"],
+      },
+    ],
   };
 }
 
 const buttons = [
-  makeButton("bold"),
-  makeButton("heading"),
-  makeButton("addRow"),
-  makeButton("insertTable"),
+  makeButton("inline", "bold"),
+  makeButton("block", "heading:1"),
+  makeButton("table", "addRow"),
+  makeButton("insert", "insertTable"),
 ];
 
 function makeState(disabled = false, active = false) {

@@ -26,52 +26,49 @@ describe("toolbarGroups", () => {
       for (const group of TOOLBAR_GROUPS) {
         expect(group.id).toBeDefined();
         expect(group.label).toBeDefined();
-        expect(Array.isArray(group.buttons)).toBe(true);
-        expect(group.buttons.length).toBeGreaterThan(0);
+        expect(Array.isArray(group.items)).toBe(true);
+        expect(group.items.length).toBeGreaterThan(0);
       }
     });
 
-    it("each button has required properties", () => {
+    it("each item has required properties", () => {
       for (const group of TOOLBAR_GROUPS) {
-        for (const button of group.buttons) {
-          if (button.type === "separator") continue;
-          expect(button.id).toBeDefined();
-          expect(button.icon).toBeDefined();
-          expect(button.label).toBeDefined();
-          expect(button.action).toBeDefined();
+        for (const item of group.items) {
+          expect(item.id).toBeDefined();
+          expect(item.icon).toBeDefined();
+          expect(item.label).toBeDefined();
+          expect(item.action).toBeDefined();
         }
       }
     });
   });
 
   describe("block group", () => {
-    it("contains heading dropdown", () => {
+    it("contains heading items", () => {
       const block = TOOLBAR_GROUPS.find((g) => g.id === "block");
       expect(block).toBeDefined();
-      const heading = block!.buttons.find((b) => b.id === "heading");
-      expect(heading).toBeDefined();
-      expect(heading!.type).toBe("dropdown");
+      const headingItems = block!.items.map((item) => item.id);
+      expect(headingItems).toContain("paragraph");
+      expect(headingItems).toContain("h1");
     });
   });
 
   describe("inline group", () => {
-    it("contains all format buttons in spec order", () => {
+    it("contains all format items", () => {
       const inline = TOOLBAR_GROUPS.find((g) => g.id === "inline");
       expect(inline).toBeDefined();
 
-      const buttonIds = inline!.buttons
-        .filter((b) => b.type !== "separator")
-        .map((b) => b.id);
+      const itemIds = inline!.items.map((item) => item.id);
 
-      expect(buttonIds).toContain("bold");
-      expect(buttonIds).toContain("italic");
-      expect(buttonIds).toContain("underline");
-      expect(buttonIds).toContain("strikethrough");
-      expect(buttonIds).toContain("highlight");
-      expect(buttonIds).toContain("superscript");
-      expect(buttonIds).toContain("subscript");
-      expect(buttonIds).toContain("code");
-      expect(buttonIds).toContain("clear-formatting");
+      expect(itemIds).toContain("bold");
+      expect(itemIds).toContain("italic");
+      expect(itemIds).toContain("underline");
+      expect(itemIds).toContain("strikethrough");
+      expect(itemIds).toContain("highlight");
+      expect(itemIds).toContain("superscript");
+      expect(itemIds).toContain("subscript");
+      expect(itemIds).toContain("code");
+      expect(itemIds).toContain("clear-formatting");
     });
   });
 
@@ -80,16 +77,14 @@ describe("toolbarGroups", () => {
       const list = TOOLBAR_GROUPS.find((g) => g.id === "list");
       expect(list).toBeDefined();
 
-      const buttonIds = list!.buttons
-        .filter((b) => b.type !== "separator")
-        .map((b) => b.id);
+      const itemIds = list!.items.map((item) => item.id);
 
-      expect(buttonIds).toContain("bullet-list");
-      expect(buttonIds).toContain("ordered-list");
-      expect(buttonIds).toContain("task-list");
-      expect(buttonIds).toContain("indent");
-      expect(buttonIds).toContain("outdent");
-      expect(buttonIds).toContain("remove-list");
+      expect(itemIds).toContain("bullet-list");
+      expect(itemIds).toContain("ordered-list");
+      expect(itemIds).toContain("task-list");
+      expect(itemIds).toContain("indent");
+      expect(itemIds).toContain("outdent");
+      expect(itemIds).toContain("remove-list");
     });
   });
 
@@ -98,13 +93,11 @@ describe("toolbarGroups", () => {
       const table = TOOLBAR_GROUPS.find((g) => g.id === "table");
       expect(table).toBeDefined();
 
-      const buttonIds = table!.buttons
-        .filter((b) => b.type !== "separator")
-        .map((b) => b.id);
+      const itemIds = table!.items.map((item) => item.id);
 
-      expect(buttonIds).toContain("insert-table");
-      expect(buttonIds).toContain("add-row");
-      expect(buttonIds).toContain("add-col");
+      expect(itemIds).toContain("insert-table");
+      expect(itemIds).toContain("add-row");
+      expect(itemIds).toContain("add-col");
     });
   });
 
@@ -112,9 +105,8 @@ describe("toolbarGroups", () => {
     it("buttons have enabledIn property for context", () => {
       // All buttons should have enabledIn to define when they're active
       for (const group of TOOLBAR_GROUPS) {
-        for (const button of group.buttons) {
-          if (button.type === "separator") continue;
-          expect(button.enabledIn).toBeDefined();
+        for (const item of group.items) {
+          expect(item.enabledIn).toBeDefined();
         }
       }
     });

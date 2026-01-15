@@ -6,7 +6,8 @@
  *
  * @module components/Editor/UniversalToolbar/ToolbarButton
  */
-import type { ToolbarButton as ButtonDef } from "./toolbarGroups";
+import type { ToolbarGroupButton as ButtonDef } from "./toolbarGroups";
+import { icons } from "@/utils/icons";
 
 interface ToolbarButtonProps {
   button: ButtonDef;
@@ -39,9 +40,7 @@ export function ToolbarButton({
   onClick,
 }: ToolbarButtonProps) {
   // Show "Not available yet" tooltip for unimplemented buttons
-  let title = button.shortcut
-    ? `${button.label} (${button.shortcut})`
-    : button.label;
+  let title = button.label;
 
   if (notImplemented) {
     title = `${button.label} — Not available yet`;
@@ -53,7 +52,7 @@ export function ToolbarButton({
   return (
     <button
       type="button"
-      className={`universal-toolbar-btn${active ? " active" : ""}`}
+      className={`universal-toolbar-btn${active ? " active" : ""}${button.type === "dropdown" ? " dropdown" : ""}`}
       title={title}
       disabled={disabled || notImplemented}
       onClick={onClick}
@@ -65,6 +64,12 @@ export function ToolbarButton({
         className="universal-toolbar-icon"
         dangerouslySetInnerHTML={{ __html: button.icon }}
       />
+      {button.type === "dropdown" && (
+        <span
+          className="universal-toolbar-caret"
+          dangerouslySetInnerHTML={{ __html: icons.chevronDown }}
+        />
+      )}
     </button>
   );
 }

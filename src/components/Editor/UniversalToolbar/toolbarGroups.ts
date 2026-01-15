@@ -1,8 +1,8 @@
 /**
  * Toolbar Groups - Button Definitions
  *
- * Centralized button group definitions for the UniversalToolbar.
- * These definitions are framework-agnostic (no React/Zustand deps).
+ * Centralized group definitions for the UniversalToolbar.
+ * Each group renders as a single dropdown button with menu items.
  *
  * Groups appear in spec order:
  * Block → Inline → List → Table → Blockquote → Insert → Expandables → Link
@@ -11,7 +11,7 @@
  */
 import { icons } from "@/utils/icons";
 
-/** Contexts where a button is enabled */
+/** Contexts where a menu item is enabled */
 export type EnableContext =
   | "always"       // Always enabled
   | "selection"    // When there's a text selection
@@ -23,13 +23,9 @@ export type EnableContext =
   | "codeblock"    // Inside a code block
   | "never";       // Always disabled (not yet implemented)
 
-/** Button types */
-export type ButtonType = "button" | "dropdown" | "separator";
-
-/** Single toolbar button definition */
-export interface ToolbarButton {
+/** Menu item definition */
+export interface ToolbarMenuItem {
   id: string;
-  type: ButtonType;
   icon: string;
   label: string;
   shortcut?: string;
@@ -37,26 +33,38 @@ export interface ToolbarButton {
   enabledIn: EnableContext[];
 }
 
-/** Button group definition */
+/** Group definition */
 export interface ToolbarGroup {
   id: string;
   label: string;
-  buttons: ToolbarButton[];
+  icon: string;
+  items: ToolbarMenuItem[];
+}
+
+/** Toolbar button definition (one per group) */
+export interface ToolbarGroupButton {
+  id: string;
+  type: "dropdown";
+  icon: string;
+  label: string;
+  action: string;
+  enabledIn: EnableContext[];
+  items: ToolbarMenuItem[];
 }
 
 // --- Block Group (Heading dropdown) ---
 const BLOCK_GROUP: ToolbarGroup = {
   id: "block",
-  label: "Block",
-  buttons: [
-    {
-      id: "heading",
-      type: "dropdown",
-      icon: icons.heading,
-      label: "Heading",
-      action: "heading",
-      enabledIn: ["textblock"],
-    },
+  label: "Heading",
+  icon: icons.heading,
+  items: [
+    { id: "paragraph", icon: icons.paragraph, label: "Paragraph", action: "heading:0", enabledIn: ["textblock"] },
+    { id: "h1", icon: icons.heading1, label: "Heading 1", action: "heading:1", enabledIn: ["textblock"] },
+    { id: "h2", icon: icons.heading2, label: "Heading 2", action: "heading:2", enabledIn: ["textblock"] },
+    { id: "h3", icon: icons.heading3, label: "Heading 3", action: "heading:3", enabledIn: ["textblock"] },
+    { id: "h4", icon: icons.heading4, label: "Heading 4", action: "heading:4", enabledIn: ["textblock"] },
+    { id: "h5", icon: icons.heading5, label: "Heading 5", action: "heading:5", enabledIn: ["textblock"] },
+    { id: "h6", icon: icons.heading6, label: "Heading 6", action: "heading:6", enabledIn: ["textblock"] },
   ],
 };
 
@@ -64,16 +72,17 @@ const BLOCK_GROUP: ToolbarGroup = {
 const INLINE_GROUP: ToolbarGroup = {
   id: "inline",
   label: "Inline",
-  buttons: [
-    { id: "bold", type: "button", icon: icons.bold, label: "Bold", shortcut: "⌘B", action: "bold", enabledIn: ["selection", "textblock"] },
-    { id: "italic", type: "button", icon: icons.italic, label: "Italic", shortcut: "⌘I", action: "italic", enabledIn: ["selection", "textblock"] },
-    { id: "underline", type: "button", icon: icons.underline, label: "Underline", shortcut: "⌘U", action: "underline", enabledIn: ["selection", "textblock"] },
-    { id: "strikethrough", type: "button", icon: icons.strikethrough, label: "Strikethrough", shortcut: "⌘⇧X", action: "strikethrough", enabledIn: ["selection", "textblock"] },
-    { id: "highlight", type: "button", icon: icons.highlight, label: "Highlight", shortcut: "⌥⌘H", action: "highlight", enabledIn: ["selection", "textblock"] },
-    { id: "superscript", type: "button", icon: icons.superscript, label: "Superscript", action: "superscript", enabledIn: ["selection", "textblock"] },
-    { id: "subscript", type: "button", icon: icons.subscript, label: "Subscript", action: "subscript", enabledIn: ["selection", "textblock"] },
-    { id: "code", type: "button", icon: icons.inlineCode, label: "Inline Code", shortcut: "⌘`", action: "code", enabledIn: ["selection", "textblock"] },
-    { id: "clear-formatting", type: "button", icon: icons.clearFormatting, label: "Clear Formatting", action: "clearFormatting", enabledIn: ["selection"] },
+  icon: icons.bold,
+  items: [
+    { id: "bold", icon: icons.bold, label: "Bold", shortcut: "⌘B", action: "bold", enabledIn: ["selection", "textblock"] },
+    { id: "italic", icon: icons.italic, label: "Italic", shortcut: "⌘I", action: "italic", enabledIn: ["selection", "textblock"] },
+    { id: "underline", icon: icons.underline, label: "Underline", shortcut: "⌘U", action: "underline", enabledIn: ["selection", "textblock"] },
+    { id: "strikethrough", icon: icons.strikethrough, label: "Strikethrough", shortcut: "⌘⇧X", action: "strikethrough", enabledIn: ["selection", "textblock"] },
+    { id: "highlight", icon: icons.highlight, label: "Highlight", shortcut: "⌥⌘H", action: "highlight", enabledIn: ["selection", "textblock"] },
+    { id: "superscript", icon: icons.superscript, label: "Superscript", action: "superscript", enabledIn: ["selection", "textblock"] },
+    { id: "subscript", icon: icons.subscript, label: "Subscript", action: "subscript", enabledIn: ["selection", "textblock"] },
+    { id: "code", icon: icons.inlineCode, label: "Inline Code", shortcut: "⌘`", action: "code", enabledIn: ["selection", "textblock"] },
+    { id: "clear-formatting", icon: icons.clearFormatting, label: "Clear Formatting", action: "clearFormatting", enabledIn: ["selection"] },
   ],
 };
 
@@ -81,13 +90,14 @@ const INLINE_GROUP: ToolbarGroup = {
 const LIST_GROUP: ToolbarGroup = {
   id: "list",
   label: "List",
-  buttons: [
-    { id: "bullet-list", type: "button", icon: icons.unorderedList, label: "Bullet List", action: "bulletList", enabledIn: ["textblock", "list"] },
-    { id: "ordered-list", type: "button", icon: icons.orderedList, label: "Ordered List", action: "orderedList", enabledIn: ["textblock", "list"] },
-    { id: "task-list", type: "button", icon: icons.taskList, label: "Task List", action: "taskList", enabledIn: ["textblock", "list"] },
-    { id: "indent", type: "button", icon: icons.indent, label: "Indent", action: "indent", enabledIn: ["list"] },
-    { id: "outdent", type: "button", icon: icons.outdent, label: "Outdent", action: "outdent", enabledIn: ["list"] },
-    { id: "remove-list", type: "button", icon: icons.removeList, label: "Remove List", action: "removeList", enabledIn: ["list"] },
+  icon: icons.unorderedList,
+  items: [
+    { id: "bullet-list", icon: icons.unorderedList, label: "Bullet List", action: "bulletList", enabledIn: ["textblock", "list"] },
+    { id: "ordered-list", icon: icons.orderedList, label: "Ordered List", action: "orderedList", enabledIn: ["textblock", "list"] },
+    { id: "task-list", icon: icons.taskList, label: "Task List", action: "taskList", enabledIn: ["textblock", "list"] },
+    { id: "indent", icon: icons.indent, label: "Indent", action: "indent", enabledIn: ["list"] },
+    { id: "outdent", icon: icons.outdent, label: "Outdent", action: "outdent", enabledIn: ["list"] },
+    { id: "remove-list", icon: icons.removeList, label: "Remove List", action: "removeList", enabledIn: ["list"] },
   ],
 };
 
@@ -95,21 +105,22 @@ const LIST_GROUP: ToolbarGroup = {
 const TABLE_GROUP: ToolbarGroup = {
   id: "table",
   label: "Table",
-  buttons: [
-    { id: "insert-table", type: "button", icon: icons.table, label: "Insert Table", action: "insertTable", enabledIn: ["textblock"] },
-    { id: "add-row-above", type: "button", icon: icons.rowAbove, label: "Row Above", action: "addRowAbove", enabledIn: ["table"] },
-    { id: "add-row", type: "button", icon: icons.rowBelow, label: "Row Below", action: "addRow", enabledIn: ["table"] },
-    { id: "add-col-left", type: "button", icon: icons.colLeft, label: "Column Left", action: "addColLeft", enabledIn: ["table"] },
-    { id: "add-col", type: "button", icon: icons.colRight, label: "Column Right", action: "addCol", enabledIn: ["table"] },
-    { id: "delete-row", type: "button", icon: icons.deleteRow, label: "Delete Row", action: "deleteRow", enabledIn: ["table"] },
-    { id: "delete-col", type: "button", icon: icons.deleteCol, label: "Delete Column", action: "deleteCol", enabledIn: ["table"] },
-    { id: "delete-table", type: "button", icon: icons.deleteTable, label: "Delete Table", action: "deleteTable", enabledIn: ["table"] },
-    { id: "align-left", type: "button", icon: icons.alignLeft, label: "Align Left", action: "alignLeft", enabledIn: ["table"] },
-    { id: "align-center", type: "button", icon: icons.alignCenter, label: "Align Center", action: "alignCenter", enabledIn: ["table"] },
-    { id: "align-right", type: "button", icon: icons.alignRight, label: "Align Right", action: "alignRight", enabledIn: ["table"] },
-    { id: "align-all-left", type: "button", icon: icons.alignAllLeft, label: "Align All Left", action: "alignAllLeft", enabledIn: ["table"] },
-    { id: "align-all-center", type: "button", icon: icons.alignAllCenter, label: "Align All Center", action: "alignAllCenter", enabledIn: ["table"] },
-    { id: "align-all-right", type: "button", icon: icons.alignAllRight, label: "Align All Right", action: "alignAllRight", enabledIn: ["table"] },
+  icon: icons.table,
+  items: [
+    { id: "insert-table", icon: icons.table, label: "Insert Table", action: "insertTable", enabledIn: ["textblock"] },
+    { id: "add-row-above", icon: icons.rowAbove, label: "Row Above", action: "addRowAbove", enabledIn: ["table"] },
+    { id: "add-row", icon: icons.rowBelow, label: "Row Below", action: "addRow", enabledIn: ["table"] },
+    { id: "add-col-left", icon: icons.colLeft, label: "Column Left", action: "addColLeft", enabledIn: ["table"] },
+    { id: "add-col", icon: icons.colRight, label: "Column Right", action: "addCol", enabledIn: ["table"] },
+    { id: "delete-row", icon: icons.deleteRow, label: "Delete Row", action: "deleteRow", enabledIn: ["table"] },
+    { id: "delete-col", icon: icons.deleteCol, label: "Delete Column", action: "deleteCol", enabledIn: ["table"] },
+    { id: "delete-table", icon: icons.deleteTable, label: "Delete Table", action: "deleteTable", enabledIn: ["table"] },
+    { id: "align-left", icon: icons.alignLeft, label: "Align Left", action: "alignLeft", enabledIn: ["table"] },
+    { id: "align-center", icon: icons.alignCenter, label: "Align Center", action: "alignCenter", enabledIn: ["table"] },
+    { id: "align-right", icon: icons.alignRight, label: "Align Right", action: "alignRight", enabledIn: ["table"] },
+    { id: "align-all-left", icon: icons.alignAllLeft, label: "Align All Left", action: "alignAllLeft", enabledIn: ["table"] },
+    { id: "align-all-center", icon: icons.alignAllCenter, label: "Align All Center", action: "alignAllCenter", enabledIn: ["table"] },
+    { id: "align-all-right", icon: icons.alignAllRight, label: "Align All Right", action: "alignAllRight", enabledIn: ["table"] },
   ],
 };
 
@@ -117,10 +128,11 @@ const TABLE_GROUP: ToolbarGroup = {
 const BLOCKQUOTE_GROUP: ToolbarGroup = {
   id: "blockquote",
   label: "Blockquote",
-  buttons: [
-    { id: "nest-quote", type: "button", icon: icons.nestQuote, label: "Nest Deeper", action: "nestQuote", enabledIn: ["blockquote"] },
-    { id: "unnest-quote", type: "button", icon: icons.unnestQuote, label: "Unnest", action: "unnestQuote", enabledIn: ["blockquote"] },
-    { id: "remove-quote", type: "button", icon: icons.removeQuote, label: "Remove Blockquote", action: "removeQuote", enabledIn: ["blockquote"] },
+  icon: icons.blockquote,
+  items: [
+    { id: "nest-quote", icon: icons.nestQuote, label: "Nest Deeper", action: "nestQuote", enabledIn: ["blockquote"] },
+    { id: "unnest-quote", icon: icons.unnestQuote, label: "Unnest", action: "unnestQuote", enabledIn: ["blockquote"] },
+    { id: "remove-quote", icon: icons.removeQuote, label: "Remove Blockquote", action: "removeQuote", enabledIn: ["blockquote"] },
   ],
 };
 
@@ -128,16 +140,17 @@ const BLOCKQUOTE_GROUP: ToolbarGroup = {
 const INSERT_GROUP: ToolbarGroup = {
   id: "insert",
   label: "Insert",
-  buttons: [
-    { id: "insert-image", type: "button", icon: icons.image, label: "Image", action: "insertImage", enabledIn: ["textblock"] },
-    { id: "insert-code-block", type: "button", icon: icons.codeBlock, label: "Code Block", action: "insertCodeBlock", enabledIn: ["textblock"] },
-    { id: "insert-blockquote", type: "button", icon: icons.blockquote, label: "Blockquote", action: "insertBlockquote", enabledIn: ["textblock"] },
-    { id: "insert-divider", type: "button", icon: icons.divider, label: "Divider", action: "insertDivider", enabledIn: ["textblock"] },
-    { id: "insert-math", type: "button", icon: icons.math, label: "Math Block", action: "insertMath", enabledIn: ["textblock"] },
-    { id: "insert-table-block", type: "button", icon: icons.table, label: "Table", action: "insertTableBlock", enabledIn: ["textblock"] },
-    { id: "insert-bullet-list", type: "button", icon: icons.unorderedList, label: "Bullet List", action: "insertBulletList", enabledIn: ["textblock"] },
-    { id: "insert-ordered-list", type: "button", icon: icons.orderedList, label: "Ordered List", action: "insertOrderedList", enabledIn: ["textblock"] },
-    { id: "insert-task-list", type: "button", icon: icons.taskList, label: "Task List", action: "insertTaskList", enabledIn: ["textblock"] },
+  icon: icons.codeBlock,
+  items: [
+    { id: "insert-image", icon: icons.image, label: "Image", action: "insertImage", enabledIn: ["textblock"] },
+    { id: "insert-code-block", icon: icons.codeBlock, label: "Code Block", action: "insertCodeBlock", enabledIn: ["textblock"] },
+    { id: "insert-blockquote", icon: icons.blockquote, label: "Blockquote", action: "insertBlockquote", enabledIn: ["textblock"] },
+    { id: "insert-divider", icon: icons.divider, label: "Divider", action: "insertDivider", enabledIn: ["textblock"] },
+    { id: "insert-math", icon: icons.math, label: "Math Block", action: "insertMath", enabledIn: ["textblock"] },
+    { id: "insert-table-block", icon: icons.table, label: "Table", action: "insertTableBlock", enabledIn: ["textblock"] },
+    { id: "insert-bullet-list", icon: icons.unorderedList, label: "Bullet List", action: "insertBulletList", enabledIn: ["textblock"] },
+    { id: "insert-ordered-list", icon: icons.orderedList, label: "Ordered List", action: "insertOrderedList", enabledIn: ["textblock"] },
+    { id: "insert-task-list", icon: icons.taskList, label: "Task List", action: "insertTaskList", enabledIn: ["textblock"] },
   ],
 };
 
@@ -145,10 +158,11 @@ const INSERT_GROUP: ToolbarGroup = {
 const EXPANDABLES_GROUP: ToolbarGroup = {
   id: "expandables",
   label: "Expandables",
-  buttons: [
-    { id: "insert-details", type: "button", icon: icons.details, label: "Details", action: "insertDetails", enabledIn: ["textblock"] },
-    { id: "insert-alert", type: "button", icon: icons.alertIcon, label: "Alert", action: "insertAlert", enabledIn: ["textblock"] },
-    { id: "insert-footnote", type: "button", icon: icons.footnote, label: "Footnote", action: "insertFootnote", enabledIn: ["textblock"] },
+  icon: icons.details,
+  items: [
+    { id: "insert-details", icon: icons.details, label: "Details", action: "insertDetails", enabledIn: ["textblock"] },
+    { id: "insert-alert", icon: icons.alertIcon, label: "Alert", action: "insertAlert", enabledIn: ["textblock"] },
+    { id: "insert-footnote", icon: icons.footnote, label: "Footnote", action: "insertFootnote", enabledIn: ["textblock"] },
   ],
 };
 
@@ -156,8 +170,9 @@ const EXPANDABLES_GROUP: ToolbarGroup = {
 const LINK_GROUP: ToolbarGroup = {
   id: "link",
   label: "Link",
-  buttons: [
-    { id: "link", type: "dropdown", icon: icons.link, label: "Link", shortcut: "⌘K", action: "link", enabledIn: ["selection", "textblock"] },
+  icon: icons.link,
+  items: [
+    { id: "link", icon: icons.link, label: "Link", shortcut: "⌘K", action: "link", enabledIn: ["selection", "textblock"] },
   ],
 };
 
@@ -174,15 +189,23 @@ export const TOOLBAR_GROUPS: ToolbarGroup[] = [
 ];
 
 /**
- * Get a flat list of all buttons across all groups.
+ * Get a flat list of all menu items across groups.
  */
-export function getAllButtons(): ToolbarButton[] {
-  return TOOLBAR_GROUPS.flatMap((g) => g.buttons);
+export function getAllItems(): ToolbarMenuItem[] {
+  return TOOLBAR_GROUPS.flatMap((group) => group.items);
 }
 
 /**
- * Find a button by ID.
+ * Get the toolbar buttons (one per group).
  */
-export function getButtonById(id: string): ToolbarButton | undefined {
-  return getAllButtons().find((b) => b.id === id);
+export function getGroupButtons(): ToolbarGroupButton[] {
+  return TOOLBAR_GROUPS.map((group) => ({
+    id: group.id,
+    type: "dropdown",
+    icon: group.icon,
+    label: group.label,
+    action: group.id,
+    enabledIn: ["always"],
+    items: group.items,
+  }));
 }

@@ -5,5 +5,5 @@
  */
 export { UniversalToolbar } from "./UniversalToolbar";
 export { ToolbarButton } from "./ToolbarButton";
-export { TOOLBAR_GROUPS, getAllButtons, getButtonById } from "./toolbarGroups";
-export type { ToolbarGroup, ToolbarButton as ToolbarButtonDef, EnableContext } from "./toolbarGroups";
+export { TOOLBAR_GROUPS, getAllItems, getGroupButtons } from "./toolbarGroups";
+export type { ToolbarGroup, ToolbarGroupButton as ToolbarButtonDef, ToolbarMenuItem, EnableContext } from "./toolbarGroups";
