@@ -14,7 +14,7 @@ import { HistoryView } from "./HistoryView";
 import "./Sidebar.css";
 
 // Constants
-const TRAFFIC_LIGHTS_SPACER_PX = 38;
+const TRAFFIC_LIGHTS_SPACER_PX = 28;
 
 // View mode configuration - single source of truth
 const VIEW_CONFIG: Record<SidebarViewMode, {
@@ -43,7 +43,7 @@ export function Sidebar() {
   return (
     <div className="sidebar" style={{ width: "100%", height: "100%" }}>
       {/* Spacer for traffic lights area */}
-      <div style={{ height: TRAFFIC_LIGHTS_SPACER_PX, flexShrink: 0 }} />
+      <div style={{ height: TRAFFIC_LIGHTS_SPACER_PX, flexShrink: 0, padding: 0, margin: 0 }} />
       <div className="sidebar-header">
         <button
           className="sidebar-btn"
