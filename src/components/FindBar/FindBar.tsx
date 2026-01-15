@@ -8,6 +8,7 @@ import {
   Regex,
   X,
   Replace,
+  ReplaceAll,
 } from "lucide-react";
 import { useSearchStore } from "@/stores/searchStore";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -197,20 +198,22 @@ export function FindBar() {
         {/* Replace Actions */}
         <div className="find-bar-replace-actions">
           <button
-            className="find-bar-btn"
+            className="find-bar-icon-btn"
             onClick={handleReplaceCurrent}
             disabled={matchCount === 0}
             title="Replace"
+            aria-label="Replace"
           >
-            Replace
+            <Replace size={16} />
           </button>
           <button
-            className="find-bar-btn"
+            className="find-bar-icon-btn"
             onClick={handleReplaceAll}
             disabled={matchCount === 0}
             title="Replace All"
+            aria-label="Replace All"
           >
-            All
+            <ReplaceAll size={16} />
           </button>
         </div>
 

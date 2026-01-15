@@ -255,7 +255,7 @@ export function UniversalToolbar() {
       className="universal-toolbar"
       onKeyDown={handleKeyDown}
     >
-      {TOOLBAR_GROUPS.map((group, groupIndex) => (
+      {TOOLBAR_GROUPS.map((group, _groupIndex) => (
         <div key={group.id} className="universal-toolbar-group">
           {(() => {
             const button = buttons[flatIndex];
