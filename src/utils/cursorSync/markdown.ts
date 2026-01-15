@@ -26,8 +26,13 @@ export function detectNodeType(line: string): NodeType {
     return "blockquote";
   }
 
-  // Table row (contains |)
-  if (/^\|/.test(trimmed) || /\|/.test(line)) {
+  // Table row: must start with | or have | with content on both sides
+  // More strict than just "contains |" to avoid false positives in code/text
+  if (/^\|/.test(trimmed) && /\|$/.test(trimmed)) {
+    return "table_cell";
+  }
+  // Also match table rows that start with | but don't end with |
+  if (/^\|[^|]+\|/.test(trimmed)) {
     return "table_cell";
   }
 
@@ -120,71 +125,31 @@ export function stripInlineFormatting(text: string): string {
 }
 
 /**
- * Check if a line is content (not blank or HTML-only)
- */
-export function isContentLine(line: string): boolean {
-  const trimmed = line.trim();
-  if (trimmed === "") return false;
-  // Skip HTML-only lines like <br />, <br/>, <hr />, etc.
-  if (/^<\/?[a-z][^>]*\/?>$/i.test(trimmed)) return false;
-  // Skip code fence lines
-  if (/^```/.test(trimmed) || /^~~~/.test(trimmed)) return false;
-  // Skip table separator lines
-  if (/^\|?[\s:-]+\|[\s:-|]+$/.test(trimmed)) return false;
-  return true;
-}
-
-/**
- * Check if currently inside a code block
+ * Check if currently inside a code block.
+ * Tracks fence type (``` vs ~~~) to avoid toggling on different markers.
  */
 export function isInsideCodeBlock(lines: string[], lineIndex: number): boolean {
-  let insideCodeBlock = false;
+  let currentFence: string | null = null; // null = outside, "```" or "~~~" = inside
+
   for (let i = 0; i <= lineIndex && i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (/^```/.test(trimmed) || /^~~~/.test(trimmed)) {
-      insideCodeBlock = !insideCodeBlock;
-    }
-  }
-  return insideCodeBlock;
-}
 
-/**
- * Get content line index (skipping blank lines, fences, etc.)
- */
-export function getContentLineIndex(
-  lines: string[],
-  lineNumber: number
-): number {
-  let contentLineIndex = 0;
-  for (let i = 0; i < lineNumber && i < lines.length; i++) {
-    if (isContentLine(lines[i])) {
-      contentLineIndex++;
-    }
-  }
-  return contentLineIndex;
-}
-
-/**
- * Get line number from content line index
- */
-export function getLineFromContentIndex(
-  lines: string[],
-  contentLineIndex: number
-): number {
-  let count = 0;
-  for (let i = 0; i < lines.length; i++) {
-    if (isContentLine(lines[i])) {
-      if (count === contentLineIndex) {
-        return i;
+    if (currentFence === null) {
+      // Not inside a code block - check for opening fence
+      if (/^```/.test(trimmed)) {
+        currentFence = "```";
+      } else if (/^~~~/.test(trimmed)) {
+        currentFence = "~~~";
       }
-      count++;
+    } else {
+      // Inside a code block - only close on matching fence type
+      if (currentFence === "```" && /^```/.test(trimmed)) {
+        currentFence = null;
+      } else if (currentFence === "~~~" && /^~~~/.test(trimmed)) {
+        currentFence = null;
+      }
     }
   }
-  // Return last content line if not found
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (isContentLine(lines[i])) {
-      return i;
-    }
-  }
-  return 0;
+
+  return currentFence !== null;
 }

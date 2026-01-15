@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const linkReferenceExtension = Node.create({
   name: "link_reference",
@@ -9,6 +10,7 @@ export const linkReferenceExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       identifier: { default: "" },
       label: { default: null },
       referenceType: { default: "full" },

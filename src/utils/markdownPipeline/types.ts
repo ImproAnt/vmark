@@ -38,10 +38,17 @@ export type {
 // Re-export math types from mdast-util-math (added by remark-math)
 export type { Math, InlineMath } from "mdast-util-math";
 
+// Position type from unist (optional on all AST nodes)
+export interface UnistPosition {
+  start: { line: number; column: number; offset?: number };
+  end: { line: number; column: number; offset?: number };
+}
+
 // Frontmatter type from remark-frontmatter
 export interface Yaml {
   type: "yaml";
   value: string;
+  position?: UnistPosition;
 }
 
 // Custom inline types for VMark
@@ -70,6 +77,7 @@ export interface WikiLink {
   type: "wikiLink";
   value: string; // The page name
   alias?: string; // Optional display alias
+  position?: UnistPosition;
   data?: {
     permalink?: string;
     hProperties?: Record<string, unknown>;
@@ -80,6 +88,7 @@ export interface WikiEmbed {
   type: "wikiEmbed";
   value: string; // The embedded resource path
   alias?: string;
+  position?: UnistPosition;
 }
 
 // Alert block types (GitHub-style markdown alerts)
@@ -89,6 +98,7 @@ export interface Alert {
   type: "alert";
   alertType: AlertType;
   children: import("mdast").BlockContent[];
+  position?: UnistPosition;
 }
 
 // Details block types (HTML <details>/<summary>)
@@ -97,6 +107,7 @@ export interface Details {
   open?: boolean;
   summary?: string;
   children: import("mdast").BlockContent[];
+  position?: UnistPosition;
 }
 
 // Union type for all phrasing (inline) content

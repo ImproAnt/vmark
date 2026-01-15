@@ -2,6 +2,7 @@ import { InputRule, Node } from "@tiptap/core";
 import type { EditorState } from "@tiptap/pm/state";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { TextSelection } from "@tiptap/pm/state";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 const detailsClickPluginKey = new PluginKey("detailsClick");
 const DETAILS_INPUT_PATTERN = /^(?:<details>|:::details)\s*$/i;
@@ -31,6 +32,12 @@ export const detailsSummaryExtension = Node.create({
   defining: true,
   selectable: false,
 
+  addAttributes() {
+    return {
+      ...sourceLineAttr,
+    };
+  },
+
   parseHTML() {
     return [{ tag: "summary" }];
   },
@@ -48,6 +55,7 @@ export const detailsBlockExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       open: {
         default: false,
         parseHTML: (element) => (element as HTMLElement).hasAttribute("open"),
@@ -113,7 +121,9 @@ export const detailsBlockExtension = Node.create({
         key: detailsClickPluginKey,
         props: {
           handleClick(view, pos, event) {
-            const target = event.target as HTMLElement;
+            // event.target can be a Text node, which doesn't have closest()
+            const target = event.target;
+            if (!(target instanceof Element)) return false;
             const summary = target.closest("summary, .details-summary");
             if (!summary) return false;
 

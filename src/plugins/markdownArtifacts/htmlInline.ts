@@ -1,6 +1,7 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import type { NodeView } from "@tiptap/pm/view";
 import { createHtmlInlineNodeView } from "./HtmlNodeView";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const htmlInlineExtension = Node.create({
   name: "html_inline",
@@ -11,6 +12,7 @@ export const htmlInlineExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       value: { default: "" },
     };
   },

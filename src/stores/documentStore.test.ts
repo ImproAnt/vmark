@@ -165,7 +165,7 @@ describe("documentStore", () => {
       initDocument(WINDOW_LABEL);
 
       const cursorInfo = {
-        contentLineIndex: 5,
+        sourceLine: 5,
         wordAtCursor: "test",
         offsetInWord: 2,
         nodeType: "paragraph" as const,
@@ -184,7 +184,7 @@ describe("documentStore", () => {
 
       initDocument(WINDOW_LABEL);
       setCursorInfo(WINDOW_LABEL, {
-        contentLineIndex: 0,
+        sourceLine: 1,
         wordAtCursor: "",
         offsetInWord: 0,
         nodeType: "paragraph",

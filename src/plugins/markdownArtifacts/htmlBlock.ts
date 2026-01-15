@@ -1,6 +1,7 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import type { NodeView } from "@tiptap/pm/view";
 import { createHtmlBlockNodeView } from "./HtmlNodeView";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const htmlBlockExtension = Node.create({
   name: "html_block",
@@ -11,6 +12,7 @@ export const htmlBlockExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       value: { default: "" },
     };
   },

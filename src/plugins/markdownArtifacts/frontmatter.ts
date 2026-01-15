@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const frontmatterExtension = Node.create({
   name: "frontmatter",
@@ -9,6 +10,7 @@ export const frontmatterExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       value: { default: "" },
     };
   },

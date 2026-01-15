@@ -2,6 +2,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import type { EditorState } from "@tiptap/pm/state";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 const taskCheckboxPluginKey = new PluginKey("taskCheckbox");
 
@@ -62,6 +63,7 @@ export const taskListItemExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       checked: {
         default: null,
         parseHTML: (element) => {

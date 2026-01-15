@@ -19,6 +19,7 @@ import type {
   List,
   ListItem,
   Table,
+  ThematicBreak,
   Html,
   Text,
   Strong,
@@ -156,7 +157,7 @@ class MdastToPMConverter {
       case "listItem":
         return convertListItem(this.context, node as ListItem, marks);
       case "thematicBreak":
-        return convertThematicBreak(this.context);
+        return convertThematicBreak(this.context, node as ThematicBreak);
       case "table":
         return convertTable(this.context, node as Table, marks);
       case "math":

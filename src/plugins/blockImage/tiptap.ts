@@ -2,6 +2,7 @@ import "./block-image.css";
 import { Node } from "@tiptap/core";
 import type { NodeView } from "@tiptap/pm/view";
 import { BlockImageNodeView } from "./BlockImageNodeView";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const blockImageExtension = Node.create({
   name: "block_image",
@@ -15,6 +16,7 @@ export const blockImageExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       src: { default: "" },
       alt: { default: "" },
       title: { default: "" },

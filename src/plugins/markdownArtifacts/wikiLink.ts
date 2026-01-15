@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const wikiLinkExtension = Node.create({
   name: "wikiLink",
@@ -9,6 +10,7 @@ export const wikiLinkExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       value: { default: "" },
       alias: { default: null },
     };

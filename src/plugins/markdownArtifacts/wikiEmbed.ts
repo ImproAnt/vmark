@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const wikiEmbedExtension = Node.create({
   name: "wikiEmbed",
@@ -9,6 +10,7 @@ export const wikiEmbedExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       value: { default: "" },
       alias: { default: null },
     };

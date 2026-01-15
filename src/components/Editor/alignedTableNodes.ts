@@ -1,9 +1,11 @@
 import { TableCell, TableHeader } from "@tiptap/extension-table";
+import { sourceLineAttr } from "@/plugins/shared/sourceLineAttr";
 
 export const AlignedTableCell = TableCell.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      ...sourceLineAttr,
       alignment: {
         default: null,
         parseHTML: (element) => {
@@ -25,6 +27,7 @@ export const AlignedTableHeader = TableHeader.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      ...sourceLineAttr,
       alignment: {
         default: null,
         parseHTML: (element) => {

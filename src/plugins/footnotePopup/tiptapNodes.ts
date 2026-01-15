@@ -1,4 +1,5 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import { sourceLineAttr } from "../shared/sourceLineAttr";
 
 export const footnoteReferenceExtension = Node.create({
   name: "footnote_reference",
@@ -9,6 +10,7 @@ export const footnoteReferenceExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       label: {
         default: "1",
         parseHTML: (element) => (element as HTMLElement).getAttribute("data-label") ?? "1",
@@ -43,6 +45,7 @@ export const footnoteDefinitionExtension = Node.create({
 
   addAttributes() {
     return {
+      ...sourceLineAttr,
       label: {
         default: "1",
         parseHTML: (element) => (element as HTMLElement).getAttribute("data-label") ?? "1",
