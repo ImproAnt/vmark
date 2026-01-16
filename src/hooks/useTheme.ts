@@ -105,6 +105,9 @@ function applyModeColors(root: HTMLElement, colors: ThemeColors, isDark: boolean
       "--source-mode-bg": darkModeColors["--source-mode-bg"],
       "--error-color": darkModeColors["--error-color"],
       "--error-bg": darkModeColors["--error-bg"],
+      // Subtle block background for dark mode (light overlay)
+      "--block-bg-subtle": "rgba(255, 255, 255, 0.03)",
+      "--block-bg-subtle-hover": "rgba(255, 255, 255, 0.05)",
     });
     root.classList.add("dark-theme", "dark");
   } else {
@@ -112,6 +115,12 @@ function applyModeColors(root: HTMLElement, colors: ThemeColors, isDark: boolean
       ...lightModeColors,
       // Use theme's border color for bg-tertiary to harmonize with colored themes
       "--bg-tertiary": colors.border,
+      // Use theme-specific strong/emphasis colors if defined
+      "--strong-color": colors.strong ?? lightModeColors["--strong-color"],
+      "--emphasis-color": colors.emphasis ?? lightModeColors["--emphasis-color"],
+      // Subtle block background for light mode (dark overlay)
+      "--block-bg-subtle": "rgba(0, 0, 0, 0.02)",
+      "--block-bg-subtle-hover": "rgba(0, 0, 0, 0.04)",
     });
     root.classList.remove("dark-theme", "dark");
   }

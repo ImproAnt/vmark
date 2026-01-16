@@ -50,8 +50,8 @@
 
 /* Math rendering errors */
 .math-error {
-  color: #cf222e;
-  background-color: #ffebe9;
+  color: var(--error-color, #cf222e);
+  background-color: var(--error-bg, #ffebe9);
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-family: monospace;
@@ -73,7 +73,7 @@
 .math-block {
   margin: 1rem 0;
   padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.015);
+  background-color: var(--block-bg-subtle, rgba(0, 0, 0, 0.02));
   border-radius: 6px;
   text-align: center;
   cursor: pointer;
@@ -81,7 +81,7 @@
 }
 
 .math-block:hover {
-  background-color: rgba(0, 0, 0, 0.025);
+  background-color: var(--block-bg-subtle-hover, rgba(0, 0, 0, 0.04));
 }
 
 .math-block.editing {

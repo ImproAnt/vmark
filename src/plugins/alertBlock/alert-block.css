@@ -52,10 +52,11 @@
 
 /* ===================
    NOTE - Blue
+   Use semi-transparent backgrounds for better theme compatibility
    =================== */
 .alert-note {
   --alert-border: #0969da;
-  --alert-bg: #ddf4ff;
+  --alert-bg: rgba(9, 105, 218, 0.1);
   --alert-title: #0969da;
 }
 
@@ -69,7 +70,7 @@
    =================== */
 .alert-tip {
   --alert-border: #1a7f37;
-  --alert-bg: #dafbe1;
+  --alert-bg: rgba(26, 127, 55, 0.1);
   --alert-title: #1a7f37;
 }
 
@@ -83,7 +84,7 @@
    =================== */
 .alert-important {
   --alert-border: #8250df;
-  --alert-bg: #fbefff;
+  --alert-bg: rgba(130, 80, 223, 0.1);
   --alert-title: #8250df;
 }
 
@@ -93,11 +94,11 @@
 }
 
 /* ===================
-   WARNING - Yellow
+   WARNING - Yellow/Amber
    =================== */
 .alert-warning {
   --alert-border: #9a6700;
-  --alert-bg: #fff8c5;
+  --alert-bg: rgba(154, 103, 0, 0.1);
   --alert-title: #9a6700;
 }
 
@@ -111,7 +112,7 @@
    =================== */
 .alert-caution {
   --alert-border: #cf222e;
-  --alert-bg: #ffebe9;
+  --alert-bg: rgba(207, 34, 46, 0.1);
   --alert-title: #cf222e;
 }
 
@@ -121,7 +122,7 @@
 }
 
 /* ===================
-   DARK MODE
+   DARK MODE - Brighter colors for visibility
    =================== */
 .dark-theme .alert-note {
   --alert-border: #58a6ff;

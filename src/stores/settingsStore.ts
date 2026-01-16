@@ -55,6 +55,9 @@ export const themes: Record<ThemeId, ThemeColors> = {
     link: "#0066cc",
     secondary: "#f8f8f8",
     border: "#eeeeee",
+    // Blue-gray for bold, dark wine for italic
+    strong: "#3f5663",
+    emphasis: "#5b0411",
   },
   paper: {
     background: "#EEEDED",
@@ -62,6 +65,9 @@ export const themes: Record<ThemeId, ThemeColors> = {
     link: "#0066cc",
     secondary: "#e5e4e4",
     border: "#d5d4d4",
+    // Blue-gray for bold, dark wine for italic
+    strong: "#3f5663",
+    emphasis: "#5b0411",
   },
   mint: {
     background: "#CCE6D0",
@@ -69,6 +75,9 @@ export const themes: Record<ThemeId, ThemeColors> = {
     link: "#1a6b4a",
     secondary: "#b8d9bd",
     border: "#a8c9ad",
+    // Forest teal for bold, warm olive for italic
+    strong: "#1a5c4a",
+    emphasis: "#6b4423",
   },
   sepia: {
     background: "#F9F0DB",
@@ -76,6 +85,9 @@ export const themes: Record<ThemeId, ThemeColors> = {
     link: "#8b4513",
     secondary: "#f0e5cc",
     border: "#e0d5bc",
+    // Deep brown for bold, terracotta for italic
+    strong: "#4a3728",
+    emphasis: "#8b3a2f",
   },
   night: {
     background: "#23262b",
@@ -88,6 +100,7 @@ export const themes: Record<ThemeId, ThemeColors> = {
     codeText: "#d1d5db",
     selection: "rgba(90, 168, 255, 0.22)",
     mdChar: "#7aa874",
+    // Light blue for bold, warm orange for italic
     strong: "#6cb6ff",
     emphasis: "#d19a66",
   },
