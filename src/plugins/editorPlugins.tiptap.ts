@@ -1,18 +1,22 @@
 import { Extension } from "@tiptap/core";
-import { keymap } from "@tiptap/pm/keymap";
-import { Selection, type Command, type EditorState } from "@tiptap/pm/state";
+import { keydownHandler } from "@tiptap/pm/keymap";
+import { Plugin, PluginKey, Selection, type Command, type EditorState } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 import { useUIStore } from "@/stores/uiStore";
+import { useEditorStore } from "@/stores/editorStore";
 import { useShortcutsStore } from "@/stores/shortcutsStore";
 import { useSourcePeekStore } from "@/stores/sourcePeekStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { openSourcePeek } from "@/utils/sourcePeek";
+import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { guardProseMirrorCommand } from "@/utils/imeGuard";
 import { canRunActionInMultiSelection } from "@/plugins/toolbarActions/multiSelectionPolicy";
 import { getWysiwygMultiSelectionContext } from "@/plugins/toolbarActions/multiSelectionContext";
 import { expandedToggleMark } from "@/plugins/editorPlugins/expandedToggleMark";
 import { findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
 
+
+const editorKeymapPluginKey = new PluginKey("editorKeymaps");
 
 function escapeMarkBoundary(view: EditorView): boolean {
   const { state, dispatch } = view;
@@ -73,111 +77,141 @@ function wrapWithMultiSelectionGuard(action: string, command: Command): Command 
   };
 }
 
+export function buildEditorKeymapBindings(): Record<string, Command> {
+  const shortcuts = useShortcutsStore.getState();
+  const bindings: Record<string, Command> = {};
+
+  bindIfKey(bindings, shortcuts.getShortcut("toggleSidebar"), () => {
+    useUIStore.getState().toggleSidebar();
+    return true;
+  });
+  bindIfKey(bindings, shortcuts.getShortcut("sourceMode"), () => {
+    flushActiveWysiwygNow();
+    useEditorStore.getState().toggleSourceMode();
+    return true;
+  });
+
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("bold"),
+    wrapWithMultiSelectionGuard("bold", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "bold");
+    })
+  );
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("italic"),
+    wrapWithMultiSelectionGuard("italic", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "italic");
+    })
+  );
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("code"),
+    wrapWithMultiSelectionGuard("code", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "code");
+    })
+  );
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("strikethrough"),
+    wrapWithMultiSelectionGuard("strikethrough", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "strike");
+    })
+  );
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("link"),
+    wrapWithMultiSelectionGuard("link", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "link");
+    })
+  );
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("highlight"),
+    wrapWithMultiSelectionGuard("highlight", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "highlight");
+    })
+  );
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("subscript"),
+    wrapWithMultiSelectionGuard("subscript", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "subscript");
+    })
+  );
+  bindIfKey(
+    bindings,
+    shortcuts.getShortcut("superscript"),
+    wrapWithMultiSelectionGuard("superscript", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "superscript");
+    })
+  );
+
+  bindIfKey(bindings, shortcuts.getShortcut("sourcePeek"), (_state, _dispatch, view) => {
+    if (!view) return false;
+    const sourcePeek = useSourcePeekStore.getState();
+    if (sourcePeek.isOpen) {
+      sourcePeek.close();
+      return true;
+    }
+    const preserveLineBreaks = useSettingsStore.getState().markdown.preserveLineBreaks;
+    openSourcePeek(view, { preserveLineBreaks });
+    return true;
+  });
+
+  bindings.Escape = guardProseMirrorCommand((_state: EditorState, _dispatch, view) => {
+    if (!view) return false;
+    const sourcePeek = useSourcePeekStore.getState();
+    if (sourcePeek.isOpen) {
+      sourcePeek.close();
+      return true;
+    }
+    const uiStore = useUIStore.getState();
+    if (uiStore.universalToolbarVisible) {
+      uiStore.setUniversalToolbarVisible(false);
+      return true;
+    }
+    return escapeMarkBoundary(view);
+  });
+
+  return bindings;
+}
+
 export const editorKeymapExtension = Extension.create({
   name: "editorKeymaps",
   priority: 1000,
   addProseMirrorPlugins() {
-    const shortcuts = useShortcutsStore.getState();
-    const bindings: Record<string, Command> = {};
-
-    bindIfKey(bindings, shortcuts.getShortcut("toggleSidebar"), () => {
-      useUIStore.getState().toggleSidebar();
-      return true;
+    let handler = keydownHandler(buildEditorKeymapBindings());
+    const unsubscribe = useShortcutsStore.subscribe(() => {
+      handler = keydownHandler(buildEditorKeymapBindings());
     });
 
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("bold"),
-      wrapWithMultiSelectionGuard("bold", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "bold");
-      })
-    );
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("italic"),
-      wrapWithMultiSelectionGuard("italic", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "italic");
-      })
-    );
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("code"),
-      wrapWithMultiSelectionGuard("code", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "code");
-      })
-    );
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("strikethrough"),
-      wrapWithMultiSelectionGuard("strikethrough", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "strike");
-      })
-    );
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("link"),
-      wrapWithMultiSelectionGuard("link", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "link");
-      })
-    );
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("highlight"),
-      wrapWithMultiSelectionGuard("highlight", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "highlight");
-      })
-    );
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("subscript"),
-      wrapWithMultiSelectionGuard("subscript", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "subscript");
-      })
-    );
-    bindIfKey(
-      bindings,
-      shortcuts.getShortcut("superscript"),
-      wrapWithMultiSelectionGuard("superscript", (_state, _dispatch, view) => {
-        if (!view) return false;
-        return expandedToggleMark(view, "superscript");
-      })
-    );
-
-    bindIfKey(bindings, shortcuts.getShortcut("sourcePeek"), (_state, _dispatch, view) => {
-      if (!view) return false;
-      const sourcePeek = useSourcePeekStore.getState();
-      if (sourcePeek.isOpen) {
-        sourcePeek.close();
-        return true;
-      }
-      const preserveLineBreaks = useSettingsStore.getState().markdown.preserveLineBreaks;
-      openSourcePeek(view, { preserveLineBreaks });
-      return true;
-    });
-
-    bindings.Escape = guardProseMirrorCommand((_state: EditorState, _dispatch, view) => {
-      if (!view) return false;
-      const sourcePeek = useSourcePeekStore.getState();
-      if (sourcePeek.isOpen) {
-        sourcePeek.close();
-        return true;
-      }
-      const uiStore = useUIStore.getState();
-      if (uiStore.universalToolbarVisible) {
-        uiStore.setUniversalToolbarVisible(false);
-        return true;
-      }
-      return escapeMarkBoundary(view);
-    });
-
-    return [keymap(bindings)];
+    return [
+      new Plugin({
+        key: editorKeymapPluginKey,
+        props: {
+          handleKeyDown(view, event) {
+            return handler(view, event);
+          },
+        },
+        view() {
+          return {
+            destroy() {
+              unsubscribe();
+            },
+          };
+        },
+      }),
+    ];
   },
 });
 

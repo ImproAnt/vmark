@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { EditorState, Compartment } from "@codemirror/state";
 import { EditorView, keymap, drawSelection, dropCursor } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, toggleBlockComment } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { syntaxHighlighting } from "@codemirror/language";
@@ -19,6 +19,7 @@ import {
 } from "@codemirror/search";
 import { useEditorStore } from "@/stores/editorStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useShortcutsStore } from "@/stores/shortcutsStore";
 import { useSearchStore } from "@/stores/searchStore";
 import {
   useDocumentContent,
@@ -52,10 +53,8 @@ import {
   createImeGuardPlugin,
   createSourceCursorContextPlugin,
 } from "@/plugins/codemirror";
+import { buildSourceShortcutKeymap } from "@/plugins/codemirror/sourceShortcuts";
 import { toggleTaskList } from "@/plugins/sourceFormatPopup/taskListActions";
-import {
-  applyFormat,
-} from "@/plugins/sourceFormatPopup";
 import { guardCodeMirrorKeyBinding, runOrQueueCodeMirrorAction } from "@/utils/imeGuard";
 import { computeSourceCursorContext } from "@/plugins/sourceFormatPopup/cursorContext";
 
@@ -124,6 +123,8 @@ const lineWrapCompartment = new Compartment();
 const brVisibilityCompartment = new Compartment();
 // Compartment for auto-pairing brackets
 const autoPairCompartment = new Compartment();
+// Compartment for source shortcuts
+const shortcutKeymapCompartment = new Compartment();
 
 export function SourceEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -219,6 +220,8 @@ export function SourceEditor() {
         dropCursor(),
         // History (undo/redo)
         history(),
+        // Shortcuts from settings (dynamic via compartment)
+        shortcutKeymapCompartment.of(keymap.of(buildSourceShortcutKeymap())),
         // Keymaps (no searchKeymap - we use our unified FindBar)
         keymap.of([
           // Smart list continuation (must be before default keymap)
@@ -254,30 +257,6 @@ export function SourceEditor() {
           }),
           // Note: Ctrl+E is now handled by the universal toolbar (useUniversalToolbar hook)
           // The context-aware popup is retired in favor of the universal toolbar.
-          // Cmd+`: inline code (reassigned from Cmd+E)
-          guardCodeMirrorKeyBinding({
-            key: "Mod-`",
-            run: (view) => {
-              applyFormat(view, "code");
-              return true;
-            },
-            preventDefault: true,
-          }),
-          // Cmd+/: toggle source mode (same as F7)
-          guardCodeMirrorKeyBinding({
-            key: "Mod-/",
-            run: () => {
-              useEditorStore.getState().toggleSourceMode();
-              return true;
-            },
-            preventDefault: true,
-          }),
-          // Cmd+Shift+\: toggle HTML comment <!-- -->
-          guardCodeMirrorKeyBinding({
-            key: "Mod-Shift-\\",
-            run: (view) => toggleBlockComment(view),
-            preventDefault: true,
-          }),
           ...closeBracketsKeymap,
           ...defaultKeymap,
           ...historyKeymap,
@@ -308,6 +287,17 @@ export function SourceEditor() {
     });
 
     viewRef.current = view;
+    const updateShortcutKeymap = () => {
+      runOrQueueCodeMirrorAction(view, () => {
+        view.dispatch({
+          effects: shortcutKeymapCompartment.reconfigure(
+            keymap.of(buildSourceShortcutKeymap())
+          ),
+        });
+      });
+    };
+    updateShortcutKeymap();
+    const unsubscribeShortcuts = useShortcutsStore.subscribe(updateShortcutKeymap);
     useSourceCursorContextStore.getState().setContext(
       computeSourceCursorContext(view),
       view
@@ -325,6 +315,7 @@ export function SourceEditor() {
     }, 50);
 
     return () => {
+      unsubscribeShortcuts();
       view.destroy();
       viewRef.current = null;
     };
