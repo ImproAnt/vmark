@@ -169,6 +169,40 @@ export function ShortcutsSettings() {
         Customize keyboard shortcuts. Click a shortcut to change it.
       </p>
 
+      {/* Shortcut schemes */}
+      <div className="mb-5 rounded border border-[var(--bg-tertiary)] p-3">
+        <div className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
+          Shortcut Schemes
+        </div>
+        <div className="text-xs text-[var(--text-tertiary)] mt-1">
+          Apply a preset baseline before customizing individual keys.
+        </div>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <button
+            onClick={() => {
+              if (confirm(`Apply "${SHORTCUT_PRESETS.default.name}" preset? This will replace all custom shortcuts.`)) {
+                applyPreset("default");
+              }
+            }}
+            className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]
+                       rounded border border-gray-200 dark:border-gray-700"
+          >
+            {SHORTCUT_PRESETS.default.name}
+          </button>
+          <button
+            onClick={() => {
+              if (confirm(`Apply "${SHORTCUT_PRESETS.vscode.name}" preset? This will replace all custom shortcuts.`)) {
+                applyPreset("vscode");
+              }
+            }}
+            className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]
+                       rounded border border-gray-200 dark:border-gray-700"
+          >
+            {SHORTCUT_PRESETS.vscode.name}
+          </button>
+        </div>
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         {/* Search */}

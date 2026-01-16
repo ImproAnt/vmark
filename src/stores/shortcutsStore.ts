@@ -8,6 +8,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
+import { isMacPlatform } from "@/utils/shortcutMatch";
 
 // ============================================================================
 // Types
@@ -39,10 +40,10 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   // === Formatting ===
   { id: "bold", label: "Bold", category: "formatting", defaultKey: "Mod-b", menuId: "bold" },
   { id: "italic", label: "Italic", category: "formatting", defaultKey: "Mod-i", menuId: "italic" },
-  { id: "code", label: "Inline Code", category: "formatting", defaultKey: "Mod-`", menuId: "code" },
+  { id: "code", label: "Inline Code", category: "formatting", defaultKey: "Mod-Shift-`", menuId: "code" },
   { id: "strikethrough", label: "Strikethrough", category: "formatting", defaultKey: "Mod-Shift-x", menuId: "strikethrough" },
   { id: "link", label: "Link", category: "formatting", defaultKey: "Mod-k", menuId: "link" },
-  { id: "highlight", label: "Highlight", category: "formatting", defaultKey: "Alt-Mod-h", menuId: "highlight" },
+  { id: "highlight", label: "Highlight", category: "formatting", defaultKey: "Mod-Shift-m", menuId: "highlight" },
   { id: "subscript", label: "Subscript", category: "formatting", defaultKey: "Alt-Mod-=", menuId: "subscript" },
   { id: "superscript", label: "Superscript", category: "formatting", defaultKey: "Alt-Mod-Shift-=", menuId: "superscript" },
   { id: "clearFormat", label: "Clear Formatting", category: "formatting", defaultKey: "Mod-\\", menuId: "clear-format" },
@@ -54,25 +55,25 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   { id: "heading4", label: "Heading 4", category: "blocks", defaultKey: "Mod-4", menuId: "heading-4" },
   { id: "heading5", label: "Heading 5", category: "blocks", defaultKey: "Mod-5", menuId: "heading-5" },
   { id: "heading6", label: "Heading 6", category: "blocks", defaultKey: "Mod-6", menuId: "heading-6" },
-  { id: "paragraph", label: "Paragraph", category: "blocks", defaultKey: "Mod-0", menuId: "paragraph" },
-  { id: "increaseHeading", label: "Increase Heading", category: "blocks", defaultKey: "Mod-=", menuId: "increase-heading" },
-  { id: "decreaseHeading", label: "Decrease Heading", category: "blocks", defaultKey: "Mod--", menuId: "decrease-heading" },
+  { id: "paragraph", label: "Paragraph", category: "blocks", defaultKey: "Mod-Shift-0", menuId: "paragraph" },
+  { id: "increaseHeading", label: "Increase Heading", category: "blocks", defaultKey: "Mod-Alt-]", menuId: "increase-heading" },
+  { id: "decreaseHeading", label: "Decrease Heading", category: "blocks", defaultKey: "Mod-Alt-[", menuId: "decrease-heading" },
   { id: "blockquote", label: "Blockquote", category: "blocks", defaultKey: "Alt-Mod-q", menuId: "quote" },
-  { id: "codeBlock", label: "Code Block", category: "blocks", defaultKey: "Ctrl-Mod-c", menuId: "code-fences" },
+  { id: "codeBlock", label: "Code Block", category: "blocks", defaultKey: "Alt-Mod-c", menuId: "code-fences" },
   { id: "bulletList", label: "Bullet List", category: "blocks", defaultKey: "Alt-Mod-u", menuId: "unordered-list" },
   { id: "orderedList", label: "Ordered List", category: "blocks", defaultKey: "Alt-Mod-o", menuId: "ordered-list" },
   { id: "taskList", label: "Task List", category: "blocks", defaultKey: "Alt-Mod-x", menuId: "task-list" },
-  { id: "insertTable", label: "Insert Table", category: "blocks", defaultKey: "Alt-Mod-t", menuId: "insert-table" },
+  { id: "insertTable", label: "Insert Table", category: "blocks", defaultKey: "Mod-Shift-t", menuId: "insert-table" },
   { id: "horizontalLine", label: "Horizontal Line", category: "blocks", defaultKey: "Alt-Mod--", menuId: "horizontal-line" },
-  { id: "insertImage", label: "Insert Image", category: "blocks", defaultKey: "Alt-Mod-i", menuId: "image" },
+  { id: "insertImage", label: "Insert Image", category: "blocks", defaultKey: "Mod-Shift-i", menuId: "image" },
   { id: "indent", label: "Indent", category: "blocks", defaultKey: "Mod-]", menuId: "indent" },
   { id: "outdent", label: "Outdent", category: "blocks", defaultKey: "Mod-[", menuId: "outdent" },
 
   // === Navigation ===
   { id: "selectLine", label: "Select Line", category: "navigation", defaultKey: "Mod-l", menuId: "select-line" },
   { id: "expandSelection", label: "Expand Selection", category: "navigation", defaultKey: "Ctrl-Shift-Up", menuId: "expand-selection" },
-  { id: "formatToolbar", label: "Universal Toolbar", category: "navigation", defaultKey: "Ctrl-e", description: "Show the universal bottom toolbar" },
-  { id: "sourcePeek", label: "Source Peek", category: "navigation", defaultKey: "Mod-Shift-/", description: "Edit selection as markdown" },
+  { id: "formatToolbar", label: "Universal Toolbar", category: "navigation", defaultKey: "Mod-Shift-p", description: "Show the universal bottom toolbar" },
+  { id: "sourcePeek", label: "Source Peek", category: "navigation", defaultKey: "Mod-Alt-/", description: "Edit selection as markdown" },
   { id: "findReplace", label: "Find & Replace", category: "navigation", defaultKey: "Mod-f", menuId: "find-replace" },
   { id: "findNext", label: "Find Next", category: "navigation", defaultKey: "Mod-g", menuId: "find-next" },
   { id: "findPrevious", label: "Find Previous", category: "navigation", defaultKey: "Mod-Shift-g", menuId: "find-prev" },
@@ -80,16 +81,16 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   // === Editing ===
   { id: "formatCJKSelection", label: "Format CJK Selection", category: "editing", defaultKey: "Mod-Shift-f", menuId: "format-cjk" },
   { id: "formatCJKFile", label: "Format CJK File", category: "editing", defaultKey: "Alt-Mod-Shift-f", menuId: "format-cjk-file" },
-  { id: "copyAsHTML", label: "Copy as HTML", category: "editing", defaultKey: "Alt-Mod-c", menuId: "copy-html" },
+  { id: "copyAsHTML", label: "Copy as HTML", category: "editing", defaultKey: "Mod-Shift-c", menuId: "copy-html" },
   { id: "toggleComment", label: "Toggle Comment", category: "editing", defaultKey: "Mod-Shift-\\", description: "Insert HTML comment <!-- -->" },
 
   // === View ===
   { id: "toggleSidebar", label: "Toggle Sidebar", category: "view", defaultKey: "Mod-Shift-b", menuId: "sidebar" },
-  { id: "toggleOutline", label: "Toggle Outline", category: "view", defaultKey: "Ctrl-Mod-1", menuId: "outline" },
+  { id: "toggleOutline", label: "Toggle Outline", category: "view", defaultKey: "Mod-Alt-1", menuId: "outline" },
   { id: "sourceMode", label: "Source Mode", category: "view", defaultKey: "Mod-/", menuId: "source-mode" },
   { id: "focusMode", label: "Focus Mode", category: "view", defaultKey: "F8", menuId: "focus-mode" },
   { id: "typewriterMode", label: "Typewriter Mode", category: "view", defaultKey: "F9", menuId: "typewriter-mode" },
-  { id: "wordWrap", label: "Toggle Word Wrap", category: "view", defaultKey: "F10", menuId: "word-wrap" },
+  { id: "wordWrap", label: "Toggle Word Wrap", category: "view", defaultKey: "Alt-z", menuId: "word-wrap" },
   { id: "viewHistory", label: "View History", category: "view", defaultKey: "Mod-Shift-h", menuId: "view-history" },
 
   // === File ===
@@ -112,15 +113,15 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   { id: "tableColumnLeft", label: "Add Column Left", category: "blocks", defaultKey: "Alt-Mod-Left" },
   { id: "tableColumnRight", label: "Add Column Right", category: "blocks", defaultKey: "Alt-Mod-Right" },
   { id: "tableDeleteColumn", label: "Delete Column", category: "blocks", defaultKey: "Alt-Mod-Backspace" },
-  { id: "tableAlignLeft", label: "Align Left", category: "blocks", defaultKey: "Mod-Shift-l" },
+  { id: "tableAlignLeft", label: "Align Left", category: "blocks", defaultKey: "Mod-Alt-Shift-l" },
   { id: "tableAlignCenter", label: "Align Center", category: "blocks", defaultKey: "Mod-Alt-c" },
   { id: "tableAlignRight", label: "Align Right", category: "blocks", defaultKey: "Mod-Shift-r" },
 
   // === Future: Alerts (Phase 3) ===
   { id: "insertNote", label: "Insert Note", category: "blocks", defaultKey: "Alt-Mod-n", menuId: "info-note" },
-  { id: "insertTip", label: "Insert Tip", category: "blocks", defaultKey: "Mod-Shift-t", menuId: "info-tip" },
+  { id: "insertTip", label: "Insert Tip", category: "blocks", defaultKey: "Mod-Alt-Shift-t", menuId: "info-tip" },
   { id: "insertWarning", label: "Insert Warning", category: "blocks", defaultKey: "Mod-Shift-w", menuId: "info-warning" },
-  { id: "insertImportant", label: "Insert Important", category: "blocks", defaultKey: "Mod-Shift-i", menuId: "info-important" },
+  { id: "insertImportant", label: "Insert Important", category: "blocks", defaultKey: "Mod-Alt-Shift-i", menuId: "info-important" },
   { id: "insertCaution", label: "Insert Caution", category: "blocks", defaultKey: "Mod-Shift-u", menuId: "info-caution" },
   { id: "insertCollapsible", label: "Insert Collapsible", category: "blocks", defaultKey: "Alt-Mod-d", menuId: "collapsible-block" },
 ];
@@ -134,7 +135,7 @@ const shortcutMap = new Map(DEFAULT_SHORTCUTS.map(s => [s.id, s]));
 
 export const SHORTCUT_PRESETS: Record<string, { name: string; bindings: Record<string, string> }> = {
   default: {
-    name: "Default",
+    name: "Optimized (Recommended)",
     bindings: {},
   },
   vscode: {
@@ -143,18 +144,6 @@ export const SHORTCUT_PRESETS: Record<string, { name: string; bindings: Record<s
       // VS Code-style shortcuts
       toggleSidebar: "Mod-b",
       formatToolbar: "Mod-Shift-p",
-    },
-  },
-  default: {
-    name: "",
-    bindings: {
-      // -style shortcuts (uses Ctrl instead of Cmd for headings on macOS)
-      heading1: "Ctrl-1",
-      heading2: "Ctrl-2",
-      heading3: "Ctrl-3",
-      heading4: "Ctrl-4",
-      heading5: "Ctrl-5",
-      heading6: "Ctrl-6",
     },
   },
 };
@@ -355,7 +344,7 @@ async function syncMenuShortcuts(shortcuts: Record<string, string>) {
 /**
  * Convert ProseMirror key format to Tauri accelerator format.
  * Mod-b -> CmdOrCtrl+B
- * Alt-Mod-h -> Alt+CmdOrCtrl+H
+ * Mod-Shift-` -> CmdOrCtrl+Shift+`
  */
 function prosemirrorToTauri(key: string): string {
   return key
@@ -372,7 +361,7 @@ function prosemirrorToTauri(key: string): string {
  * Mod-b -> ⌘B (on macOS)
  */
 export function formatKeyForDisplay(key: string): string {
-  const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const isMac = isMacPlatform();
 
   return key
     .replace(/Mod/gi, isMac ? "⌘" : "Ctrl")
