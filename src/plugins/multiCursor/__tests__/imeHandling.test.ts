@@ -49,6 +49,9 @@ describe("imeHandling", () => {
       shiftKey: false,
       isComposing: true,
       keyCode: 229,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
     });
     expect(result).toBeNull();
   });

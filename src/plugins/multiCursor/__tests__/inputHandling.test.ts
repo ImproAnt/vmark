@@ -251,6 +251,9 @@ describe("inputHandling", () => {
         shiftKey: false,
         isComposing: false,
         keyCode: 0,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
       });
 
       expect(tr).not.toBeNull();
@@ -273,6 +276,9 @@ describe("inputHandling", () => {
         shiftKey: true,
         isComposing: false,
         keyCode: 0,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
       });
 
       expect(tr).not.toBeNull();
@@ -281,6 +287,56 @@ describe("inputHandling", () => {
         const multiSel = newState.selection as MultiSelection;
         expect(multiSel.ranges[0].$from.pos).toBe(2);
         expect(multiSel.ranges[0].$to.pos).toBe(3);
+      }
+    });
+
+    it("moves cursors by word with Option/Alt+ArrowRight", () => {
+      const state = createMultiCursorState("hello world", [
+        { from: 2, to: 2 },
+        { from: 8, to: 8 },
+      ]);
+
+      const tr = handleMultiCursorKeyDown(state, {
+        key: "ArrowRight",
+        shiftKey: false,
+        isComposing: false,
+        keyCode: 0,
+        altKey: true,
+        ctrlKey: false,
+        metaKey: false,
+      });
+
+      expect(tr).not.toBeNull();
+      if (tr) {
+        const newState = state.apply(tr);
+        const multiSel = newState.selection as MultiSelection;
+        expect(multiSel.ranges[0].$from.pos).toBe(6);
+        expect(multiSel.ranges[1].$from.pos).toBe(12);
+      }
+    });
+
+    it("moves cursors to line end with Cmd+ArrowRight", () => {
+      const state = createMultiCursorState("hello world", [
+        { from: 2, to: 2 },
+        { from: 8, to: 8 },
+      ]);
+
+      const tr = handleMultiCursorKeyDown(state, {
+        key: "ArrowRight",
+        shiftKey: false,
+        isComposing: false,
+        keyCode: 0,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: true,
+      });
+
+      expect(tr).not.toBeNull();
+      if (tr) {
+        const newState = state.apply(tr);
+        const multiSel = newState.selection as MultiSelection;
+        expect(multiSel.ranges).toHaveLength(1);
+        expect(multiSel.ranges[0].$from.pos).toBe(12);
       }
     });
   });

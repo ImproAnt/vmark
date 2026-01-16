@@ -37,7 +37,7 @@ describe("decorations", () => {
       expect(decorations).toBe(DecorationSet.empty);
     });
 
-    it("creates decorations for secondary cursors only", () => {
+    it("creates decorations for all cursors", () => {
       const state = createState("hello world");
       const doc = state.doc;
       const $pos1 = doc.resolve(1);
@@ -47,18 +47,19 @@ describe("decorations", () => {
         new SelectionRange($pos1, $pos1),
         new SelectionRange($pos2, $pos2),
       ];
-      // Primary is at index 0, so position 7 gets decoration
+      // Primary is at index 0, both cursors get decorations
       const multiSel = new MultiSelection(ranges, 0);
       const tr = state.tr.setSelection(multiSel);
       const newState = state.apply(tr);
 
       const decorations = createMultiCursorDecorations(newState);
 
-      // Should have 1 decoration (secondary cursor at position 7)
+      // Should have 2 decorations (primary + secondary cursors)
       const found = decorations.find();
-      expect(found).toHaveLength(1);
-      expect(found[0].from).toBe(7);
-      expect(found[0].to).toBe(7);
+      expect(found).toHaveLength(2);
+      const positions = found.map((d) => d.from);
+      expect(positions).toContain(1);
+      expect(positions).toContain(7);
     });
 
     it("creates cursor decoration with correct CSS class", () => {
@@ -78,8 +79,9 @@ describe("decorations", () => {
       const decorations = createMultiCursorDecorations(newState);
       const found = decorations.find();
 
-      // Check decoration has correct class
-      expect(found[0].spec.class).toContain("multi-cursor");
+      // Check decorations have correct class
+      const classes = found.map((d) => d.spec.class);
+      expect(classes.some((cls) => String(cls).includes("multi-cursor"))).toBe(true);
     });
 
     it("creates decorations for all secondary cursors", () => {
@@ -96,7 +98,7 @@ describe("decorations", () => {
         new SelectionRange($pos3, $pos3),
         new SelectionRange($pos4, $pos4),
       ];
-      // Primary is index 1 (pos 4), so 3 secondary decorations
+      // Primary is index 1 (pos 4), all cursors get decorations
       const multiSel = new MultiSelection(ranges, 1);
       const tr = state.tr.setSelection(multiSel);
       const newState = state.apply(tr);
@@ -104,13 +106,13 @@ describe("decorations", () => {
       const decorations = createMultiCursorDecorations(newState);
       const found = decorations.find();
 
-      // Should have 3 decorations (all except primary at pos 4)
-      expect(found).toHaveLength(3);
+      // Should have 4 decorations (all cursors)
+      expect(found).toHaveLength(4);
       const positions = found.map((d) => d.from);
       expect(positions).toContain(1);
+      expect(positions).toContain(4);
       expect(positions).toContain(7);
       expect(positions).toContain(10);
-      expect(positions).not.toContain(4);
     });
 
     it("creates selection highlight decorations for non-empty ranges", () => {
@@ -149,8 +151,8 @@ describe("decorations", () => {
       const decorations = createMultiCursorDecorations(newState);
       const found = decorations.find();
 
-      // Should have selection highlight for secondary range
-      expect(found.length).toBeGreaterThanOrEqual(1);
+      // Should have selection highlight for secondary range and primary caret
+      expect(found.length).toBeGreaterThanOrEqual(2);
       const selectionDeco = found.find((d) => d.from === 7 && d.to === 12);
       expect(selectionDeco).toBeDefined();
     });

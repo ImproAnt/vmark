@@ -76,6 +76,71 @@ export function findWordBoundaries(
   return findWordBoundariesWithRegex(text, posInText);
 }
 
+type WordSegment = { start: number; end: number };
+
+/**
+ * Get all word-like segments in a text.
+ */
+export function getWordSegments(text: string): WordSegment[] {
+  if (!text) return [];
+  const segmenter = getWordSegmenter();
+
+  if (segmenter) {
+    const segments: WordSegment[] = [];
+    for (const segment of segmenter.segment(text)) {
+      if (!segment.isWordLike) continue;
+      segments.push({
+        start: segment.index,
+        end: segment.index + segment.segment.length,
+      });
+    }
+    return segments;
+  }
+
+  return getWordSegmentsWithRegex(text);
+}
+
+/**
+ * Find the next word edge relative to a position.
+ * dir < 0 moves left to word starts; dir > 0 moves right to word ends.
+ */
+export function findWordEdge(
+  text: string,
+  posInText: number,
+  dir: -1 | 1
+): number | null {
+  if (!text) return null;
+  const segments = getWordSegments(text);
+  if (!segments.length) return null;
+
+  const pos = Math.max(0, Math.min(text.length, posInText));
+
+  if (dir < 0) {
+    for (let i = segments.length - 1; i >= 0; i--) {
+      const seg = segments[i];
+      if (pos > seg.start && pos <= seg.end) {
+        return seg.start;
+      }
+      if (pos <= seg.start) continue;
+      if (pos > seg.end) {
+        return seg.start;
+      }
+    }
+    return segments[0].start;
+  }
+
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (pos >= seg.start && pos < seg.end) {
+      return seg.end;
+    }
+    if (pos < seg.start) {
+      return seg.end;
+    }
+  }
+  return segments[segments.length - 1].end;
+}
+
 /**
  * Find word boundaries using Intl.Segmenter.
  * Provides accurate CJK word segmentation.
@@ -150,6 +215,26 @@ function findWordBoundariesWithRegex(
   }
 
   return { start, end };
+}
+
+function getWordSegmentsWithRegex(text: string): WordSegment[] {
+  const wordChars = /[\w\u00C0-\u024F\u1E00-\u1EFF]/;
+  const segments: WordSegment[] = [];
+  let index = 0;
+
+  while (index < text.length) {
+    while (index < text.length && !wordChars.test(text[index])) {
+      index++;
+    }
+    if (index >= text.length) break;
+    const start = index;
+    while (index < text.length && wordChars.test(text[index])) {
+      index++;
+    }
+    segments.push({ start, end: index });
+  }
+
+  return segments;
 }
 
 /**

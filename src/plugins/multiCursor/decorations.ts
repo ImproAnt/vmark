@@ -1,8 +1,8 @@
 /**
  * Multi-cursor decorations for ProseMirror
  *
- * Creates visual decorations for secondary cursors and selections.
- * The primary cursor uses the native browser caret.
+ * Creates visual decorations for multi-cursor selections.
+ * Uses a custom caret when multi-cursor is active so all cursors blink in sync.
  */
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorState } from "@tiptap/pm/state";
@@ -18,7 +18,8 @@ const SELECTION_CLASS = "multi-cursor-selection";
  * Creates decorations for multi-cursor display.
  *
  * Rules:
- * - Primary cursor/selection: no decoration (browser handles it)
+ * - Primary cursor (empty range): widget decoration with caret
+ * - Primary selection (non-empty range): no decoration (browser handles highlight)
  * - Secondary cursors (empty ranges): widget decoration with caret
  * - Secondary selections (non-empty ranges): inline decoration with highlight
  *
@@ -36,10 +37,7 @@ export function createMultiCursorDecorations(state: EditorState): DecorationSet 
   const primaryIndex = selection.primaryIndex;
 
   selection.ranges.forEach((range, index) => {
-    // Skip primary range - browser handles it
-    if (index === primaryIndex) {
-      return;
-    }
+    const isPrimary = index === primaryIndex;
 
     const from = range.$from.pos;
     const to = range.$to.pos;
@@ -53,10 +51,12 @@ export function createMultiCursorDecorations(state: EditorState): DecorationSet 
       decorations.push(cursorWidget);
     } else {
       // Selection (non-empty range) - create inline decoration
-      const selectionDeco = Decoration.inline(from, to, {
-        class: SELECTION_CLASS,
-      });
-      decorations.push(selectionDeco);
+      if (!isPrimary) {
+        const selectionDeco = Decoration.inline(from, to, {
+          class: SELECTION_CLASS,
+        });
+        decorations.push(selectionDeco);
+      }
     }
   });
 
@@ -64,7 +64,7 @@ export function createMultiCursorDecorations(state: EditorState): DecorationSet 
 }
 
 /**
- * Creates the DOM element for a secondary cursor.
+ * Creates the DOM element for a cursor caret.
  *
  * @returns HTMLElement representing the cursor caret
  */

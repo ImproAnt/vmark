@@ -1,9 +1,14 @@
 /**
  * Multi-cursor styles for WYSIWYG editor
  *
- * Provides visual styling for secondary cursors and selections.
- * The primary cursor uses the native browser caret.
+ * Provides visual styling for multi-cursor caret widgets and selections.
+ * When multi-cursor is active, we hide the native caret to sync blinking.
  */
+
+/* Hide native caret when multi-cursor is active */
+.multi-cursor-active {
+  caret-color: transparent;
+}
 
 /* Secondary cursor caret */
 .multi-cursor-caret {

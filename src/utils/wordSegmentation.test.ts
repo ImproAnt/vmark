@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { findWordBoundaries, _resetSegmenterCache } from "./wordSegmentation";
+import { findWordBoundaries, findWordEdge, _resetSegmenterCache } from "./wordSegmentation";
 
 describe("wordSegmentation", () => {
   beforeEach(() => {
@@ -80,6 +80,32 @@ describe("wordSegmentation", () => {
       expect(result).not.toBeNull();
       expect(result!.start).toBeLessThanOrEqual(3);
       expect(result!.end).toBeGreaterThan(3);
+    });
+  });
+
+  describe("findWordEdge - ASCII text", () => {
+    it("moves left to word start when inside a word", () => {
+      const text = "hello world";
+      const result = findWordEdge(text, 2, -1);
+      expect(result).toBe(0);
+    });
+
+    it("moves right to word end when inside a word", () => {
+      const text = "hello world";
+      const result = findWordEdge(text, 2, 1);
+      expect(result).toBe(5);
+    });
+
+    it("skips to next word end from whitespace", () => {
+      const text = "hello world";
+      const result = findWordEdge(text, 5, 1);
+      expect(result).toBe(11);
+    });
+
+    it("skips to previous word start from whitespace", () => {
+      const text = "hello world";
+      const result = findWordEdge(text, 5, -1);
+      expect(result).toBe(0);
     });
   });
 

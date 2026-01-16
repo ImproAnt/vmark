@@ -107,6 +107,7 @@ describe("saveToPath", () => {
 
   it("returns false and skips updates when write fails", async () => {
     vi.mocked(writeTextFile).mockRejectedValue(new Error("disk error"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await saveToPath("tab-3", "/tmp/fail.md", "fail", "manual");
 
@@ -116,5 +117,6 @@ describe("saveToPath", () => {
     expect(mockUpdateTabPath).not.toHaveBeenCalled();
     expect(mockAddFile).not.toHaveBeenCalled();
     expect(createSnapshot).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

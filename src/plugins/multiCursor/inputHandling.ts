@@ -9,6 +9,10 @@ import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { MultiSelection } from "./MultiSelection";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import { normalizeRangesWithPrimary } from "./rangeUtils";
+import {
+  handleMultiCursorHorizontal,
+  type HorizontalUnit,
+} from "./horizontalMovement";
 
 /**
  * Sort ranges by position (descending) for safe editing.
@@ -224,7 +228,7 @@ export function handleMultiCursorArrow(
 
 export type MultiCursorKeyEvent = Pick<
   KeyboardEvent,
-  "key" | "shiftKey" | "isComposing" | "keyCode"
+  "key" | "shiftKey" | "isComposing" | "keyCode" | "altKey" | "ctrlKey" | "metaKey"
 >;
 
 /**
@@ -248,9 +252,19 @@ export function handleMultiCursorKeyDown(
     case "Delete":
       return handleMultiCursorDelete(state);
     case "ArrowLeft":
-    case "ArrowRight":
+    case "ArrowRight": {
+      const unit: HorizontalUnit = event.metaKey
+        ? "line"
+        : event.altKey || event.ctrlKey
+          ? "word"
+          : "char";
+      return handleMultiCursorHorizontal(state, event.key, event.shiftKey, unit);
+    }
     case "ArrowUp":
     case "ArrowDown":
+      if (event.metaKey || event.altKey || event.ctrlKey) {
+        return null;
+      }
       return handleMultiCursorArrow(state, event.key, event.shiftKey);
     default:
       return null;

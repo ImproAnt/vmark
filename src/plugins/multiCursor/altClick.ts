@@ -29,6 +29,19 @@ function positionInRanges(
   return -1;
 }
 
+function cursorIndexAtPosition(
+  ranges: readonly SelectionRange[],
+  pos: number
+): number {
+  for (let i = 0; i < ranges.length; i++) {
+    const range = ranges[i];
+    if (range.$from.pos === range.$to.pos && range.$from.pos === pos) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 /**
  * Snap a position to the nearest valid text selection.
  * This avoids placing cursors inside atom nodes.
@@ -74,18 +87,17 @@ export function addCursorAtPosition(
   const primaryPos = selection instanceof MultiSelection
     ? selection.ranges[selection.primaryIndex].$from.pos
     : selection.from;
+  const snappedPos = snapToTextSelection(state, pos);
   const bounds = getCodeBlockBounds(state, primaryPos);
-  if (bounds && (pos < bounds.from || pos > bounds.to)) {
+  if (bounds && (snappedPos < bounds.from || snappedPos > bounds.to)) {
     return null;
   }
-
-  const snappedPos = snapToTextSelection(state, pos);
   const $pos = doc.resolve(snappedPos);
   const newRange = new SelectionRange($pos, $pos);
 
   if (selection instanceof MultiSelection) {
     // Check if position is already in existing ranges
-    const existingIndex = positionInRanges(selection.ranges, pos);
+    const existingIndex = cursorIndexAtPosition(selection.ranges, snappedPos);
     if (existingIndex >= 0) {
       // Position already has a cursor - set it as primary
       if (existingIndex === selection.primaryIndex) {

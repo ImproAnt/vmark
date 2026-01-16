@@ -55,6 +55,23 @@ export function multiCursorPlugin(): Plugin<MultiCursorPluginState> {
         return { isActive };
       },
     },
+    view(editorView) {
+      const syncClass = (state: EditorState) => {
+        const isActive = state.selection instanceof MultiSelection;
+        editorView.dom.classList.toggle("multi-cursor-active", isActive);
+      };
+
+      syncClass(editorView.state);
+
+      return {
+        update(view) {
+          syncClass(view.state);
+        },
+        destroy() {
+          editorView.dom.classList.remove("multi-cursor-active");
+        },
+      };
+    },
 
     props: {
       decorations(state: EditorState) {
