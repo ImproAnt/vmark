@@ -93,10 +93,10 @@ const INLINE_GROUP: ToolbarGroup = {
     { id: "italic", icon: icons.italic, label: "Italic", shortcut: "⌘I", action: "italic", enabledIn: ["selection", "textblock"] },
     { id: "underline", icon: icons.underline, label: "Underline", shortcut: "⌘U", action: "underline", enabledIn: ["selection", "textblock"] },
     { id: "strikethrough", icon: icons.strikethrough, label: "Strikethrough", shortcut: "⌘⇧X", action: "strikethrough", enabledIn: ["selection", "textblock"] },
-    { id: "highlight", icon: icons.highlight, label: "Highlight", shortcut: "⌥⌘H", action: "highlight", enabledIn: ["selection", "textblock"] },
+    { id: "highlight", icon: icons.highlight, label: "Highlight", shortcut: "⌘⇧M", action: "highlight", enabledIn: ["selection", "textblock"] },
     { id: "superscript", icon: icons.superscript, label: "Superscript", action: "superscript", enabledIn: ["selection", "textblock"] },
     { id: "subscript", icon: icons.subscript, label: "Subscript", action: "subscript", enabledIn: ["selection", "textblock"] },
-    { id: "code", icon: icons.inlineCode, label: "Inline Code", shortcut: "⌘`", action: "code", enabledIn: ["selection", "textblock"] },
+    { id: "code", icon: icons.inlineCode, label: "Inline Code", shortcut: "⌘⇧`", action: "code", enabledIn: ["selection", "textblock"] },
     { id: "clear-formatting", icon: icons.clearFormatting, label: "Clear Formatting", action: "clearFormatting", enabledIn: ["selection"] },
   ],
 };

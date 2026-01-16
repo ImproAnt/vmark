@@ -255,7 +255,7 @@ export function SourceEditor() {
             },
             preventDefault: true,
           }),
-          // Note: Ctrl+E is now handled by the universal toolbar (useUniversalToolbar hook)
+          // Note: Universal toolbar shortcut is handled by useUniversalToolbar.
           // The context-aware popup is retired in favor of the universal toolbar.
           ...closeBracketsKeymap,
           ...defaultKeymap,

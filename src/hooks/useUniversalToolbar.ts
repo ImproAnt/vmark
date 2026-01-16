@@ -1,19 +1,20 @@
 /**
- * useUniversalToolbar - Ctrl+E toggle hook
+ * useUniversalToolbar - configurable toggle hook
  *
- * Listens for Ctrl+E keyboard shortcut to toggle the universal toolbar.
+ * Listens for the configured shortcut to toggle the universal toolbar.
  * Works with both WYSIWYG and Source modes.
  *
  * @module hooks/useUniversalToolbar
  */
 import { useEffect, useCallback } from "react";
 import { useUIStore } from "@/stores/uiStore";
+import { useShortcutsStore } from "@/stores/shortcutsStore";
+import { matchesShortcutEvent } from "@/utils/shortcutMatch";
 
 /**
- * Hook to handle Ctrl+E universal toolbar toggle.
+ * Hook to handle the universal toolbar toggle shortcut.
  *
- * Attaches a global keydown listener for Ctrl+E (Cmd+E on Mac is already
- * mapped to Ctrl+E by the app).
+ * Attaches a global keydown listener for the configured shortcut.
  *
  * @example
  * function App() {
@@ -38,8 +39,8 @@ export function useUniversalToolbar(): void {
         useUIStore.getState().setUniversalToolbarVisible(false);
         return;
       }
-      // Ctrl+E toggles toolbar (Cmd+E is already mapped to Ctrl+E by the app)
-      if (e.ctrlKey && e.key.toLowerCase() === "e" && !e.altKey && !e.shiftKey) {
+      const shortcut = useShortcutsStore.getState().getShortcut("formatToolbar");
+      if (matchesShortcutEvent(e, shortcut)) {
         e.preventDefault();
         e.stopPropagation();
         toggleToolbar();

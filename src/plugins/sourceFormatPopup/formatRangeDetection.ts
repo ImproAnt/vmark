@@ -2,7 +2,7 @@
  * Format Range Detection for Source Mode
  *
  * Detects if cursor is inside a formatted range (e.g., **bold**, *italic*).
- * Used by Cmd+E to auto-select formatted content.
+ * Used by the toolbar shortcut to auto-select formatted content.
  */
 
 import type { EditorView } from "@codemirror/view";

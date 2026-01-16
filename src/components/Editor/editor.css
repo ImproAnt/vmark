@@ -197,7 +197,7 @@
 .tiptap-editor ul,
 .tiptap-editor ol {
   margin: 0.8em 0;
-  padding-left: 30px;
+  padding-left: 1em;
 }
 
 .tiptap-editor ul:first-child,

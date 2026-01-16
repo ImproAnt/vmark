@@ -13,6 +13,7 @@ interface ToolbarButtonProps {
   disabled?: boolean;
   active?: boolean;
   notImplemented?: boolean;
+  focusEnabled?: boolean;
   focusIndex?: number;
   currentFocusIndex?: number;
   onClick: () => void;
@@ -34,6 +35,7 @@ export function ToolbarButton({
   disabled = false,
   active = false,
   notImplemented = false,
+  focusEnabled = true,
   focusIndex,
   currentFocusIndex,
   onClick,
@@ -45,8 +47,8 @@ export function ToolbarButton({
     title = `${button.label} — Not available yet`;
   }
 
-  // Roving tabindex: only focused button has tabIndex=0
-  const tabIndex = focusIndex === currentFocusIndex ? 0 : -1;
+  // Roving tabindex: only focused button has tabIndex=0 when focus is active
+  const tabIndex = focusEnabled && focusIndex === currentFocusIndex ? 0 : -1;
 
   return (
     <button

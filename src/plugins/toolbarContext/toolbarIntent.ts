@@ -80,7 +80,7 @@ export function resolveToolbarIntent(ctx: CursorContext): ToolbarIntent {
   }
 
   // 8. Link → unified behavior: format toolbar with linkContext
-  // Cmd+E opens format toolbar; Link button in toolbar opens link popup
+  // Toolbar shortcut opens format toolbar; Link button in toolbar opens link popup
   if (ctx.inLink) {
     return {
       type: "format",

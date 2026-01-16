@@ -151,7 +151,7 @@ describe("resolveToolbarIntent", () => {
       });
 
       const intent = resolveToolbarIntent(ctx);
-      // Unified: Cmd+E in link opens format toolbar, Link button opens popup
+      // Unified: toolbar shortcut in link opens format toolbar, Link button opens popup
       expect(intent.type).toBe("format");
       if (intent.type === "format") {
         expect(intent.autoSelected).toBe(true);

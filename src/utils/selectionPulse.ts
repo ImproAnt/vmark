@@ -1,7 +1,7 @@
 /**
  * Selection Pulse Animation Utility
  *
- * Provides visual feedback when auto-selecting text (e.g., Cmd+E word selection).
+ * Provides visual feedback when auto-selecting text (e.g., toolbar shortcut word selection).
  * Adds a temporary CSS class that triggers a pulse animation, then removes it.
  *
  * Uses WeakMap for timer tracking - allows GC when elements are removed.

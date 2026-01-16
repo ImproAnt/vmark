@@ -26,6 +26,8 @@ interface UseToolbarKeyboardOptions {
   isButtonFocusable: (index: number) => boolean;
   /** Optional external ref for the toolbar container */
   containerRef?: React.RefObject<HTMLDivElement | null>;
+  /** Whether focus should be managed by the toolbar */
+  focusMode: boolean;
   /** Callback when a button should be activated */
   onActivate: (index: number) => void;
   /** Callback when a dropdown should open */
@@ -62,7 +64,15 @@ interface UseToolbarKeyboardReturn {
 export function useToolbarKeyboard(
   options: UseToolbarKeyboardOptions
 ): UseToolbarKeyboardReturn {
-  const { buttonCount, isButtonFocusable, onActivate, onOpenDropdown, onClose, containerRef: externalRef } = options;
+  const {
+    buttonCount,
+    isButtonFocusable,
+    onActivate,
+    onOpenDropdown,
+    onClose,
+    containerRef: externalRef,
+    focusMode,
+  } = options;
   const internalRef = useRef<HTMLDivElement>(null);
   const containerRef = externalRef ?? internalRef;
 
@@ -172,8 +182,11 @@ export function useToolbarKeyboard(
 
   // Focus button when toolbar opens
   useEffect(() => {
+    if (!focusMode) return;
     const container = containerRef.current;
     if (!container) return;
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (activeElement && container.contains(activeElement)) return;
 
     // Delay to ensure DOM is ready
     const timer = setTimeout(() => {
@@ -187,7 +200,7 @@ export function useToolbarKeyboard(
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [focusedIndex, isButtonFocusable, containerRef]);
+  }, [focusMode, focusedIndex, isButtonFocusable, containerRef]);
 
   return {
     focusedIndex,

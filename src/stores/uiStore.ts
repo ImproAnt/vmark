@@ -15,7 +15,8 @@ interface UIState {
   sidebarViewMode: SidebarViewMode;
   activeHeadingLine: number | null; // Current heading line for outline highlight
   statusBarPinned: boolean; // When true, status bar stays visible
-  universalToolbarVisible: boolean; // Ctrl+E universal formatting toolbar
+  universalToolbarVisible: boolean; // Universal formatting toolbar (shortcut configurable)
+  universalToolbarHasFocus: boolean; // Keyboard focus is inside the universal toolbar
   lastFocusedToolbarIndex: number; // Last focused button index in universal toolbar
 }
 
@@ -32,6 +33,7 @@ interface UIActions {
   setStatusBarPinned: (pinned: boolean) => void;
   toggleUniversalToolbar: () => void;
   setUniversalToolbarVisible: (visible: boolean) => void;
+  setUniversalToolbarHasFocus: (hasFocus: boolean) => void;
   setLastFocusedToolbarIndex: (index: number) => void;
 }
 
@@ -44,6 +46,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   activeHeadingLine: null,
   statusBarPinned: false,
   universalToolbarVisible: false,
+  universalToolbarHasFocus: false,
   lastFocusedToolbarIndex: 0,
 
   openSettings: () => set({ settingsOpen: true }),
@@ -59,7 +62,15 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   toggleStatusBar: () => set((state) => ({ statusBarPinned: !state.statusBarPinned })),
   setStatusBarPinned: (pinned) => set({ statusBarPinned: pinned }),
   toggleUniversalToolbar: () =>
-    set((state) => ({ universalToolbarVisible: !state.universalToolbarVisible })),
-  setUniversalToolbarVisible: (visible) => set({ universalToolbarVisible: visible }),
+    set((state) => ({
+      universalToolbarVisible: !state.universalToolbarVisible,
+      universalToolbarHasFocus: !state.universalToolbarVisible,
+    })),
+  setUniversalToolbarVisible: (visible) =>
+    set((state) => ({
+      universalToolbarVisible: visible,
+      universalToolbarHasFocus: visible ? state.universalToolbarHasFocus : false,
+    })),
+  setUniversalToolbarHasFocus: (hasFocus) => set({ universalToolbarHasFocus: hasFocus }),
   setLastFocusedToolbarIndex: (index) => set({ lastFocusedToolbarIndex: index }),
 }));

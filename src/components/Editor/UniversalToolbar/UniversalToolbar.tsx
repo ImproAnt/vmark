@@ -2,12 +2,12 @@
  * UniversalToolbar - Bottom formatting toolbar
  *
  * A universal, single-line toolbar anchored at the bottom of the window.
- * Triggered by Ctrl+E, provides consistent formatting actions across
+ * Triggered by the configured shortcut, provides consistent formatting actions across
  * both WYSIWYG and Source modes.
  *
  * @module components/Editor/UniversalToolbar
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSourceCursorContextStore } from "@/stores/sourceCursorContextStore";
@@ -41,6 +41,7 @@ import "./universal-toolbar.css";
  */
 export function UniversalToolbar() {
   const visible = useUIStore((state) => state.universalToolbarVisible);
+  const toolbarHasFocus = useUIStore((state) => state.universalToolbarHasFocus);
   const lastFocusedIndex = useUIStore((state) => state.lastFocusedToolbarIndex);
   const sourceMode = useEditorStore((state) => state.sourceMode);
   const wysiwygContext = useTiptapEditorStore((state) => state.context);
@@ -110,6 +111,22 @@ export function UniversalToolbar() {
     });
   }, []);
 
+  const handleFocusCapture = useCallback(() => {
+    if (!useUIStore.getState().universalToolbarHasFocus) {
+      useUIStore.getState().setUniversalToolbarHasFocus(true);
+    }
+  }, []);
+
+  const handleBlurCapture = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      const nextTarget = event.relatedTarget as Node | null;
+      const container = containerRef.current;
+      if (container && nextTarget && container.contains(nextTarget)) return;
+      useUIStore.getState().setUniversalToolbarHasFocus(false);
+    },
+    [containerRef]
+  );
+
   const handleAction = useCallback((action: string) => {
     if (action.startsWith("heading:")) {
       const level = Number(action.split(":")[1]);
@@ -163,6 +180,7 @@ export function UniversalToolbar() {
     buttonCount: buttons.length,
     containerRef,
     isButtonFocusable,
+    focusMode: toolbarHasFocus,
     onActivate: (index) => {
       const button = buttons[index];
       if (!button) return;
@@ -270,6 +288,8 @@ export function UniversalToolbar() {
       aria-label="Formatting toolbar"
       className="universal-toolbar"
       onKeyDown={handleKeyDown}
+      onFocusCapture={handleFocusCapture}
+      onBlurCapture={handleBlurCapture}
     >
       {TOOLBAR_GROUPS.map((group, _groupIndex) => (
         <div key={group.id} className="universal-toolbar-group">
@@ -290,6 +310,7 @@ export function UniversalToolbar() {
                 disabled={disabled}
                 notImplemented={notImplemented}
                 active={active}
+                focusEnabled={toolbarHasFocus}
                 focusIndex={currentIndex}
                 currentFocusIndex={focusedIndex}
                 onClick={() => {

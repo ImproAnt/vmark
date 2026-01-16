@@ -113,7 +113,7 @@ function MainLayout() {
   useViewShortcuts(); // F7, F8, F9 shortcuts
   useTabShortcuts(); // Cmd+T, Cmd+W tab shortcuts
   useReloadGuard(); // Prevent reload when dirty
-  useUniversalToolbar(); // Ctrl+E universal toolbar toggle
+  useUniversalToolbar(); // Universal toolbar toggle (shortcut configurable)
 
   const classNames = [
     "app-layout",

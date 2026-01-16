@@ -1,19 +1,27 @@
 /**
  * Tab Indent Extension for Tiptap
  *
- * Fallback Tab handler that inserts spaces when Tab is not handled
- * by other extensions (slash menu, auto-pair jump, list indent, etc.).
+ * Fallback Tab handler that keeps Tab inside the editor.
+ * Handles table navigation, list indent/outdent, and finally inserts spaces.
  *
  * When cursor is in a table:
  * - Tab: moves to next cell, or adds a row at the last cell
  * - Shift+Tab: moves to previous cell
  *
+ * When cursor is in a list item:
+ * - Tab: indent (sink) the list item
+ * - Shift+Tab: outdent (lift) the list item
+ *
+ * Note: We use ProseMirror's direct liftListItem/sinkListItem functions
+ * because our custom listItem node doesn't register Tiptap commands.
+ *
  * This prevents Tab from moving focus outside the editor.
  */
 
 import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
 import { goToNextCell, addRowAfter } from "@tiptap/pm/tables";
+import { liftListItem, sinkListItem } from "@tiptap/pm/schema-list";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { isInTable, getTableInfo } from "@/plugins/tableUI/tableActions.tiptap";
 
@@ -24,6 +32,20 @@ const tabIndentPluginKey = new PluginKey("tabIndent");
  */
 function getTabSize(): number {
   return useSettingsStore.getState().general.tabSize;
+}
+
+/**
+ * Check if the cursor is inside a list item.
+ */
+function isInListItem(state: EditorState): boolean {
+  const listItemType = state.schema.nodes.listItem;
+  if (!listItemType) return false;
+
+  const { $from } = state.selection;
+  for (let d = $from.depth; d > 0; d--) {
+    if ($from.node(d).type === listItemType) return true;
+  }
+  return false;
 }
 
 export const tabIndentExtension = Extension.create({
@@ -66,6 +88,20 @@ export const tabIndentExtension = Extension.create({
 
               const { state, dispatch } = view;
               const { selection } = state;
+
+              // In list item: indent/outdent
+              if (isInListItem(state)) {
+                event.preventDefault();
+                const listItemType = state.schema.nodes.listItem;
+                if (listItemType) {
+                  if (event.shiftKey) {
+                    liftListItem(listItemType)(state, dispatch);
+                  } else {
+                    sinkListItem(listItemType)(state, dispatch);
+                  }
+                }
+                return true;
+              }
 
               // Handle Shift+Tab: outdent (remove up to tabSize spaces before cursor)
               if (event.shiftKey) {

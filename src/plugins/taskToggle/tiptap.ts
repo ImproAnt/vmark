@@ -104,10 +104,11 @@ export const taskListItemExtension = Node.create({
   },
 
   addKeyboardShortcuts() {
+    // Note: Tab/Shift-Tab for list indent/outdent is handled by tabIndentExtension
+    // using ProseMirror's liftListItem/sinkListItem directly (our custom listItem
+    // node doesn't register Tiptap commands).
     return {
       Enter: () => this.editor.commands.splitListItem(this.name),
-      Tab: () => this.editor.commands.sinkListItem(this.name),
-      "Shift-Tab": () => this.editor.commands.liftListItem(this.name),
       "Mod-Shift-Enter": () => toggleTaskCheckbox(this.editor.view.state, this.editor.view.dispatch),
     };
   },

@@ -1,14 +1,16 @@
 /**
  * View Shortcuts Hook
  *
- * Handles keyboard shortcuts for view modes (F7, F8, F9).
+ * Handles keyboard shortcuts for view modes (configurable).
  * Menu accelerators don't always work reliably, so we listen directly.
  */
 
 import { useEffect } from "react";
 import { useEditorStore } from "@/stores/editorStore";
+import { useShortcutsStore } from "@/stores/shortcutsStore";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { isImeKeyEvent } from "@/utils/imeGuard";
+import { matchesShortcutEvent } from "@/utils/shortcutMatch";
 
 export function useViewShortcuts() {
   useEffect(() => {
@@ -20,20 +22,34 @@ export function useViewShortcuts() {
         return;
       }
 
-      switch (e.key) {
-        case "F7":
-          e.preventDefault();
-          flushActiveWysiwygNow();
-          useEditorStore.getState().toggleSourceMode();
-          break;
-        case "F8":
-          e.preventDefault();
-          useEditorStore.getState().toggleFocusMode();
-          break;
-        case "F9":
-          e.preventDefault();
-          useEditorStore.getState().toggleTypewriterMode();
-          break;
+      const shortcuts = useShortcutsStore.getState();
+      const sourceModeKey = shortcuts.getShortcut("sourceMode");
+      const focusModeKey = shortcuts.getShortcut("focusMode");
+      const typewriterModeKey = shortcuts.getShortcut("typewriterMode");
+      const wordWrapKey = shortcuts.getShortcut("wordWrap");
+
+      if (matchesShortcutEvent(e, sourceModeKey)) {
+        e.preventDefault();
+        flushActiveWysiwygNow();
+        useEditorStore.getState().toggleSourceMode();
+        return;
+      }
+
+      if (matchesShortcutEvent(e, focusModeKey)) {
+        e.preventDefault();
+        useEditorStore.getState().toggleFocusMode();
+        return;
+      }
+
+      if (matchesShortcutEvent(e, typewriterModeKey)) {
+        e.preventDefault();
+        useEditorStore.getState().toggleTypewriterMode();
+        return;
+      }
+
+      if (matchesShortcutEvent(e, wordWrapKey)) {
+        e.preventDefault();
+        useEditorStore.getState().toggleWordWrap();
       }
     };
 
