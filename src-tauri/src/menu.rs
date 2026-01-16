@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use tauri::menu::{AboutMetadataBuilder, Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu};
 use tauri::AppHandle;
 
-/// Beta version string, read from version.txt at compile time.
-const BETA_VERSION: &str = include_str!("../version.txt");
+/// App version, pulled from Cargo package metadata at compile time.
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub const RECENT_FILES_SUBMENU_ID: &str = "recent-files-submenu";
 
@@ -439,7 +439,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     // Help menu - About dialog shows beta version
     let about_metadata = AboutMetadataBuilder::new()
         .name(Some("VMark"))
-        .version(Some(BETA_VERSION.trim()))
+        .version(Some(APP_VERSION))
         .build();
     let help_menu = Submenu::with_items(
         app,
@@ -844,7 +844,7 @@ fn create_menu_with_shortcuts(
     // Help menu
     let about_metadata = AboutMetadataBuilder::new()
         .name(Some("VMark"))
-        .version(Some(BETA_VERSION.trim()))
+        .version(Some(APP_VERSION))
         .build();
     let help_menu = Submenu::with_items(
         app,
