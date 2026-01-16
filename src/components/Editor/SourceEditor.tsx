@@ -25,6 +25,7 @@ import {
   useDocumentCursorInfo,
   useDocumentActions,
 } from "@/hooks/useDocumentState";
+import { useSourceMenuCommands } from "@/hooks/useSourceMenuCommands";
 import {
   getCursorInfoFromCodeMirror,
   restoreCursorInCodeMirror,
@@ -128,6 +129,8 @@ export function SourceEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const isInternalChange = useRef(false);
+
+  useSourceMenuCommands(viewRef);
 
   // Use document store for content (per-window state)
   const content = useDocumentContent();
