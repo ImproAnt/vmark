@@ -12,8 +12,18 @@ describe("markdownPasteDetection", () => {
     expect(isMarkdownPasteCandidate(text)).toBe(true);
   });
 
+  it("detects single-line headings", () => {
+    const text = "# Title";
+    expect(isMarkdownPasteCandidate(text)).toBe(true);
+  });
+
   it("detects list blocks", () => {
     const text = "- first\n- second";
+    expect(isMarkdownPasteCandidate(text)).toBe(true);
+  });
+
+  it("detects single-line list items", () => {
+    const text = "- one item";
     expect(isMarkdownPasteCandidate(text)).toBe(true);
   });
 
@@ -25,6 +35,21 @@ describe("markdownPasteDetection", () => {
   it("detects links when combined with other markdown", () => {
     const text = "[Link](https://example.com)\n\nNext line";
     expect(isMarkdownPasteCandidate(text)).toBe(true);
+  });
+
+  it("detects multi-line emphasis without other signals", () => {
+    const text = "This is **important**.\nPlease read *carefully*.";
+    expect(isMarkdownPasteCandidate(text)).toBe(true);
+  });
+
+  it("detects blockquote markdown when combined with another signal", () => {
+    const text = "> # Title\n> Quote line";
+    expect(isMarkdownPasteCandidate(text)).toBe(true);
+  });
+
+  it("rejects email-style quoted text", () => {
+    const text = "On Monday, John wrote:\n> Thanks for your help!\n> Let me know.";
+    expect(isMarkdownPasteCandidate(text)).toBe(false);
   });
 
   it("rejects single-line emphasis", () => {
@@ -39,7 +64,4 @@ describe("markdownPasteDetection", () => {
     expect(isMarkdownPasteCandidate("Just a sentence with _underscores_.")).toBe(false);
   });
 
-  it("rejects single-line list items without other signals", () => {
-    expect(isMarkdownPasteCandidate("- one item")).toBe(false);
-  });
 });
