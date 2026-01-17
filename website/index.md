@@ -115,6 +115,7 @@ VMark is available for macOS, Windows, and Linux. Download the latest version an
       GitHub
     </a>
     <a href="https://lixiaolai.com" target="_blank" class="credit-link">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 17.938A8.004 8.004 0 0 1 4 12c0-.34.028-.674.074-1.002l5.926 5.927v1.009c0 1.093.907 2.004 2 2.004v-1zm6.426-2.318A1.994 1.994 0 0 0 15.5 16.5h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.412A7.997 7.997 0 0 1 20 12a7.96 7.96 0 0 1-2.574 5.62z"/></svg>
       lixiaolai.com
     </a>
   </div>
