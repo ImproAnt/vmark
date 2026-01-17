@@ -2,7 +2,8 @@ import { useEffect, useCallback, useRef, type MutableRefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
-import { useTerminalStore } from "@/stores/terminalStore";
+import { useTerminalStore, type TerminalSession } from "@/stores/terminalStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import type { Terminal } from "@xterm/xterm";
 
 interface PtySession {
@@ -28,20 +29,24 @@ interface PtyExit {
  * - Spawning PTY session on mount
  * - Forwarding PTY output to xterm.js
  * - Sending user input to PTY
+ * - Restoring sessions from persistence
  * - Cleaning up on unmount
  *
  * @param terminalRef - Reference to the xterm.js Terminal instance
  * @param processData - Optional function to process data before writing to terminal
  * @param onSessionCreated - Callback when PTY session is created
  * @param onSessionEnded - Callback when PTY session ends
+ * @param sessionToRestore - Optional session to restore (will update ID instead of creating new)
  */
 export function useTerminalPty(
   terminalRef: MutableRefObject<Terminal | null>,
   processData?: (data: string) => string,
   onSessionCreated?: (sessionId: string) => void,
-  onSessionEnded?: (sessionId: string) => void
+  onSessionEnded?: (sessionId: string) => void,
+  sessionToRestore?: TerminalSession
 ) {
   const rootPath = useWorkspaceStore((state) => state.rootPath);
+  const updateSessionId = useTerminalStore((state) => state.updateSessionId);
   const sessionIdRef = useRef<string | null>(null);
   const unlistenOutputRef = useRef<UnlistenFn | null>(null);
   const unlistenExitRef = useRef<UnlistenFn | null>(null);
@@ -62,11 +67,19 @@ export function useTerminalPty(
 
     const spawnPty = async () => {
       try {
-        // Spawn PTY with workspace root as cwd
+        // Get shell setting
+        const shellSetting = useSettingsStore.getState().terminal.shell;
+        const shell = shellSetting === "system" ? undefined : shellSetting;
+
+        // Use session cwd for restoration, otherwise use workspace root
+        const cwd = sessionToRestore?.cwd || rootPath || undefined;
+
+        // Spawn PTY
         const session = await invoke<PtySession>("pty_spawn", {
-          cwd: rootPath || undefined,
+          cwd,
           cols: 80,
           rows: 24,
+          shell,
         });
 
         if (!mounted) {
@@ -76,7 +89,13 @@ export function useTerminalPty(
         }
 
         sessionIdRef.current = session.id;
-        onSessionCreated?.(session.id);
+
+        // If restoring a session, update its ID instead of creating new
+        if (sessionToRestore) {
+          updateSessionId(sessionToRestore.id, session.id);
+        } else {
+          onSessionCreated?.(session.id);
+        }
 
         // Listen for PTY output
         unlistenOutputRef.current = await listen<PtyOutput>("pty:output", (event) => {
@@ -134,7 +153,7 @@ export function useTerminalPty(
         sessionIdRef.current = null;
       }
     };
-  }, [rootPath, terminalRef, processData, onSessionCreated, onSessionEnded]);
+  }, [rootPath, terminalRef, processData, onSessionCreated, onSessionEnded, sessionToRestore, updateSessionId]);
 
   return {
     sessionId: sessionIdRef.current,

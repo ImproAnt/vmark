@@ -3,11 +3,21 @@
   display: flex;
   flex-direction: column;
   background-color: var(--terminal-bg, #1e1e1e);
-  border-top: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 
-.terminal-resize-handle {
+/* Bottom position (default) */
+.terminal-panel--bottom {
+  border-top: 1px solid var(--border-color);
+}
+
+/* Right position */
+.terminal-panel--right {
+  border-left: 1px solid var(--border-color);
+}
+
+/* Resize handle - bottom position */
+.terminal-resize-handle--bottom {
   position: absolute;
   top: 0;
   left: 0;
@@ -18,12 +28,26 @@
   background: transparent;
 }
 
-.terminal-resize-handle:hover {
+/* Resize handle - right position */
+.terminal-resize-handle--right {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+}
+
+.terminal-resize-handle--bottom:hover,
+.terminal-resize-handle--right:hover {
   background-color: var(--primary-color);
   opacity: 0.5;
 }
 
-.terminal-resize-handle:active {
+.terminal-resize-handle--bottom:active,
+.terminal-resize-handle--right:active {
   background-color: var(--primary-color);
   opacity: 0.8;
 }
@@ -31,6 +55,7 @@
 .terminal-content {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   padding: 4px 8px;
 }
@@ -42,7 +67,46 @@
   flex-direction: column;
 }
 
+/* Split layout */
+.terminal-split {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.terminal-split--horizontal {
+  flex-direction: row;
+}
+
+.terminal-split--vertical {
+  flex-direction: column;
+}
+
+.terminal-split-pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.terminal-split-divider {
+  flex-shrink: 0;
+  background: var(--border-color, #3c3c3c);
+}
+
+.terminal-split--horizontal .terminal-split-divider {
+  width: 1px;
+}
+
+.terminal-split--vertical .terminal-split-divider {
+  height: 1px;
+}
+
 /* Dark theme - terminal is already dark by default */
-.dark-theme .terminal-panel {
+.dark-theme .terminal-panel--bottom {
   border-top-color: var(--border-color);
+}
+
+.dark-theme .terminal-panel--right {
+  border-left-color: var(--border-color);
 }

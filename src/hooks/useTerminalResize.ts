@@ -1,21 +1,29 @@
 import { useCallback, useRef, useEffect } from "react";
-import { useTerminalStore, TERMINAL_MIN_HEIGHT, TERMINAL_MAX_HEIGHT } from "@/stores/terminalStore";
+import {
+  useTerminalStore,
+  TERMINAL_MIN_HEIGHT,
+  TERMINAL_MAX_HEIGHT,
+  TERMINAL_MIN_WIDTH,
+  TERMINAL_MAX_WIDTH,
+} from "@/stores/terminalStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 /**
  * Hook for handling terminal panel resize via drag handle.
  *
  * Features:
- * - Clamps height to MIN/MAX bounds
+ * - Supports both vertical (bottom) and horizontal (right) resize
+ * - Clamps size to MIN/MAX bounds
  * - Cleans up listeners on blur/unmount to prevent leaks
  * - Prevents text selection during drag
- * - Inverts drag direction (dragging up = taller)
+ * - Inverts drag direction appropriately for each position
  *
  * @returns handleResizeStart - onMouseDown handler for the resize handle
  */
 export function useTerminalResize() {
   const isResizing = useRef(false);
-  const startY = useRef(0);
-  const startHeight = useRef(0);
+  const startPos = useRef(0);
+  const startSize = useRef(0);
 
   // Store references for cleanup
   const handlersRef = useRef<{
@@ -26,6 +34,11 @@ export function useTerminalResize() {
   /** Clamp height to valid range */
   const clampHeight = useCallback((height: number): number => {
     return Math.max(TERMINAL_MIN_HEIGHT, Math.min(TERMINAL_MAX_HEIGHT, height));
+  }, []);
+
+  /** Clamp width to valid range */
+  const clampWidth = useCallback((width: number): number => {
+    return Math.max(TERMINAL_MIN_WIDTH, Math.min(TERMINAL_MAX_WIDTH, width));
   }, []);
 
   /** Clean up listeners and styles */
@@ -52,15 +65,32 @@ export function useTerminalResize() {
     (e: React.MouseEvent) => {
       e.preventDefault();
       isResizing.current = true;
-      startY.current = e.clientY;
-      startHeight.current = useTerminalStore.getState().height;
+
+      const position = useSettingsStore.getState().terminal.position;
+      const isHorizontal = position === "right";
+
+      if (isHorizontal) {
+        startPos.current = e.clientX;
+        startSize.current = useTerminalStore.getState().width;
+      } else {
+        startPos.current = e.clientY;
+        startSize.current = useTerminalStore.getState().height;
+      }
 
       const handleMouseMove = (e: MouseEvent) => {
         if (!isResizing.current) return;
-        // Inverted: dragging up (negative delta) should increase height
-        const delta = startY.current - e.clientY;
-        const newHeight = clampHeight(startHeight.current + delta);
-        useTerminalStore.getState().setHeight(newHeight);
+
+        if (isHorizontal) {
+          // Horizontal resize: dragging left (negative delta) should increase width
+          const delta = startPos.current - e.clientX;
+          const newWidth = clampWidth(startSize.current + delta);
+          useTerminalStore.getState().setWidth(newWidth);
+        } else {
+          // Vertical resize: dragging up (negative delta) should increase height
+          const delta = startPos.current - e.clientY;
+          const newHeight = clampHeight(startSize.current + delta);
+          useTerminalStore.getState().setHeight(newHeight);
+        }
       };
 
       const handleMouseUp = () => {
@@ -75,10 +105,10 @@ export function useTerminalResize() {
       // Also cleanup on window blur (user switches away mid-drag)
       window.addEventListener("blur", handleMouseUp);
 
-      document.body.style.cursor = "row-resize";
+      document.body.style.cursor = isHorizontal ? "col-resize" : "row-resize";
       document.body.style.userSelect = "none";
     },
-    [clampHeight, cleanup]
+    [clampHeight, clampWidth, cleanup]
   );
 
   return handleResizeStart;

@@ -64,6 +64,34 @@ impl Default for PtyState {
     }
 }
 
+/// Resolve shell type to executable path
+fn resolve_shell(shell_type: Option<&str>) -> String {
+    match shell_type {
+        Some("bash") => "/bin/bash".to_string(),
+        Some("zsh") => "/bin/zsh".to_string(),
+        Some("fish") => {
+            // Fish is often installed via Homebrew
+            if std::path::Path::new("/opt/homebrew/bin/fish").exists() {
+                "/opt/homebrew/bin/fish".to_string()
+            } else if std::path::Path::new("/usr/local/bin/fish").exists() {
+                "/usr/local/bin/fish".to_string()
+            } else {
+                "/usr/bin/fish".to_string()
+            }
+        }
+        Some("powershell") => {
+            // PowerShell on macOS
+            if std::path::Path::new("/usr/local/bin/pwsh").exists() {
+                "/usr/local/bin/pwsh".to_string()
+            } else {
+                "pwsh".to_string()
+            }
+        }
+        // "system" or None - use SHELL env var
+        _ => std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string()),
+    }
+}
+
 /// Spawn a new PTY session
 #[tauri::command]
 pub async fn pty_spawn(
@@ -72,6 +100,7 @@ pub async fn pty_spawn(
     cwd: Option<String>,
     cols: Option<u16>,
     rows: Option<u16>,
+    shell: Option<String>,
 ) -> Result<PtySession, String> {
     let session_id = uuid::Uuid::new_v4().to_string();
     let cols = cols.unwrap_or(80);
@@ -90,10 +119,14 @@ pub async fn pty_spawn(
         })
         .map_err(|e| format!("Failed to open PTY: {}", e))?;
 
-    // Build shell command
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-    let mut cmd = CommandBuilder::new(&shell);
-    cmd.arg("-l"); // Login shell
+    // Build shell command - resolve shell type to path
+    let shell_path = resolve_shell(shell.as_deref());
+    let mut cmd = CommandBuilder::new(&shell_path);
+
+    // Add login shell flag (not for PowerShell)
+    if !shell_path.contains("pwsh") {
+        cmd.arg("-l");
+    }
 
     // Set working directory
     if let Some(ref dir) = cwd {

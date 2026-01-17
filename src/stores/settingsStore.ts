@@ -168,6 +168,8 @@ export type TerminalShell = "system" | "bash" | "zsh" | "fish" | "powershell";
 export type TerminalFontSize = 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
 export type TerminalCursorStyle = "block" | "bar" | "underline";
 export type TerminalMarkdownMode = "ansi" | "overlay" | "off";
+export type TerminalTheme = "auto" | "dark" | "light";
+export type TerminalPosition = "bottom" | "right";
 
 export interface TerminalSettings {
   shell: TerminalShell;           // Shell to use (system = auto-detect)
@@ -177,6 +179,8 @@ export interface TerminalSettings {
   scrollback: number;             // Lines of scrollback (1000-10000)
   markdownMode: TerminalMarkdownMode; // Markdown rendering mode
   copyOnSelect: boolean;          // Copy text when selected
+  theme: TerminalTheme;           // Terminal color theme (auto = follow app)
+  position: TerminalPosition;     // Panel position (bottom or right)
 }
 
 export interface AdvancedSettingsState {
@@ -338,6 +342,8 @@ const initialState: SettingsState = {
     scrollback: 5000,
     markdownMode: "ansi",
     copyOnSelect: false,
+    theme: "auto",
+    position: "bottom",
   },
   advanced: {
     enableCommandMenu: false,

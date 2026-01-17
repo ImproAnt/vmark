@@ -83,7 +83,15 @@
   opacity: 1 !important;
 }
 
-.terminal-tab-add {
+/* Actions container (add, split buttons) */
+.terminal-tabs-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.terminal-tab-action {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -99,7 +107,7 @@
   flex-shrink: 0;
 }
 
-.terminal-tab-add:hover {
+.terminal-tab-action:hover {
   background: #2a2d2e;
   color: #cccccc;
 }

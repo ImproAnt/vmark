@@ -54,6 +54,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSearchStore } from "@/stores/searchStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { useMenuEvents } from "@/hooks/useMenuEvents";
 import { useExportMenuEvents } from "@/hooks/useExportMenuEvents";
 import { useWorkspaceMenuEvents } from "@/hooks/useWorkspaceMenuEvents";
@@ -105,10 +107,13 @@ function MainLayout() {
   const sidebarVisible = useUIStore((state) => state.sidebarVisible);
   const sidebarWidth = useUIStore((state) => state.sidebarWidth);
   const findBarOpen = useSearchStore((state) => state.isOpen);
+  const terminalPosition = useSettingsStore((state) => state.terminal.position);
+  const terminalVisible = useTerminalStore((state) => state.visible);
   const isDocumentWindow = useIsDocumentWindow();
   const windowLabel = useWindowLabel();
   const handleResizeStart = useSidebarResize();
   const sidebarOffset = sidebarVisible ? `${sidebarWidth}px` : "0px";
+  const isTerminalRight = terminalPosition === "right" && terminalVisible;
 
   // Initialize hooks
   useWorkspaceBootstrap(); // Load config from disk on startup (must be first)
@@ -186,13 +191,41 @@ function MainLayout() {
       >
         {/* Spacer for title bar area */}
         <div style={{ height: TITLEBAR_HEIGHT, flexShrink: 0 }} />
-        <div style={{ flex: 1, minHeight: 0, minWidth: 0, marginBottom: TITLEBAR_HEIGHT }}>
-          <Editor />
+        {/* Main content area - flex row when terminal is on right */}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            minWidth: 0,
+            marginBottom: TITLEBAR_HEIGHT,
+            display: "flex",
+            flexDirection: isTerminalRight ? "row" : "column",
+          }}
+        >
+          {/* Editor + bottom bars container */}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Editor area */}
+            <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+              <Editor />
+            </div>
+            {/* Bottom bars - always above bottom terminal, within sidebars when right terminal */}
+            <UniversalToolbar />
+            <FindBar />
+            <StatusBar />
+          </div>
+          {/* Terminal panel - on right side when isTerminalRight, otherwise below in column */}
+          {isTerminalRight && <TerminalPanel />}
         </div>
-        <TerminalPanel />
-        <UniversalToolbar />
-        <FindBar />
-        <StatusBar />
+        {/* Terminal at bottom (outside the row layout) */}
+        {!isTerminalRight && <TerminalPanel />}
       </div>
     </div>
   );

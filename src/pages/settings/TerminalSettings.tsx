@@ -10,6 +10,8 @@ import {
   type TerminalFontSize,
   type TerminalCursorStyle,
   type TerminalMarkdownMode,
+  type TerminalTheme,
+  type TerminalPosition,
 } from "@/stores/settingsStore";
 import { SettingRow, SettingsGroup, Select, Toggle } from "./components";
 
@@ -52,6 +54,17 @@ const markdownModeOptions: { value: TerminalMarkdownMode; label: string }[] = [
   { value: "off", label: "Off" },
 ];
 
+const themeOptions: { value: TerminalTheme; label: string }[] = [
+  { value: "auto", label: "Follow App" },
+  { value: "dark", label: "Dark" },
+  { value: "light", label: "Light" },
+];
+
+const positionOptions: { value: TerminalPosition; label: string }[] = [
+  { value: "bottom", label: "Bottom" },
+  { value: "right", label: "Right" },
+];
+
 export function TerminalSettings() {
   const terminal = useSettingsStore((state) => state.terminal);
   const updateSetting = useSettingsStore((state) => state.updateTerminalSetting);
@@ -74,6 +87,26 @@ export function TerminalSettings() {
 
       {/* Appearance */}
       <SettingsGroup title="Appearance">
+        <SettingRow
+          label="Position"
+          description="Where to show the terminal panel"
+        >
+          <Select
+            value={terminal.position}
+            options={positionOptions}
+            onChange={(v) => updateSetting("position", v as TerminalPosition)}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Theme"
+          description="Terminal color scheme"
+        >
+          <Select
+            value={terminal.theme}
+            options={themeOptions}
+            onChange={(v) => updateSetting("theme", v as TerminalTheme)}
+          />
+        </SettingRow>
         <SettingRow label="Font Size">
           <Select
             value={String(terminal.fontSize)}
