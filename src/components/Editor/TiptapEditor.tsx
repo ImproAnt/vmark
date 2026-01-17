@@ -29,6 +29,7 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useWindowLabel } from "@/contexts/WindowContext";
 import { resolveHardBreakStyle } from "@/utils/linebreaks";
 import { smartPasteExtension } from "@/plugins/smartPaste/tiptap";
+import { markdownPasteExtension } from "@/plugins/markdownPaste/tiptap";
 import { linkPopupExtension } from "@/plugins/linkPopup/tiptap";
 import { cursorAwareExtension } from "@/plugins/cursorAware/tiptap";
 import { searchExtension } from "@/plugins/search/tiptap";
@@ -177,6 +178,7 @@ export function TiptapEditorInner() {
       cursorAwareExtension,
       footnotePopupExtension,
       smartPasteExtension,
+      markdownPasteExtension,
       linkPopupExtension,
       searchExtension,
       spellCheckExtension,
