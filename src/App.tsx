@@ -74,6 +74,7 @@ import { useExternalFileChanges } from "@/hooks/useExternalFileChanges";
 import { useSidebarResize } from "@/hooks/useSidebarResize";
 import { useUniversalToolbar } from "@/hooks/useUniversalToolbar";
 import { useMcpAutoStart } from "@/hooks/useMcpAutoStart";
+import { useFileExplorerShortcuts } from "@/hooks/useFileExplorerShortcuts";
 
 /** Height of the title bar area in pixels */
 const TITLEBAR_HEIGHT = 40;
@@ -122,6 +123,7 @@ function MainLayout() {
   useTabShortcuts(); // Cmd+T, Cmd+W tab shortcuts
   useReloadGuard(); // Prevent reload when dirty
   useUniversalToolbar(); // Universal toolbar toggle (shortcut configurable)
+  useFileExplorerShortcuts(); // Toggle hidden files
 
   const classNames = [
     "app-layout",
