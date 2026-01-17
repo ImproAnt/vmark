@@ -30,6 +30,12 @@ export async function handleFormatToggle(
       case "strike":
         editor.commands.toggleStrike();
         break;
+      case "underline":
+        editor.chain().focus().toggleMark("underline").run();
+        break;
+      case "highlight":
+        editor.chain().focus().toggleMark("highlight").run();
+        break;
       default:
         throw new Error(`Unknown format: ${format}`);
     }
