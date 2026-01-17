@@ -220,15 +220,6 @@ export function TerminalPanel() {
         onMouseDown={handleResizeStart}
       />
 
-      {/* Tabs bar - only show when we have sessions */}
-      {sessions.length > 0 && (
-        <TerminalTabs
-          onNewSession={handleNewSession}
-          onCloseSession={handleCloseSession}
-          onSplitSession={handleSplitSession}
-        />
-      )}
-
       {/* Terminal views */}
       <div className="terminal-content">
         {/* If active session has a split, render split layout */}
@@ -281,6 +272,15 @@ export function TerminalPanel() {
           })
         )}
       </div>
+
+      {/* Tabs bar at bottom - only show when we have sessions */}
+      {sessions.length > 0 && (
+        <TerminalTabs
+          onNewSession={handleNewSession}
+          onCloseSession={handleCloseSession}
+          onSplitSession={handleSplitSession}
+        />
+      )}
     </div>
   );
 }

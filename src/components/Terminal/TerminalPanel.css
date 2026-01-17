@@ -6,14 +6,14 @@
   flex-shrink: 0;
 }
 
-/* Bottom position (default) */
+/* Bottom position (default) - border separates from editor */
 .terminal-panel--bottom {
-  border-top: 1px solid var(--terminal-chrome-border, var(--border-color));
+  border-top: 1px solid var(--border-color);
 }
 
-/* Right position */
+/* Right position - no border needed, background difference provides separation */
 .terminal-panel--right {
-  border-left: 1px solid var(--terminal-chrome-border, var(--border-color));
+  /* No border - scrollbar and background contrast provide visual separation */
 }
 
 /* Resize handle - bottom position */
@@ -91,7 +91,7 @@
 
 .terminal-split-divider {
   flex-shrink: 0;
-  background: var(--terminal-chrome-border, #3c3c3c);
+  background: var(--border-color);
 }
 
 .terminal-split--horizontal .terminal-split-divider {
@@ -102,11 +102,3 @@
   height: 1px;
 }
 
-/* Dark theme - terminal is already dark by default */
-.dark-theme .terminal-panel--bottom {
-  border-top-color: var(--border-color);
-}
-
-.dark-theme .terminal-panel--right {
-  border-left-color: var(--border-color);
-}

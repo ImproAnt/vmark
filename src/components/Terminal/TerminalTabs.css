@@ -1,23 +1,17 @@
 /**
- * Terminal Tabs Styles - Pill style matching StatusBar tabs
+ * Terminal Tabs Styles - Matches StatusBar/FindBar/UniversalToolbar
  *
- * Uses CSS custom properties set by TerminalPanel based on the terminal theme.
- * --terminal-chrome-bg: Tab bar background
- * --terminal-chrome-border: Border color
- * --terminal-chrome-text: Inactive text color
- * --terminal-chrome-text-active: Active text color
- * --terminal-chrome-hover-bg: Hover background
- * --terminal-chrome-active-bg: Active tab background
+ * Uses app theme tokens for consistency with other bottom bars.
  */
 
 .terminal-tabs {
   display: flex;
   align-items: center;
-  height: 32px;
-  background: var(--terminal-chrome-bg, #252526);
-  border-bottom: 1px solid var(--terminal-chrome-border, #3c3c3c);
-  padding: 0 8px;
-  gap: 4px;
+  height: 40px;
+  background-color: var(--bg-color);
+  padding: 6px 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .terminal-tabs-list {
@@ -33,33 +27,33 @@
   display: none;
 }
 
-/* Pill-style tab */
+/* Pill-style tab - matches StatusBar tabs */
 .terminal-tab {
   display: flex;
   align-items: center;
   gap: 4px;
   height: 22px;
-  padding: 0 10px;
-  background: transparent;
+  padding: 0 8px;
+  background-color: transparent;
   border: none;
   border-radius: 11px;
-  color: var(--terminal-chrome-text, #808080);
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .terminal-tab:hover {
-  background: var(--terminal-chrome-hover-bg, rgba(255, 255, 255, 0.08));
-  color: var(--terminal-chrome-text-active, #cccccc);
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  color: var(--text-color);
 }
 
 .terminal-tab.active {
-  background: var(--terminal-chrome-active-bg, #1e1e1e);
-  color: var(--terminal-chrome-text-active, #ffffff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  background-color: var(--bg-primary);
+  color: var(--text-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .terminal-tab-title {
@@ -79,7 +73,7 @@
   background: transparent;
   border: none;
   border-radius: 50%;
-  color: inherit;
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: background-color 0.1s ease, color 0.1s ease;
   flex-shrink: 0;
@@ -90,7 +84,8 @@
 }
 
 .terminal-tab-close:hover {
-  background: var(--terminal-chrome-hover-bg, rgba(255, 255, 255, 0.15));
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.1));
+  color: var(--text-color);
 }
 
 /* Actions container (split buttons on right) */
@@ -101,7 +96,7 @@
   flex-shrink: 0;
 }
 
-/* Action buttons - round style */
+/* Action buttons - matches StatusBar new-tab button */
 .terminal-tab-action {
   display: flex;
   align-items: center;
@@ -112,13 +107,13 @@
   background: transparent;
   border: none;
   border-radius: 50%;
-  color: var(--terminal-chrome-text, #808080);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
   flex-shrink: 0;
 }
 
 .terminal-tab-action:hover {
-  background: var(--terminal-chrome-hover-bg, rgba(255, 255, 255, 0.08));
-  color: var(--terminal-chrome-text-active, #cccccc);
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.08));
+  color: var(--text-color);
 }
