@@ -1,6 +1,6 @@
 # Getting Started with VMark
 
-VMark is a local-first Markdown editor built for a seamless writing experience. It features dual editing modes, rich formatting tools, and excellent CJK (Chinese/Japanese/Korean) support.
+VMark is a local-first Markdown editor with dual editing modes, rich formatting tools, and excellent CJK (Chinese/Japanese/Korean) support.
 
 ## Quick Start
 

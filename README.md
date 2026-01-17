@@ -1,6 +1,6 @@
 # VMark
 
-A local-first Markdown editor built with Tauri v2 and React, featuring dual editing surfaces for a dual editing modes.
+A local-first Markdown editor built with Tauri v2 and React, featuring dual editing modes and seamless rich text / source switching.
 
 ## Features
 
@@ -62,12 +62,6 @@ pnpm tauri build
 | `pnpm build` | Build frontend for production |
 | `pnpm tauri build` | Build desktop application |
 
-## Documentation
-
-- `AGENTS.md`: working agreement and required practices.
-- `docs/README.md`: documentation map (start here for architecture + testing).
-- `docs/dev-reference.md`: developer reference (architecture + workflows).
-
 ## Project Structure
 
 ```
@@ -81,7 +75,7 @@ vmark/
 │   └── pages/              # Route pages
 ├── src-tauri/              # Rust backend
 │   └── src/                # Tauri commands and plugins
-├── docs/                   # Documentation
+├── website/                # VitePress documentation site
 └── public/                 # Static assets
 ```
 
@@ -102,8 +96,6 @@ Unit tests use Vitest. Run the test suite:
 pnpm test           # Run once
 pnpm test:watch     # Watch mode
 ```
-
-For E2E testing of the running application, see `docs/testing/tauri-mcp-automated-testing-guide.md`.
 
 ## License
 

@@ -4,7 +4,7 @@ layout: home
 hero:
   name: VMark
   text: A Local-First Markdown Editor
-  tagline: Write beautifully with dual editing modes, CJK formatting, and a dual editing modes
+  tagline: Write beautifully with dual editing modes, CJK formatting, and seamless rich text / source switching
   image:
     src: /logo.png
     alt: VMark
