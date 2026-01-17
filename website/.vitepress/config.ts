@@ -31,6 +31,13 @@ export default defineConfig({
             { text: 'Keyboard Shortcuts', link: '/guide/shortcuts' },
             { text: 'CJK Formatting', link: '/guide/cjk-formatting' },
           ]
+        },
+        {
+          text: 'AI Integration',
+          items: [
+            { text: 'MCP Setup', link: '/guide/mcp-setup' },
+            { text: 'MCP Tools Reference', link: '/guide/mcp-tools' },
+          ]
         }
       ]
     },
