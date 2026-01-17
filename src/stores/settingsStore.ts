@@ -165,7 +165,7 @@ export interface McpServerSettings {
 }
 
 export type TerminalShell = "system" | "bash" | "zsh" | "fish" | "powershell";
-export type TerminalFontSize = 12 | 13 | 14 | 15 | 16;
+export type TerminalFontSize = 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
 export type TerminalCursorStyle = "block" | "bar" | "underline";
 export type TerminalMarkdownMode = "ansi" | "overlay" | "off";
 
@@ -332,7 +332,7 @@ const initialState: SettingsState = {
   },
   terminal: {
     shell: "system",
-    fontSize: 13,
+    fontSize: 15,
     cursorStyle: "bar",
     cursorBlink: true,
     scrollback: 5000,

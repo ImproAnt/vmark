@@ -27,6 +27,10 @@ const fontSizeOptions: { value: string; label: string }[] = [
   { value: "14", label: "14px" },
   { value: "15", label: "15px" },
   { value: "16", label: "16px" },
+  { value: "17", label: "17px" },
+  { value: "18", label: "18px" },
+  { value: "19", label: "19px" },
+  { value: "20", label: "20px" },
 ];
 
 const cursorStyleOptions: { value: TerminalCursorStyle; label: string }[] = [
