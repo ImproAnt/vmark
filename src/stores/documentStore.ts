@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CursorInfo } from "@/types/cursorSync";
+import type { HardBreakStyle, LineEnding } from "@/utils/linebreakDetection";
 
 // Re-export for backwards compatibility
 export type { NodeType, CursorInfo } from "@/types/cursorSync";
@@ -15,6 +16,8 @@ export interface DocumentState {
   lastAutoSave: number | null;
   /** True when the file was deleted externally - show warning UI */
   isMissing: boolean;
+  lineEnding: LineEnding;
+  hardBreakStyle: HardBreakStyle;
 }
 
 interface DocumentStore {
@@ -24,13 +27,22 @@ interface DocumentStore {
   // Actions - now take tabId instead of windowLabel
   initDocument: (tabId: string, content?: string, filePath?: string | null) => void;
   setContent: (tabId: string, content: string) => void;
-  loadContent: (tabId: string, content: string, filePath?: string | null) => void;
+  loadContent: (
+    tabId: string,
+    content: string,
+    filePath?: string | null,
+    meta?: { lineEnding?: LineEnding; hardBreakStyle?: HardBreakStyle }
+  ) => void;
   setFilePath: (tabId: string, path: string | null) => void;
   markMissing: (tabId: string) => void;
   clearMissing: (tabId: string) => void;
   markSaved: (tabId: string) => void;
   markAutoSaved: (tabId: string) => void;
   setCursorInfo: (tabId: string, info: CursorInfo | null) => void;
+  setLineMetadata: (
+    tabId: string,
+    meta: { lineEnding?: LineEnding; hardBreakStyle?: HardBreakStyle }
+  ) => void;
   removeDocument: (tabId: string) => void;
 
   // Selectors
@@ -47,6 +59,8 @@ const createInitialDocument = (content = "", filePath: string | null = null): Do
   cursorInfo: null,
   lastAutoSave: null,
   isMissing: false,
+  lineEnding: "unknown",
+  hardBreakStyle: "unknown",
 });
 
 /**
@@ -87,7 +101,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       }))
     ),
 
-  loadContent: (tabId, content, filePath) =>
+  loadContent: (tabId, content, filePath, meta) =>
     set((state) =>
       updateDoc(state, tabId, (doc) => ({
         content,
@@ -95,6 +109,8 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         filePath: filePath ?? null,
         isDirty: false,
         documentId: doc.documentId + 1,
+        lineEnding: meta?.lineEnding ?? doc.lineEnding,
+        hardBreakStyle: meta?.hardBreakStyle ?? doc.hardBreakStyle,
       }))
     ),
 
@@ -126,6 +142,14 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
   setCursorInfo: (tabId, info) =>
     set((state) => updateDoc(state, tabId, () => ({ cursorInfo: info }))),
+
+  setLineMetadata: (tabId, meta) =>
+    set((state) =>
+      updateDoc(state, tabId, (doc) => ({
+        lineEnding: meta.lineEnding ?? doc.lineEnding,
+        hardBreakStyle: meta.hardBreakStyle ?? doc.hardBreakStyle,
+      }))
+    ),
 
   removeDocument: (tabId) =>
     set((state) => {

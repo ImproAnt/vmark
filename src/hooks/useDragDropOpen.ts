@@ -19,6 +19,7 @@ import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { filterMarkdownPaths } from "@/utils/dropPaths";
 import { resolveOpenAction } from "@/utils/openPolicy";
 import { getReplaceableTab, findExistingTabForPath } from "@/hooks/useReplaceableTab";
+import { detectLinebreaks } from "@/utils/linebreakDetection";
 
 /**
  * Opens a file in a new tab (or activates existing tab if already open).
@@ -38,6 +39,7 @@ async function openFileInNewTab(windowLabel: string, path: string): Promise<void
     const content = await readTextFile(path);
     const tabId = useTabStore.getState().createTab(windowLabel, path);
     useDocumentStore.getState().initDocument(tabId, content, path);
+    useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
     useRecentFilesStore.getState().addFile(path);
   } catch (error) {
     console.error("[DragDrop] Failed to open file:", path, error);
@@ -106,7 +108,12 @@ export function useDragDropOpen(): void {
                 try {
                   const content = await readTextFile(path);
                   useTabStore.getState().updateTabPath(decision.tabId, decision.filePath);
-                  useDocumentStore.getState().loadContent(decision.tabId, content, decision.filePath);
+                  useDocumentStore.getState().loadContent(
+                    decision.tabId,
+                    content,
+                    decision.filePath,
+                    detectLinebreaks(content)
+                  );
                   useWorkspaceStore.getState().openWorkspace(decision.workspaceRoot);
                   useRecentFilesStore.getState().addFile(path);
                 } catch (error) {

@@ -7,6 +7,8 @@ import { useEditorStore } from "@/stores/editorStore";
 import { useShortcutsStore } from "@/stores/shortcutsStore";
 import { useSourcePeekStore } from "@/stores/sourcePeekStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useTabStore } from "@/stores/tabStore";
+import { useDocumentStore } from "@/stores/documentStore";
 import { openSourcePeek } from "@/utils/sourcePeek";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { guardProseMirrorCommand } from "@/utils/imeGuard";
@@ -14,6 +16,8 @@ import { canRunActionInMultiSelection } from "@/plugins/toolbarActions/multiSele
 import { getWysiwygMultiSelectionContext } from "@/plugins/toolbarActions/multiSelectionContext";
 import { expandedToggleMark } from "@/plugins/editorPlugins/expandedToggleMark";
 import { findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
+import { resolveHardBreakStyle } from "@/utils/linebreaks";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 
 const editorKeymapPluginKey = new PluginKey("editorKeymaps");
@@ -164,7 +168,12 @@ export function buildEditorKeymapBindings(): Record<string, Command> {
       return true;
     }
     const preserveLineBreaks = useSettingsStore.getState().markdown.preserveLineBreaks;
-    openSourcePeek(view, { preserveLineBreaks });
+    const hardBreakStyleOnSave = useSettingsStore.getState().markdown.hardBreakStyleOnSave;
+    const windowLabel = getCurrentWebviewWindow().label;
+    const tabId = useTabStore.getState().activeTabId[windowLabel];
+    const doc = tabId ? useDocumentStore.getState().getDocument(tabId) : null;
+    const hardBreakStyle = resolveHardBreakStyle(doc?.hardBreakStyle ?? "unknown", hardBreakStyleOnSave);
+    openSourcePeek(view, { preserveLineBreaks, hardBreakStyle });
     return true;
   });
 

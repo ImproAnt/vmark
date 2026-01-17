@@ -9,6 +9,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { persistWorkspaceSession } from "@/hooks/workspaceSession";
+import { detectLinebreaks } from "@/utils/linebreakDetection";
 
 /**
  * Hook to handle workspace-related menu events
@@ -62,6 +63,7 @@ export function useWorkspaceMenuEvents() {
                 const content = await readTextFile(filePath);
                 const tabId = useTabStore.getState().createTab(windowLabel, filePath);
                 useDocumentStore.getState().initDocument(tabId, content, filePath);
+                useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
               } catch {
                 // File may have been moved/deleted - skip it
                 console.warn(`[Workspace] Could not restore tab: ${filePath}`);

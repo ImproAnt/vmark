@@ -40,6 +40,16 @@ describe("adapter remark pipeline", () => {
       const output = serializeMarkdown(testSchema, doc, { preserveLineBreaks: true }).trim();
       expect(output).toMatch(/\\\n/);
     });
+
+    it("serializes hard breaks with two-space style when configured", () => {
+      const input = "Hello\nWorld";
+      const doc = parseMarkdown(testSchema, input, { preserveLineBreaks: true });
+      const output = serializeMarkdown(testSchema, doc, {
+        preserveLineBreaks: true,
+        hardBreakStyle: "twoSpaces",
+      }).trim();
+      expect(output).toMatch(/ {2}\n/);
+    });
   });
 
   describe("table support", () => {

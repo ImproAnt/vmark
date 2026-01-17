@@ -14,6 +14,7 @@ import { useWorkspaceStore, type WorkspaceConfig } from "@/stores/workspaceStore
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { needsBootstrap } from "@/utils/workspaceBootstrap";
+import { detectLinebreaks } from "@/utils/linebreakDetection";
 
 /**
  * Hook that bootstraps workspace config on startup.
@@ -54,6 +55,7 @@ export function useWorkspaceBootstrap() {
               const content = await readTextFile(filePath);
               const tabId = useTabStore.getState().createTab(windowLabel, filePath);
               useDocumentStore.getState().initDocument(tabId, content, filePath);
+              useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
             } catch {
               // File may have been moved/deleted - skip it
               if (import.meta.env.DEV) {

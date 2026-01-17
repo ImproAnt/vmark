@@ -9,6 +9,7 @@ import { useTabStore } from "@/stores/tabStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { createSnapshot } from "@/hooks/useHistoryOperations";
+import { resolveLineEndingOnSave, normalizeLineEndings } from "@/utils/linebreaks";
 
 export async function saveToPath(
   tabId: string,
@@ -17,8 +18,14 @@ export async function saveToPath(
   saveType: "manual" | "auto" = "manual"
 ): Promise<boolean> {
   try {
-    await writeTextFile(path, content);
+    const doc = useDocumentStore.getState().getDocument(tabId);
+    const lineEndingPref = useSettingsStore.getState().general.lineEndingsOnSave;
+    const targetLineEnding = resolveLineEndingOnSave(doc?.lineEnding ?? "unknown", lineEndingPref);
+    const output = normalizeLineEndings(content, targetLineEnding);
+
+    await writeTextFile(path, output);
     useDocumentStore.getState().setFilePath(tabId, path);
+    useDocumentStore.getState().setLineMetadata(tabId, { lineEnding: targetLineEnding });
     useDocumentStore.getState().markSaved(tabId);
     // Update tab path for title sync
     useTabStore.getState().updateTabPath(tabId, path);
@@ -30,7 +37,7 @@ export async function saveToPath(
     const { general } = useSettingsStore.getState();
     if (general.historyEnabled) {
       try {
-        await createSnapshot(path, content, saveType, {
+        await createSnapshot(path, output, saveType, {
           maxSnapshots: general.historyMaxSnapshots,
           maxAgeDays: general.historyMaxAgeDays,
         });

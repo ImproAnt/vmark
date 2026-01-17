@@ -6,6 +6,7 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabStore } from "@/stores/tabStore";
 import { collapseNewlines, formatMarkdown, formatSelection, removeTrailingSpaces } from "@/lib/cjkFormatter";
+import { resolveHardBreakStyle } from "@/utils/linebreaks";
 
 function getActiveTabIdForWindow(windowLabel: string): string | null {
   try {
@@ -25,6 +26,13 @@ function setActiveMarkdown(windowLabel: string, markdown: string) {
   const tabId = getActiveTabIdForWindow(windowLabel);
   if (!tabId) return;
   useDocumentStore.getState().setContent(tabId, markdown);
+}
+
+function shouldPreserveTwoSpaceBreaks(windowLabel: string): boolean {
+  const tabId = getActiveTabIdForWindow(windowLabel);
+  const doc = tabId ? useDocumentStore.getState().getDocument(tabId) : null;
+  const hardBreakStyleOnSave = useSettingsStore.getState().markdown.hardBreakStyleOnSave;
+  return resolveHardBreakStyle(doc?.hardBreakStyle ?? "unknown", hardBreakStyleOnSave) === "twoSpaces";
 }
 
 export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
@@ -49,6 +57,7 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
       const unlistenFormatCJK = await currentWindow.listen<string>("menu:format-cjk", (event) => {
         if (event.payload !== windowLabel) return;
         const config = useSettingsStore.getState().cjkFormatting;
+        const preserveTwoSpaceHardBreaks = shouldPreserveTwoSpaceBreaks(windowLabel);
 
         const editor = editorRef.current;
         if (editor && !editor.state.selection.empty) {
@@ -56,7 +65,7 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
           const { state, dispatch } = view;
           const { from, to } = state.selection;
           const selectedText = state.doc.textBetween(from, to, "\n");
-          const formatted = formatSelection(selectedText, config);
+          const formatted = formatSelection(selectedText, config, { preserveTwoSpaceHardBreaks });
           if (formatted !== selectedText) {
             dispatch(state.tr.replaceWith(from, to, state.schema.text(formatted)));
             view.focus();
@@ -65,7 +74,7 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
         }
 
         const content = getActiveMarkdown(windowLabel);
-        const formatted = formatMarkdown(content, config);
+        const formatted = formatMarkdown(content, config, { preserveTwoSpaceHardBreaks });
         if (formatted !== content) {
           setActiveMarkdown(windowLabel, formatted);
         }
@@ -79,8 +88,9 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
       const unlistenFormatFile = await currentWindow.listen<string>("menu:format-cjk-file", (event) => {
         if (event.payload !== windowLabel) return;
         const config = useSettingsStore.getState().cjkFormatting;
+        const preserveTwoSpaceHardBreaks = shouldPreserveTwoSpaceBreaks(windowLabel);
         const content = getActiveMarkdown(windowLabel);
-        const formatted = formatMarkdown(content, config);
+        const formatted = formatMarkdown(content, config, { preserveTwoSpaceHardBreaks });
         if (formatted !== content) {
           setActiveMarkdown(windowLabel, formatted);
         }
@@ -94,7 +104,8 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
       const unlistenTrailingSpaces = await currentWindow.listen<string>("menu:remove-trailing-spaces", (event) => {
         if (event.payload !== windowLabel) return;
         const content = getActiveMarkdown(windowLabel);
-        const formatted = removeTrailingSpaces(content);
+        const preserveTwoSpaceHardBreaks = shouldPreserveTwoSpaceBreaks(windowLabel);
+        const formatted = removeTrailingSpaces(content, { preserveTwoSpaceHardBreaks });
         if (formatted !== content) {
           setActiveMarkdown(windowLabel, formatted);
         }

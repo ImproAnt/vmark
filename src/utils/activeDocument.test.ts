@@ -122,6 +122,8 @@ describe("activeDocument", () => {
             cursorInfo: null,
             lastAutoSave: null,
             isMissing: false,
+            lineEnding: "unknown",
+            hardBreakStyle: "unknown",
           },
         },
       });
@@ -153,6 +155,8 @@ describe("activeDocument", () => {
             cursorInfo: null,
             lastAutoSave: null,
             isMissing: false,
+            lineEnding: "unknown",
+            hardBreakStyle: "unknown",
           },
           "tab-2": {
             content: "Second content",
@@ -163,6 +167,8 @@ describe("activeDocument", () => {
             cursorInfo: null,
             lastAutoSave: null,
             isMissing: false,
+            lineEnding: "unknown",
+            hardBreakStyle: "unknown",
           },
         },
       });

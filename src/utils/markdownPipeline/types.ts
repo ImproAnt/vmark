@@ -8,6 +8,7 @@
 
 export interface MarkdownPipelineOptions {
   preserveLineBreaks?: boolean;
+  hardBreakStyle?: "backslash" | "twoSpaces";
 }
 
 // Re-export standard MDAST types

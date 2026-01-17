@@ -684,6 +684,17 @@ fn create_menu_with_shortcuts(
         ],
     )?;
 
+    // Line Endings submenu
+    let line_endings_submenu = Submenu::with_items(
+        app,
+        "Line Endings",
+        true,
+        &[
+            &MenuItem::with_id(app, "line-endings-lf", "Convert to LF", true, None::<&str>)?,
+            &MenuItem::with_id(app, "line-endings-crlf", "Convert to CRLF", true, None::<&str>)?,
+        ],
+    )?;
+
     // Edit menu
     let edit_menu = Submenu::with_items(
         app,
@@ -700,6 +711,7 @@ fn create_menu_with_shortcuts(
             &PredefinedMenuItem::separator(app)?,
             &selection_submenu,
             &find_submenu,
+            &line_endings_submenu,
             &PredefinedMenuItem::separator(app)?,
             &history_submenu,
         ],

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import type { HardBreakStyleOnSave, LineEndingOnSave } from "@/utils/linebreakDetection";
 
 /**
  * Deep merge utility for settings migration.
@@ -161,6 +162,7 @@ export interface MarkdownSettings {
   enableRegexSearch: boolean; // Enable regex in Find & Replace
   mediaBorderStyle: MediaBorderStyle; // Border style for images and diagrams
   htmlRenderingMode: HtmlRenderingMode; // Rich text display for raw HTML
+  hardBreakStyleOnSave: HardBreakStyleOnSave; // Preserve or normalize hard break output
   // Auto-pair
   autoPairEnabled: boolean; // Auto-insert closing brackets/quotes
   autoPairCJKStyle: AutoPairCJKStyle; // CJK bracket pairing style
@@ -180,6 +182,7 @@ export interface GeneralSettings {
   historyMaxAgeDays: number;
   // Editor
   tabSize: number; // Number of spaces for Tab key (2 or 4)
+  lineEndingsOnSave: LineEndingOnSave; // Preserve or normalize line endings
 }
 
 interface SettingsState {
@@ -220,6 +223,7 @@ const initialState: SettingsState = {
     historyMaxSnapshots: 50,
     historyMaxAgeDays: 7,
     tabSize: 2,
+    lineEndingsOnSave: "preserve",
   },
   appearance: {
     theme: "paper",
@@ -266,6 +270,7 @@ const initialState: SettingsState = {
     enableRegexSearch: true,
     mediaBorderStyle: "none",
     htmlRenderingMode: "hidden",
+    hardBreakStyleOnSave: "preserve",
     autoPairEnabled: true,
     autoPairCJKStyle: "auto",
     autoPairCurlyQuotes: false, // OFF by default (may conflict with IME smart quotes)

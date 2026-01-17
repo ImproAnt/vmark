@@ -66,5 +66,8 @@ export function serializeMdastToMarkdown(
 ): string {
   const processor = createSerializer(options);
   const result = processor.stringify(mdast);
+  if (options.hardBreakStyle === "twoSpaces") {
+    return result.replace(/\\(\r?\n)/g, "  $1");
+  }
   return result;
 }

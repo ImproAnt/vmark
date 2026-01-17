@@ -385,8 +385,38 @@ export function limitConsecutivePunctuation(
 /**
  * Remove trailing spaces at end of lines
  */
-export function removeTrailingSpaces(text: string): string {
-  return text.replace(/ +$/gm, "");
+export function removeTrailingSpaces(
+  text: string,
+  options: { preserveTwoSpaceHardBreaks?: boolean } = {}
+): string {
+  if (!options.preserveTwoSpaceHardBreaks) {
+    return text.replace(/ +$/gm, "");
+  }
+
+  const lines = text.split("\n");
+  const processed = lines.map((line) => {
+    let lineEnding = "";
+    let content = line;
+
+    if (content.endsWith("\r")) {
+      lineEnding = "\r";
+      content = content.slice(0, -1);
+    }
+
+    const trailingMatch = content.match(/ +$/);
+    if (!trailingMatch) return content + lineEnding;
+
+    const trailingSpaces = trailingMatch[0];
+    const before = content.slice(0, -trailingSpaces.length);
+
+    if (trailingSpaces.length >= 2 && before.trim().length > 0) {
+      return content + lineEnding;
+    }
+
+    return before + lineEnding;
+  });
+
+  return processed.join("\n");
 }
 
 // ============================================================
@@ -396,7 +426,11 @@ export function removeTrailingSpaces(text: string): string {
 /**
  * Apply all enabled CJK formatting rules to text
  */
-export function applyRules(text: string, config: CJKFormattingSettings): string {
+export function applyRules(
+  text: string,
+  config: CJKFormattingSettings,
+  options: { preserveTwoSpaceHardBreaks?: boolean } = {}
+): string {
   // Group 1: Universal (always check, applies to all text)
   if (config.ellipsisNormalization) {
     text = normalizeEllipsis(text);
@@ -473,7 +507,7 @@ export function applyRules(text: string, config: CJKFormattingSettings): string 
     text = collapseSpaces(text);
   }
   if (config.trailingSpaceRemoval) {
-    text = removeTrailingSpaces(text);
+    text = removeTrailingSpaces(text, options);
   }
 
   // Group 1: Universal (newline collapsing)

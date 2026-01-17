@@ -16,6 +16,8 @@ import { resolveOpenAction } from "@/utils/openPolicy";
 import { getReplaceableTab } from "@/hooks/useReplaceableTab";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { invoke } from "@tauri-apps/api/core";
+import { detectLinebreaks } from "@/utils/linebreakDetection";
+import { normalizeLineEndings } from "@/utils/linebreaks";
 
 export function useMenuEvents() {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
@@ -77,6 +79,32 @@ export function useMenuEvents() {
       });
       if (cancelled) { unlistenWordWrap(); return; }
       unlistenRefs.current.push(unlistenWordWrap);
+
+      const convertLineEndings = (target: "lf" | "crlf") => {
+        const tabId = useTabStore.getState().activeTabId[windowLabel];
+        if (!tabId) return;
+        const doc = useDocumentStore.getState().getDocument(tabId);
+        if (!doc) return;
+        const normalized = normalizeLineEndings(doc.content, target);
+        if (normalized !== doc.content) {
+          useDocumentStore.getState().setContent(tabId, normalized);
+        }
+        useDocumentStore.getState().setLineMetadata(tabId, { lineEnding: target });
+      };
+
+      const unlistenLineEndingsLf = await currentWindow.listen<string>("menu:line-endings-lf", (event) => {
+        if (event.payload !== windowLabel) return;
+        convertLineEndings("lf");
+      });
+      if (cancelled) { unlistenLineEndingsLf(); return; }
+      unlistenRefs.current.push(unlistenLineEndingsLf);
+
+      const unlistenLineEndingsCrlf = await currentWindow.listen<string>("menu:line-endings-crlf", (event) => {
+        if (event.payload !== windowLabel) return;
+        convertLineEndings("crlf");
+      });
+      if (cancelled) { unlistenLineEndingsCrlf(); return; }
+      unlistenRefs.current.push(unlistenLineEndingsCrlf);
 
       const unlistenPreferences = await currentWindow.listen<string>("menu:preferences", async (event) => {
         if (event.payload !== windowLabel) return;
@@ -196,6 +224,7 @@ export function useMenuEvents() {
                 const content = await readTextFile(file.path);
                 const tabId = useTabStore.getState().createTab(windowLabel, file.path);
                 useDocumentStore.getState().initDocument(tabId, content, file.path);
+                useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
                 useRecentFilesStore.getState().addFile(file.path); // Move to top
               } catch (error) {
                 console.error("[Menu] Failed to open recent file:", error);
@@ -215,7 +244,12 @@ export function useMenuEvents() {
                 // Update the tab's file path
                 useTabStore.getState().updateTabPath(result.tabId, result.filePath);
                 // Load content into the document
-                useDocumentStore.getState().loadContent(result.tabId, content, result.filePath);
+                useDocumentStore.getState().loadContent(
+                  result.tabId,
+                  content,
+                  result.filePath,
+                  detectLinebreaks(content)
+                );
                 // Open workspace with the file's parent folder
                 useWorkspaceStore.getState().openWorkspace(result.workspaceRoot);
                 // Add to recent files

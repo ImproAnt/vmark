@@ -129,6 +129,20 @@ export function MarkdownSettings() {
           />
         </SettingRow>
         <SettingRow
+          label="Hard break style on save"
+          description="Preserve source style or normalize hard line breaks"
+        >
+          <Select
+            value={markdown.hardBreakStyleOnSave}
+            options={[
+              { value: "preserve", label: "Preserve existing" },
+              { value: "backslash", label: "Backslash (\\\\)" },
+              { value: "twoSpaces", label: "Two spaces" },
+            ]}
+            onChange={(v) => updateSetting("hardBreakStyleOnSave", v as typeof markdown.hardBreakStyleOnSave)}
+          />
+        </SettingRow>
+        <SettingRow
           label="Show <br> tags"
           description="Display HTML line break tags visibly in editor"
         >

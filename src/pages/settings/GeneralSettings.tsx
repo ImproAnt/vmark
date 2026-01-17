@@ -107,6 +107,20 @@ export function GeneralSettings() {
             onChange={(v) => updateSetting("tabSize", Number(v))}
           />
         </SettingRow>
+        <SettingRow
+          label="Line endings on save"
+          description="Preserve original line endings or normalize on save"
+        >
+          <Select
+            value={general.lineEndingsOnSave}
+            options={[
+              { value: "preserve", label: "Preserve existing" },
+              { value: "lf", label: "LF (\\n)" },
+              { value: "crlf", label: "CRLF (\\r\\n)" },
+            ]}
+            onChange={(v) => updateSetting("lineEndingsOnSave", v as typeof general.lineEndingsOnSave)}
+          />
+        </SettingRow>
       </SettingsGroup>
     </div>
   );

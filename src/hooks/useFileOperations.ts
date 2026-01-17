@@ -21,6 +21,7 @@ import {
 import { getReplaceableTab, findExistingTabForPath } from "@/hooks/useReplaceableTab";
 import { createUntitledTab } from "@/utils/newFile";
 import { getDirectory } from "@/utils/pathUtils";
+import { detectLinebreaks } from "@/utils/linebreakDetection";
 
 export function useFileOperations() {
   const windowLabel = useWindowLabel();
@@ -43,6 +44,7 @@ export function useFileOperations() {
       try {
         const content = await readTextFile(path);
         useDocumentStore.getState().initDocument(tabId, content, path);
+        useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
         useRecentFilesStore.getState().addFile(path);
       } catch (error) {
         console.error("[FileOps] Failed to open file:", path, error);
@@ -87,7 +89,12 @@ export function useFileOperations() {
             // Update the tab's file path
             useTabStore.getState().updateTabPath(decision.tabId, decision.filePath);
             // Load content into the document
-            useDocumentStore.getState().loadContent(decision.tabId, content, decision.filePath);
+            useDocumentStore.getState().loadContent(
+              decision.tabId,
+              content,
+              decision.filePath,
+              detectLinebreaks(content)
+            );
             // Open workspace with the file's parent folder
             useWorkspaceStore.getState().openWorkspace(decision.workspaceRoot);
             // Add to recent files

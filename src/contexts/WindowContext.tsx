@@ -6,6 +6,7 @@ import { useDocumentStore } from "../stores/documentStore";
 import { useTabStore } from "../stores/tabStore";
 import { useRecentFilesStore } from "../stores/recentFilesStore";
 import { useWorkspaceStore, type WorkspaceConfig } from "../stores/workspaceStore";
+import { detectLinebreaks } from "../utils/linebreakDetection";
 import {
   setCurrentWindowLabel,
   migrateWorkspaceStorage,
@@ -143,6 +144,7 @@ export function WindowProvider({ children }: WindowProviderProps) {
               try {
                 const content = await readTextFile(filePath);
                 useDocumentStore.getState().initDocument(tabId, content, filePath);
+                useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
                 useRecentFilesStore.getState().addFile(filePath);
               } catch (error) {
                 console.error("[WindowContext] Failed to load file:", filePath, error);

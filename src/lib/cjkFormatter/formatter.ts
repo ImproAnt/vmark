@@ -18,7 +18,8 @@ import { applyRules } from "./rules";
  */
 export function formatMarkdown(
   text: string,
-  config: CJKFormattingSettings
+  config: CJKFormattingSettings,
+  options: { preserveTwoSpaceHardBreaks?: boolean } = {}
 ): string {
   // Find all protected regions
   const protectedRegions = findProtectedRegions(text);
@@ -29,7 +30,7 @@ export function formatMarkdown(
   // Apply rules to each segment
   const formattedSegments: TextSegment[] = segments.map((segment) => ({
     ...segment,
-    text: applyRules(segment.text, config),
+    text: applyRules(segment.text, config, options),
   }));
 
   // Reconstruct the document
@@ -41,9 +42,10 @@ export function formatMarkdown(
  */
 export function formatSelection(
   text: string,
-  config: CJKFormattingSettings
+  config: CJKFormattingSettings,
+  options: { preserveTwoSpaceHardBreaks?: boolean } = {}
 ): string {
-  return applyRules(text, config);
+  return applyRules(text, config, options);
 }
 
 /**
@@ -51,7 +53,8 @@ export function formatSelection(
  */
 export function formatFile(
   content: string,
-  config: CJKFormattingSettings
+  config: CJKFormattingSettings,
+  options: { preserveTwoSpaceHardBreaks?: boolean } = {}
 ): string {
-  return formatMarkdown(content, config);
+  return formatMarkdown(content, config, options);
 }

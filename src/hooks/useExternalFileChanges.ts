@@ -18,6 +18,7 @@ import { useTabStore } from "@/stores/tabStore";
 import { resolveExternalChangeAction } from "@/utils/openPolicy";
 import { normalizePath } from "@/utils/paths";
 import { saveToPath } from "@/utils/saveToPath";
+import { detectLinebreaks } from "@/utils/linebreakDetection";
 
 interface FsChangeEvent {
   watchId: string;
@@ -57,7 +58,7 @@ export function useExternalFileChanges(): void {
   const handleReload = useCallback(async (tabId: string, filePath: string) => {
     try {
       const content = await readTextFile(filePath);
-      useDocumentStore.getState().loadContent(tabId, content, filePath);
+      useDocumentStore.getState().loadContent(tabId, content, filePath, detectLinebreaks(content));
       useDocumentStore.getState().clearMissing(tabId);
     } catch (error) {
       console.error("[ExternalChange] Failed to reload file:", filePath, error);
@@ -121,7 +122,7 @@ export function useExternalFileChanges(): void {
         // User explicitly chose to reload - discard their changes
         try {
           const content = await readTextFile(filePath);
-          useDocumentStore.getState().loadContent(tabId, content, filePath);
+          useDocumentStore.getState().loadContent(tabId, content, filePath, detectLinebreaks(content));
           // Clear missing flag in case file was previously deleted and recreated
           useDocumentStore.getState().clearMissing(tabId);
         } catch (error) {

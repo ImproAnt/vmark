@@ -24,6 +24,10 @@ import { scheduleTiptapFocusAndRestore } from "@/utils/tiptapFocus";
 import type { CursorInfo } from "@/stores/documentStore";
 import { useTiptapEditorStore } from "@/stores/tiptapEditorStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useTabStore } from "@/stores/tabStore";
+import { useDocumentStore } from "@/stores/documentStore";
+import { useWindowLabel } from "@/contexts/WindowContext";
+import { resolveHardBreakStyle } from "@/utils/linebreaks";
 import { smartPasteExtension } from "@/plugins/smartPaste/tiptap";
 import { linkPopupExtension } from "@/plugins/linkPopup/tiptap";
 import { cursorAwareExtension } from "@/plugins/cursorAware/tiptap";
@@ -88,6 +92,8 @@ export function TiptapEditorInner() {
   const cursorInfo = useDocumentCursorInfo();
   const { setContent, setCursorInfo } = useDocumentActions();
   const preserveLineBreaks = useSettingsStore((state) => state.markdown.preserveLineBreaks);
+  const hardBreakStyleOnSave = useSettingsStore((state) => state.markdown.hardBreakStyleOnSave);
+  const windowLabel = useWindowLabel();
 
   const isInternalChange = useRef(false);
   const lastExternalContent = useRef<string>("");
@@ -99,8 +105,10 @@ export function TiptapEditorInner() {
   const trackingTimeoutId = useRef<number | null>(null);
   const cursorInfoRef = useRef(cursorInfo);
   const preserveLineBreaksRef = useRef(preserveLineBreaks);
+  const hardBreakStyleOnSaveRef = useRef(hardBreakStyleOnSave);
   cursorInfoRef.current = cursorInfo;
   preserveLineBreaksRef.current = preserveLineBreaks;
+  hardBreakStyleOnSaveRef.current = hardBreakStyleOnSave;
 
   const extensions = useMemo(
     () => [
@@ -195,6 +203,12 @@ export function TiptapEditorInner() {
 
       const markdown = serializeMarkdown(editor.schema, editor.state.doc, {
         preserveLineBreaks: preserveLineBreaksRef.current,
+        hardBreakStyle: (() => {
+          const tabId = useTabStore.getState().activeTabId[windowLabel];
+          if (!tabId) return resolveHardBreakStyle("unknown", hardBreakStyleOnSaveRef.current);
+          const doc = useDocumentStore.getState().getDocument(tabId);
+          return resolveHardBreakStyle(doc?.hardBreakStyle ?? "unknown", hardBreakStyleOnSaveRef.current);
+        })(),
       });
       isInternalChange.current = true;
       lastExternalContent.current = markdown;
@@ -209,7 +223,7 @@ export function TiptapEditorInner() {
         isInternalChange.current = false;
       });
     },
-    [setContent]
+    [setContent, windowLabel]
   );
 
   const flushCursorInfo = useCallback(() => {

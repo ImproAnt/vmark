@@ -27,6 +27,8 @@ describe("documentStore", () => {
       expect(doc?.documentId).toBe(0);
       expect(doc?.cursorInfo).toBeNull();
       expect(doc?.lastAutoSave).toBeNull();
+      expect(doc?.lineEnding).toBe("unknown");
+      expect(doc?.hardBreakStyle).toBe("unknown");
     });
 
     it("creates a document with initial content", () => {
@@ -97,6 +99,22 @@ describe("documentStore", () => {
       expect(doc?.savedContent).toBe("Loaded content");
       expect(doc?.filePath).toBe("/new/path.md");
       expect(doc?.isDirty).toBe(false);
+      expect(doc?.lineEnding).toBe("unknown");
+      expect(doc?.hardBreakStyle).toBe("unknown");
+    });
+
+    it("applies line metadata when provided", () => {
+      const { initDocument, loadContent, getDocument } = useDocumentStore.getState();
+
+      initDocument(WINDOW_LABEL, "Initial");
+      loadContent(WINDOW_LABEL, "Loaded content", "/new/path.md", {
+        lineEnding: "crlf",
+        hardBreakStyle: "twoSpaces",
+      });
+
+      const doc = getDocument(WINDOW_LABEL);
+      expect(doc?.lineEnding).toBe("crlf");
+      expect(doc?.hardBreakStyle).toBe("twoSpaces");
     });
 
     it("increments documentId on load", () => {

@@ -48,14 +48,18 @@ import { useSettingsStore } from "@/stores/settingsStore";
 describe("saveToPath", () => {
   const mockSetFilePath = vi.fn();
   const mockMarkSaved = vi.fn();
+  const mockSetLineMetadata = vi.fn();
   const mockUpdateTabPath = vi.fn();
   const mockAddFile = vi.fn();
+  const mockGetDocument = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useDocumentStore.getState).mockReturnValue({
       setFilePath: mockSetFilePath,
       markSaved: mockMarkSaved,
+      setLineMetadata: mockSetLineMetadata,
+      getDocument: mockGetDocument,
     } as unknown as ReturnType<typeof useDocumentStore.getState>);
     vi.mocked(useTabStore.getState).mockReturnValue({
       updateTabPath: mockUpdateTabPath,
@@ -68,8 +72,10 @@ describe("saveToPath", () => {
         historyEnabled: true,
         historyMaxSnapshots: 5,
         historyMaxAgeDays: 30,
+        lineEndingsOnSave: "preserve",
       },
     } as unknown as ReturnType<typeof useSettingsStore.getState>);
+    mockGetDocument.mockReturnValue({ lineEnding: "unknown" });
   });
 
   it("writes content and updates stores on success", async () => {
@@ -89,6 +95,17 @@ describe("saveToPath", () => {
     });
   });
 
+  it("normalizes line endings based on settings", async () => {
+    vi.mocked(writeTextFile).mockResolvedValue(undefined);
+    mockGetDocument.mockReturnValue({ lineEnding: "crlf" });
+
+    const result = await saveToPath("tab-1", "/tmp/doc.md", "a\nb\n", "manual");
+
+    expect(result).toBe(true);
+    expect(writeTextFile).toHaveBeenCalledWith("/tmp/doc.md", "a\r\nb\r\n");
+    expect(mockSetLineMetadata).toHaveBeenCalledWith("tab-1", { lineEnding: "crlf" });
+  });
+
   it("skips history snapshot when disabled", async () => {
     vi.mocked(writeTextFile).mockResolvedValue(undefined);
     vi.mocked(useSettingsStore.getState).mockReturnValue({
@@ -96,6 +113,7 @@ describe("saveToPath", () => {
         historyEnabled: false,
         historyMaxSnapshots: 5,
         historyMaxAgeDays: 30,
+        lineEndingsOnSave: "preserve",
       },
     } as unknown as ReturnType<typeof useSettingsStore.getState>);
 
