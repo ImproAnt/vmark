@@ -91,15 +91,11 @@ features:
   <span class="tech-badge">Rust</span>
 </div>
 
----
-
 ## Cross-Platform
 
 VMark is available for macOS, Windows, and Linux. Download the latest version and start writing today.
 
 [Get VMark →](/download)
-
----
 
 ## Credits
 
