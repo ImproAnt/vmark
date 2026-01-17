@@ -23,6 +23,9 @@ export { registerFormattingTools } from './tools/formatting.js';
 export { registerBlockTools } from './tools/blocks.js';
 export { registerListTools } from './tools/lists.js';
 export { registerTableTools } from './tools/tables.js';
+export { registerVMarkTools } from './tools/vmark.js';
+export { registerWorkspaceTools } from './tools/workspace.js';
+export { registerPromptTools } from './tools/prompts.js';
 
 // Resource registrations
 export { registerDocumentResources } from './resources/document.js';
@@ -65,6 +68,9 @@ import { registerFormattingTools } from './tools/formatting.js';
 import { registerBlockTools } from './tools/blocks.js';
 import { registerListTools } from './tools/lists.js';
 import { registerTableTools } from './tools/tables.js';
+import { registerVMarkTools } from './tools/vmark.js';
+import { registerWorkspaceTools } from './tools/workspace.js';
+import { registerPromptTools } from './tools/prompts.js';
 import { registerDocumentResources } from './resources/document.js';
 import type { Bridge } from './bridge/types.js';
 
@@ -82,6 +88,9 @@ export function createVMarkMcpServer(bridge: Bridge): VMarkMcpServer {
   registerBlockTools(server);
   registerListTools(server);
   registerTableTools(server);
+  registerVMarkTools(server);
+  registerWorkspaceTools(server);
+  registerPromptTools(server);
 
   // Register resources
   registerDocumentResources(server);
@@ -148,6 +157,42 @@ export const TOOL_CATEGORIES = [
       'table_add_column',
       'table_delete_column',
       'table_toggle_header_row',
+    ],
+  },
+  {
+    name: 'VMark Tools',
+    description: 'VMark-specific features (math, diagrams, wiki links, CJK)',
+    tools: [
+      'insert_math_inline',
+      'insert_math_block',
+      'insert_mermaid',
+      'insert_wiki_link',
+      'cjk_punctuation_convert',
+      'cjk_spacing_fix',
+    ],
+  },
+  {
+    name: 'Workspace Tools',
+    description: 'Window and document management',
+    tools: [
+      'workspace_list_windows',
+      'workspace_get_focused',
+      'workspace_focus_window',
+      'workspace_new_document',
+      'workspace_open_document',
+      'workspace_save_document',
+      'workspace_close_window',
+    ],
+  },
+  {
+    name: 'AI Prompt Tools',
+    description: 'AI-powered writing assistance',
+    tools: [
+      'improve_writing',
+      'fix_grammar',
+      'translate',
+      'summarize',
+      'expand',
     ],
   },
 ] as const;

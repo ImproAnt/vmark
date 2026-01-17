@@ -529,6 +529,17 @@ export class MockBridge implements Bridge {
       case 'table.addColumnAfter':
       case 'table.deleteColumn':
       case 'table.toggleHeaderRow':
+      // Phase 3: VMark-specific tools
+      case 'vmark.insertMathInline':
+      case 'vmark.insertMathBlock':
+      case 'vmark.insertMermaid':
+      case 'vmark.insertWikiLink':
+      case 'vmark.cjkPunctuationConvert':
+      case 'vmark.cjkSpacingFix':
+      // Phase 3: Workspace tools
+      case 'windows.focus':
+      case 'workspace.saveDocument':
+      case 'workspace.closeWindow':
         // These operations are acknowledged but don't change mock state
         // In real implementation, these would modify the editor
         return { success: true, data: null };
