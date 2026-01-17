@@ -10,7 +10,7 @@ const HEADING_RE = /^\s*#{1,6}\s+/;
 const BLOCKQUOTE_RE = /^\s*>\s+/;
 const LIST_RE = /^\s*(?:[-*+]|\d+\.)\s+/;
 const HR_RE = /^\s*(?:-{3,}|_{3,}|\*{3,})\s*$/;
-const LINK_RE = /!?\[[^\]]+\]\([^\)]+\)/;
+const LINK_RE = /!?\[[^\]]+\]\([^)]+\)/;
 
 function isTableSeparator(line: string): boolean {
   return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);

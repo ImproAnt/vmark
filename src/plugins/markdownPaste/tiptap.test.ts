@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import StarterKit from "@tiptap/starter-kit";
 import { getSchema } from "@tiptap/core";
-import { EditorState, TextSelection, SelectionRange } from "@tiptap/pm/state";
+import { EditorState, TextSelection, SelectionRange, type Transaction } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Node as PMNode } from "@tiptap/pm/model";
@@ -129,7 +129,7 @@ describe("markdownPasteExtension", () => {
       get state() {
         return state;
       },
-      dispatch(tr) {
+      dispatch(tr: Transaction) {
         state = state.apply(tr);
       },
     } as unknown as EditorView;
