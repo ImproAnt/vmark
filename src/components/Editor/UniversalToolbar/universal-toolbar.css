@@ -13,10 +13,8 @@
 .universal-toolbar {
   --universal-toolbar-height: 40px;
 
-  position: fixed;
-  bottom: 0;
-  left: var(--sidebar-offset, 0px);
-  right: 0;
+  position: relative;
+  flex-shrink: 0;
   height: var(--universal-toolbar-height);
   padding: 6px 12px;
   z-index: 102;
