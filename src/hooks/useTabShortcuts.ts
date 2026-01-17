@@ -12,6 +12,8 @@ import { useWindowLabel, useIsDocumentWindow } from "@/contexts/WindowContext";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useSearchStore } from "@/stores/searchStore";
+import { useUIStore } from "@/stores/uiStore";
 import { closeTabWithDirtyCheck } from "@/hooks/useTabOperations";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 
@@ -49,8 +51,12 @@ export function useTabShortcuts() {
       }
 
       // Cmd+J: Toggle auto-hide status bar setting
+      // Close other bars first for mutual exclusivity
       if (isMeta && e.key === "j") {
         e.preventDefault();
+        // Close FindBar and UniversalToolbar before showing StatusBar
+        useSearchStore.getState().close();
+        useUIStore.getState().setUniversalToolbarVisible(false);
         const current = useSettingsStore.getState().appearance.autoHideStatusBar ?? false;
         useSettingsStore.getState().updateAppearanceSetting("autoHideStatusBar", !current);
         return;
