@@ -44,6 +44,9 @@ import { handleUndo, handleRedo, handleFocus } from "./editorHandlers";
 
 // Block and list handlers
 import {
+  handleBlockSetType,
+  handleBlockToggle,
+  handleListToggle,
   handleInsertHorizontalRule,
   handleListIncreaseIndent,
   handleListDecreaseIndent,
@@ -51,6 +54,11 @@ import {
 
 // Table handlers
 import {
+  handleTableInsert,
+  handleTableAddRowBefore,
+  handleTableAddRowAfter,
+  handleTableAddColumnBefore,
+  handleTableAddColumnAfter,
   handleTableDelete,
   handleTableDeleteRow,
   handleTableDeleteColumn,
@@ -61,7 +69,9 @@ import {
 import {
   handleWindowsList,
   handleWindowsGetFocused,
+  handleWindowsFocus,
   handleWorkspaceNewDocument,
+  handleWorkspaceOpenDocument,
   handleWorkspaceSaveDocument,
   handleWorkspaceCloseWindow,
   handleAiNotImplemented,
@@ -143,11 +153,20 @@ async function handleRequest(event: McpRequestEvent): Promise<void> {
         break;
 
       // Block operations
+      case "block.setType":
+        await handleBlockSetType(id, args);
+        break;
+      case "block.toggle":
+        await handleBlockToggle(id, args);
+        break;
       case "block.insertHorizontalRule":
         await handleInsertHorizontalRule(id);
         break;
 
       // List operations
+      case "list.toggle":
+        await handleListToggle(id, args);
+        break;
       case "list.increaseIndent":
         await handleListIncreaseIndent(id);
         break;
@@ -156,6 +175,21 @@ async function handleRequest(event: McpRequestEvent): Promise<void> {
         break;
 
       // Table operations
+      case "table.insert":
+        await handleTableInsert(id, args);
+        break;
+      case "table.addRowBefore":
+        await handleTableAddRowBefore(id);
+        break;
+      case "table.addRowAfter":
+        await handleTableAddRowAfter(id);
+        break;
+      case "table.addColumnBefore":
+        await handleTableAddColumnBefore(id);
+        break;
+      case "table.addColumnAfter":
+        await handleTableAddColumnAfter(id);
+        break;
       case "table.delete":
         await handleTableDelete(id);
         break;
@@ -176,10 +210,16 @@ async function handleRequest(event: McpRequestEvent): Promise<void> {
       case "windows.getFocused":
         await handleWindowsGetFocused(id);
         break;
+      case "windows.focus":
+        await handleWindowsFocus(id, args);
+        break;
 
       // Workspace operations
       case "workspace.newDocument":
         await handleWorkspaceNewDocument(id);
+        break;
+      case "workspace.openDocument":
+        await handleWorkspaceOpenDocument(id, args);
         break;
       case "workspace.saveDocument":
         await handleWorkspaceSaveDocument(id);

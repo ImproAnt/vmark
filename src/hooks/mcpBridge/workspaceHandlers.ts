@@ -2,7 +2,8 @@
  * MCP Bridge - Workspace and Window Operation Handlers
  */
 
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { serializeMarkdown } from "@/utils/markdownPipeline";
@@ -56,6 +57,35 @@ export async function handleWindowsGetFocused(id: string): Promise<void> {
 }
 
 /**
+ * Handle windows.focus request.
+ * Focuses a specific window by its label.
+ */
+export async function handleWindowsFocus(
+  id: string,
+  args: Record<string, unknown>
+): Promise<void> {
+  try {
+    const windowId = args.windowId as string;
+    if (!windowId) {
+      throw new Error("windowId is required");
+    }
+
+    // For now, VMark is single-window, so we just focus the current window
+    // In the future, this could use WebviewWindow.getByLabel(windowId)
+    const currentWindow = getCurrentWindow();
+    await currentWindow.setFocus();
+
+    await respond({ id, success: true, data: null });
+  } catch (error) {
+    await respond({
+      id,
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
  * Handle workspace.newDocument request.
  */
 export async function handleWorkspaceNewDocument(id: string): Promise<void> {
@@ -68,6 +98,40 @@ export async function handleWorkspaceNewDocument(id: string): Promise<void> {
     docStore.initDocument(tabId, "", null);
 
     await respond({ id, success: true, data: null });
+  } catch (error) {
+    await respond({
+      id,
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Handle workspace.openDocument request.
+ * Opens a document from the filesystem.
+ */
+export async function handleWorkspaceOpenDocument(
+  id: string,
+  args: Record<string, unknown>
+): Promise<void> {
+  try {
+    const path = args.path as string;
+    if (!path) {
+      throw new Error("path is required");
+    }
+
+    // Read file content
+    const content = await readTextFile(path);
+
+    // Create new tab and initialize document with content
+    const tabStore = useTabStore.getState();
+    const docStore = useDocumentStore.getState();
+
+    const tabId = tabStore.createTab("main", path);
+    docStore.initDocument(tabId, content, path);
+
+    await respond({ id, success: true, data: { windowId: "main" } });
   } catch (error) {
     await respond({
       id,
