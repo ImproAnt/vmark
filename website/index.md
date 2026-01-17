@@ -101,10 +101,10 @@ VMark is available for macOS, Windows, and Linux. Download the latest version an
 
 ---
 
-## About the Author
+## Credits
 
-VMark is created by **[@xiaolai](https://x.com/xiaolai)**, a writer and developer passionate about building tools for better writing experiences.
+**Producer:** [@xiaolai](https://x.com/xiaolai) · [lixiaolai.com](https://lixiaolai.com)
 
-[Visit lixiaolai.com →](https://lixiaolai.com)
+**Coders:** [Claude Code](https://claude.ai/code) · [Codex CLI](https://github.com/openai/codex) · [Gemini CLI](https://github.com/google-gemini/gemini-cli)
 
 </div>

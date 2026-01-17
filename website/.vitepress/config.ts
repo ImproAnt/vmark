@@ -45,7 +45,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Created by <a href="https://x.com/xiaolai" target="_blank">@xiaolai</a> · <a href="https://lixiaolai.com" target="_blank">lixiaolai.com</a>',
+      message: 'Producer: <a href="https://x.com/xiaolai" target="_blank">@xiaolai</a> · Coders: <a href="https://claude.ai/code" target="_blank">Claude Code</a>, <a href="https://github.com/openai/codex" target="_blank">Codex CLI</a>, <a href="https://github.com/google-gemini/gemini-cli" target="_blank">Gemini CLI</a>',
       copyright: 'Copyright © 2026-present VMark'
     },
 
