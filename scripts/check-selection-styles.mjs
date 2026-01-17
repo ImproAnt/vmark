@@ -1,14 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { globSync } from "node:fs";
 
 const args = process.argv.slice(2);
-const files = args.length
-  ? args
-  : execSync("rg --files -g '*.css' src", { encoding: "utf8" })
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+const files = args.length ? args : globSync("src/**/*.css");
 
 const blockRe = /([^{}]+)\{([^}]*)\}/g;
 const ruleRe = /\b(color|background(?:-color)?)\s*:\s*([^;]+);/g;
