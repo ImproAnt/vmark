@@ -2,6 +2,7 @@
  * MCP Bridge - Block and List Operation Handlers
  */
 
+import { convertSelectionToTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
 import { respond, getEditor } from "./utils";
 
 /**
@@ -122,7 +123,7 @@ export async function handleListToggle(
         editor.commands.toggleOrderedList();
         break;
       case "task":
-        editor.commands.toggleTaskList();
+        convertSelectionToTaskList(editor);
         break;
       default:
         throw new Error(`Unknown list type: ${listType}`);

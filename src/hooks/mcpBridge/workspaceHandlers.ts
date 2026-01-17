@@ -97,7 +97,8 @@ export async function handleWorkspaceNewDocument(id: string): Promise<void> {
     const tabId = tabStore.createTab("main", null);
     docStore.initDocument(tabId, "", null);
 
-    await respond({ id, success: true, data: null });
+    // Return windowId as expected by MCP server
+    await respond({ id, success: true, data: { windowId: "main" } });
   } catch (error) {
     await respond({
       id,

@@ -13,7 +13,7 @@ import { createVMarkMcpServer } from './index.js';
 import { WebSocketBridge } from './bridge/websocket.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { z } from 'zod';
+import { z, ZodTypeAny } from 'zod';
 
 /**
  * Parse command line arguments.
@@ -74,6 +74,90 @@ function toMcpContents(items: Array<{ uri: string; text?: string; mimeType?: str
 }
 
 /**
+ * JSON Schema property definition.
+ */
+interface JsonSchemaProperty {
+  type?: string;
+  description?: string;
+  enum?: string[];
+  default?: unknown;
+}
+
+/**
+ * JSON Schema input schema definition.
+ */
+interface JsonSchemaInput {
+  type: string;
+  properties?: Record<string, JsonSchemaProperty>;
+  required?: string[];
+}
+
+/**
+ * Convert a JSON Schema property to a Zod schema.
+ */
+function jsonSchemaPropertyToZod(prop: JsonSchemaProperty): ZodTypeAny {
+  let schema: ZodTypeAny;
+
+  // Handle enum first (takes precedence)
+  if (prop.enum && prop.enum.length > 0) {
+    schema = z.enum(prop.enum as [string, ...string[]]);
+  } else {
+    // Handle by type
+    switch (prop.type) {
+      case 'string':
+        schema = z.string();
+        break;
+      case 'number':
+      case 'integer':
+        schema = z.number();
+        break;
+      case 'boolean':
+        schema = z.boolean();
+        break;
+      case 'array':
+        schema = z.array(z.unknown());
+        break;
+      case 'object':
+        schema = z.record(z.unknown());
+        break;
+      default:
+        schema = z.unknown();
+    }
+  }
+
+  // Add description if present
+  if (prop.description) {
+    schema = schema.describe(prop.description);
+  }
+
+  return schema;
+}
+
+/**
+ * Convert a JSON Schema to a Zod object schema.
+ * This preserves the schema structure so Claude can understand what parameters are expected.
+ */
+function jsonSchemaToZod(inputSchema: JsonSchemaInput): z.ZodObject<Record<string, ZodTypeAny>> {
+  const shape: Record<string, ZodTypeAny> = {};
+  const required = new Set(inputSchema.required ?? []);
+
+  if (inputSchema.properties) {
+    for (const [key, prop] of Object.entries(inputSchema.properties)) {
+      let zodProp = jsonSchemaPropertyToZod(prop);
+
+      // Make optional if not required
+      if (!required.has(key)) {
+        zodProp = zodProp.optional();
+      }
+
+      shape[key] = zodProp;
+    }
+  }
+
+  return z.object(shape);
+}
+
+/**
  * Main entry point.
  */
 async function main(): Promise<void> {
@@ -106,13 +190,14 @@ async function main(): Promise<void> {
 
   // Register all tools from the VMark server
   for (const tool of vmarkServer.listTools()) {
-    // Each tool has its own inputSchema defined in the tool definition
-    // We use a passthrough schema that accepts any object
+    // Convert JSON Schema to Zod schema for proper parameter exposure
+    const zodSchema = jsonSchemaToZod(tool.inputSchema as JsonSchemaInput);
+
     mcpServer.registerTool(
       tool.name,
       {
         description: tool.description,
-        inputSchema: z.object({}).passthrough(),
+        inputSchema: zodSchema,
       },
       async (args) => {
         const result = await vmarkServer.callTool(tool.name, args);
