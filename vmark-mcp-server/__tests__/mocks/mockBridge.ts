@@ -515,10 +515,20 @@ export class MockBridge implements Bridge {
       case 'format.removeLink':
       case 'format.clear':
       case 'block.setType':
+      case 'block.toggle':
       case 'block.insertHorizontalRule':
       case 'list.toggle':
       case 'list.increaseIndent':
       case 'list.decreaseIndent':
+      case 'table.insert':
+      case 'table.delete':
+      case 'table.addRowBefore':
+      case 'table.addRowAfter':
+      case 'table.deleteRow':
+      case 'table.addColumnBefore':
+      case 'table.addColumnAfter':
+      case 'table.deleteColumn':
+      case 'table.toggleHeaderRow':
         // These operations are acknowledged but don't change mock state
         // In real implementation, these would modify the editor
         return { success: true, data: null };
