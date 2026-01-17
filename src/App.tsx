@@ -209,6 +209,7 @@ function MainLayout() {
               minWidth: 0,
               display: "flex",
               flexDirection: "column",
+              overflow: "hidden",
             }}
           >
             {/* Editor area */}
