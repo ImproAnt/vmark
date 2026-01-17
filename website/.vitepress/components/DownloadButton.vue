@@ -233,16 +233,11 @@ onMounted(() => {
       Loading release information...
     </div>
 
-    <!-- Error state -->
-    <div v-else-if="error" class="error">
-      <p>{{ error }}</p>
-      <p class="error-hint">
-        Check the
-        <a :href="`https://github.com/${REPO_OWNER}/${REPO_NAME}/releases`" target="_blank">
-          GitHub Releases page
-        </a>
-        for all downloads.
-      </p>
+    <!-- Error state - show fallback without alarming message -->
+    <div v-else-if="error" class="fallback">
+      <a :href="`https://github.com/${REPO_OWNER}/${REPO_NAME}/releases`" target="_blank" class="fallback-button">
+        View Downloads on GitHub →
+      </a>
     </div>
 
     <!-- Downloads -->
@@ -296,20 +291,25 @@ onMounted(() => {
   color: var(--vp-c-text-2);
 }
 
-.error {
-  padding: 1.5rem;
+.fallback {
+  text-align: center;
+  padding: 2rem;
+}
+
+.fallback-button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  background: var(--vp-c-danger-soft);
-  color: var(--vp-c-danger-1);
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
 }
 
-.error-hint {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.error-hint a {
-  color: var(--vp-c-brand-1);
+.fallback-button:hover {
+  opacity: 0.9;
+  text-decoration: none;
 }
 
 .version-info {
