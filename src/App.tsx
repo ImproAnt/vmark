@@ -113,7 +113,8 @@ function MainLayout() {
   const windowLabel = useWindowLabel();
   const handleResizeStart = useSidebarResize();
   const sidebarOffset = sidebarVisible ? `${sidebarWidth}px` : "0px";
-  const isTerminalRight = terminalPosition === "right" && terminalVisible;
+  // Terminal affects layout only when visible AND positioned right
+  const terminalLayoutActive = terminalPosition === "right" && terminalVisible;
 
   // Initialize hooks
   useWorkspaceBootstrap(); // Load config from disk on startup (must be first)
@@ -190,14 +191,14 @@ function MainLayout() {
       >
         {/* Spacer for title bar area */}
         <div style={{ height: TITLEBAR_HEIGHT, flexShrink: 0 }} />
-        {/* Main content area - flex row when terminal is on right */}
+        {/* Main content area - flex row when terminal is on right AND visible */}
         <div
           style={{
             flex: 1,
             minHeight: 0,
             minWidth: 0,
             display: "flex",
-            flexDirection: isTerminalRight ? "row" : "column",
+            flexDirection: terminalLayoutActive ? "row" : "column",
           }}
         >
           {/* Editor + bottom bars container */}
@@ -222,11 +223,9 @@ function MainLayout() {
               <FindBar />
             </div>
           </div>
-          {/* Terminal panel - on right side when isTerminalRight, otherwise below in column */}
-          {isTerminalRight && <TerminalPanel />}
+          {/* Terminal panel - single render location, handles its own visibility */}
+          <TerminalPanel />
         </div>
-        {/* Terminal at bottom (outside the row layout) */}
-        {!isTerminalRight && <TerminalPanel />}
       </div>
     </div>
   );

@@ -246,6 +246,20 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
     terminal.loadAddon(markdownAddon);
     markdownAddonRef.current = markdownAddon;
 
+    // Let certain key combinations pass through to the window handler
+    // instead of being captured by xterm
+    terminal.attachCustomKeyEventHandler((event) => {
+      // Let Ctrl+` pass through for terminal toggle
+      if (event.ctrlKey && event.key === "`") {
+        return false; // Don't handle in xterm, let it bubble
+      }
+      // Let Cmd+` pass through on macOS
+      if (event.metaKey && event.key === "`") {
+        return false;
+      }
+      return true; // Handle normally in xterm
+    });
+
     terminal.open(containerRef.current);
     fitAddon.fit();
 

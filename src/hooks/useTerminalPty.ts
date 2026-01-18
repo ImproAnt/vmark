@@ -25,12 +25,17 @@ interface PtyExit {
 /**
  * Hook to manage PTY connection for a terminal session.
  *
+ * IMPORTANT: This hook uses empty deps [] to ensure PTY lifecycle is tied
+ * to component mount/unmount only. All values are accessed via refs to get
+ * the latest version without triggering effect re-runs. This prevents the
+ * PTY from being killed when parent components re-render (e.g., visibility toggle).
+ *
  * Handles:
- * - Spawning PTY session on mount
+ * - Spawning PTY session on mount (once per component lifetime)
  * - Forwarding PTY output to xterm.js
  * - Sending user input to PTY
  * - Restoring sessions from persistence
- * - Cleaning up on unmount
+ * - Cleaning up on unmount only
  *
  * @param terminalRef - Reference to the xterm.js Terminal instance
  * @param processData - Optional function to process data before writing to terminal
@@ -46,10 +51,24 @@ export function useTerminalPty(
   sessionToRestore?: TerminalSession
 ) {
   const rootPath = useWorkspaceStore((state) => state.rootPath);
-  const updateSessionId = useTerminalStore((state) => state.updateSessionId);
   const sessionIdRef = useRef<string | null>(null);
   const unlistenOutputRef = useRef<UnlistenFn | null>(null);
   const unlistenExitRef = useRef<UnlistenFn | null>(null);
+  const spawnedRef = useRef(false);
+
+  // Use refs for callbacks to always have latest version
+  const processDataRef = useRef(processData);
+  const onSessionCreatedRef = useRef(onSessionCreated);
+  const onSessionEndedRef = useRef(onSessionEnded);
+  const rootPathRef = useRef(rootPath);
+  const sessionToRestoreRef = useRef(sessionToRestore);
+
+  // Keep refs up to date
+  processDataRef.current = processData;
+  onSessionCreatedRef.current = onSessionCreated;
+  onSessionEndedRef.current = onSessionEnded;
+  rootPathRef.current = rootPath;
+  sessionToRestoreRef.current = sessionToRestore;
 
   // Send input to PTY
   const sendInput = useCallback((data: string) => {
@@ -71,9 +90,13 @@ export function useTerminalPty(
     });
   }, []);
 
-  // Spawn PTY on mount
+  // Spawn PTY - runs once on mount, uses refs for values
   useEffect(() => {
-    let mounted = true;
+    // Only spawn once per component lifetime
+    if (spawnedRef.current) {
+      return;
+    }
+    spawnedRef.current = true;
 
     const spawnPty = async () => {
       try {
@@ -82,7 +105,7 @@ export function useTerminalPty(
         const shell = shellSetting === "system" ? undefined : shellSetting;
 
         // Use session cwd for restoration, otherwise use workspace root
-        const cwd = sessionToRestore?.cwd || rootPath || undefined;
+        const cwd = sessionToRestoreRef.current?.cwd || rootPathRef.current || undefined;
 
         // Get terminal dimensions (use actual size if available, fallback to defaults)
         const cols = terminalRef.current?.cols ?? 80;
@@ -96,16 +119,9 @@ export function useTerminalPty(
           shell,
         });
 
-        if (!mounted) {
-          // Component unmounted, kill the session
-          await invoke("pty_kill", { sessionId: session.id });
-          return;
-        }
-
         sessionIdRef.current = session.id;
 
         // Resize PTY to actual terminal dimensions now that session exists
-        // (initial spawn used defaults because terminal might not have been ready)
         if (terminalRef.current) {
           const { cols, rows } = terminalRef.current;
           if (cols !== session.cols || rows !== session.rows) {
@@ -116,17 +132,19 @@ export function useTerminalPty(
         }
 
         // If restoring a session, update its ID instead of creating new
-        if (sessionToRestore) {
-          updateSessionId(sessionToRestore.id, session.id);
+        if (sessionToRestoreRef.current) {
+          useTerminalStore.getState().updateSessionId(sessionToRestoreRef.current.id, session.id);
         } else {
-          onSessionCreated?.(session.id);
+          onSessionCreatedRef.current?.(session.id);
         }
 
         // Listen for PTY output
         unlistenOutputRef.current = await listen<PtyOutput>("pty:output", (event) => {
           if (event.payload.sessionId !== sessionIdRef.current) return;
           // Process data through markdown filter if available
-          const data = processData ? processData(event.payload.data) : event.payload.data;
+          const data = processDataRef.current
+            ? processDataRef.current(event.payload.data)
+            : event.payload.data;
           terminalRef.current?.write(data);
         });
 
@@ -143,7 +161,7 @@ export function useTerminalPty(
           const endedSessionId = sessionIdRef.current;
           sessionIdRef.current = null;
           if (endedSessionId) {
-            onSessionEnded?.(endedSessionId);
+            onSessionEndedRef.current?.(endedSessionId);
           }
         });
       } catch (err) {
@@ -156,9 +174,8 @@ export function useTerminalPty(
 
     spawnPty();
 
+    // Cleanup only on true unmount (empty deps = only runs on unmount)
     return () => {
-      mounted = false;
-
       // Cleanup listeners
       if (unlistenOutputRef.current) {
         unlistenOutputRef.current();
@@ -178,7 +195,9 @@ export function useTerminalPty(
         sessionIdRef.current = null;
       }
     };
-  }, [rootPath, terminalRef, processData, onSessionCreated, onSessionEnded, sessionToRestore, updateSessionId]);
+  // Empty deps - only run on mount/unmount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     sessionId: sessionIdRef.current,

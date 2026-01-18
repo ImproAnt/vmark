@@ -6,6 +6,13 @@
   flex-shrink: 0;
 }
 
+/* Hidden state - keep mounted for PTY persistence but invisible and out of flow */
+.terminal-panel--hidden {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Bottom position (default) - border separates from editor */
 .terminal-panel--bottom {
   border-top: 1px solid var(--border-color);

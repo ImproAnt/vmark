@@ -158,15 +158,6 @@ export function TerminalPanel() {
     }
   }, [sessions, mountedTerminals.length]);
 
-  // Reset when hidden
-  useEffect(() => {
-    if (!visible) {
-      hasInitialized.current = false;
-    }
-  }, [visible]);
-
-  if (!visible) return null;
-
   const isRightPosition = position === "right";
   const isSplit = sessions.length >= 2;
 
@@ -183,7 +174,11 @@ export function TerminalPanel() {
     "--terminal-chrome-active-bg": chromeColors.activeBg,
   };
 
-  const panelClassName = `terminal-panel terminal-panel--${position}`;
+  const panelClassName = [
+    "terminal-panel",
+    `terminal-panel--${position}`,
+    !visible && "terminal-panel--hidden",
+  ].filter(Boolean).join(" ");
 
   return (
     <div className={panelClassName} style={panelStyle}>
