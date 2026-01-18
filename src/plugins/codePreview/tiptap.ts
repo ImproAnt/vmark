@@ -7,7 +7,12 @@ import { renderMermaid, updateMermaidTheme } from "../mermaid";
 import { sanitizeKatex, sanitizeSvg } from "@/utils/sanitize";
 
 const codePreviewPluginKey = new PluginKey("codePreview");
-const PREVIEW_ONLY_LANGUAGES = new Set(["latex", "mermaid"]);
+const PREVIEW_ONLY_LANGUAGES = new Set(["latex", "mermaid", "$$math$$"]);
+
+/** Check if language is a latex/math language (handles both "latex" and "$$math$$" sentinel) */
+function isLatexLanguage(lang: string): boolean {
+  return lang === "latex" || lang === "$$math$$";
+}
 
 const renderCache = new Map<string, string>();
 const renderPromises = new Map<string, Promise<string>>();
@@ -136,7 +141,7 @@ export const codePreviewExtension = Extension.create({
                 return;
               }
 
-              if (language === "latex") {
+              if (isLatexLanguage(language)) {
                 const placeholder = document.createElement("div");
                 placeholder.className = "code-block-preview latex-preview code-block-preview-placeholder";
                 placeholder.textContent = "Rendering math...";
