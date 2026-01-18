@@ -271,9 +271,6 @@ pub fn pty_resize(
         })
         .map_err(|e| format!("Resize error: {}", e))?;
 
-    #[cfg(debug_assertions)]
-    eprintln!("[PTY] Resized {}: {}x{}", session_id, cols, rows);
-
     Ok(())
 }
 
