@@ -1,6 +1,7 @@
 //! MCP Configuration Installer
 //!
 //! Handles installation of MCP configuration for AI providers:
+//! - Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json
 //! - Claude Code: ~/.claude.json
 //! - Codex CLI: ~/.codex/config.toml
 //! - Gemini CLI: ~/.gemini/settings.json
@@ -64,6 +65,11 @@ struct ProviderConfig {
 }
 
 const PROVIDERS: &[ProviderConfig] = &[
+    ProviderConfig {
+        name: "Claude Desktop",
+        id: "claude-desktop",
+        relative_path: "Library/Application Support/Claude/claude_desktop_config.json",
+    },
     ProviderConfig {
         name: "Claude Code",
         id: "claude",
@@ -171,7 +177,7 @@ fn read_existing_config(path: &PathBuf, provider_id: &str) -> (Option<String>, b
     let content = fs::read_to_string(path).ok();
     let (has_vmark, configured_port) = if let Some(ref c) = content {
         match provider_id {
-            "claude" | "gemini" => {
+            "claude-desktop" | "claude" | "gemini" => {
                 if let Ok(json) = serde_json::from_str::<serde_json::Value>(c) {
                     let has = json
                         .get("mcpServers")
@@ -233,7 +239,7 @@ fn generate_config_content(
     existing_content: Option<&str>,
 ) -> Result<String, String> {
     match provider_id {
-        "claude" | "gemini" => {
+        "claude-desktop" | "claude" | "gemini" => {
             let mut json: serde_json::Value = existing_content
                 .and_then(|c| serde_json::from_str(c).ok())
                 .unwrap_or_else(|| serde_json::json!({}));
@@ -288,7 +294,7 @@ fn generate_config_content(
 /// Remove vmark entry from config
 fn remove_vmark_from_config(provider_id: &str, content: &str) -> Result<String, String> {
     match provider_id {
-        "claude" | "gemini" => {
+        "claude-desktop" | "claude" | "gemini" => {
             let mut json: serde_json::Value =
                 serde_json::from_str(content).map_err(|e| format!("Invalid JSON: {}", e))?;
 
