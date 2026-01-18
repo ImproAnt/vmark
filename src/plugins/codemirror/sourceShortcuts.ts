@@ -57,6 +57,7 @@ export function buildSourceShortcutKeymap(): KeyBinding[] {
   bindIfKey(bindings, shortcuts.getShortcut("italic"), runSourceAction("italic"));
   bindIfKey(bindings, shortcuts.getShortcut("code"), runSourceAction("code"));
   bindIfKey(bindings, shortcuts.getShortcut("strikethrough"), runSourceAction("strikethrough"));
+  bindIfKey(bindings, shortcuts.getShortcut("underline"), runSourceAction("underline"));
   bindIfKey(bindings, shortcuts.getShortcut("link"), runSourceAction("link"));
   bindIfKey(bindings, shortcuts.getShortcut("highlight"), runSourceAction("highlight"));
   bindIfKey(bindings, shortcuts.getShortcut("subscript"), runSourceAction("subscript"));

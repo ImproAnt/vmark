@@ -53,6 +53,7 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   { id: "italic", label: "Italic", category: "formatting", defaultKey: "Mod-i", menuId: "italic" },
   { id: "code", label: "Inline Code", category: "formatting", defaultKey: "Mod-Shift-`", menuId: "code" },
   { id: "strikethrough", label: "Strikethrough", category: "formatting", defaultKey: "Mod-Shift-x", menuId: "strikethrough" },
+  { id: "underline", label: "Underline", category: "formatting", defaultKey: "Mod-u", menuId: "underline" },
   { id: "link", label: "Link", category: "formatting", defaultKey: "Mod-k", menuId: "link" },
   { id: "highlight", label: "Highlight", category: "formatting", defaultKey: "Mod-Shift-m", menuId: "highlight" },
   { id: "subscript", label: "Subscript", category: "formatting", defaultKey: "Alt-Mod-=", menuId: "subscript" },

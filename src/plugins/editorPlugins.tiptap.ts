@@ -126,6 +126,14 @@ export function buildEditorKeymapBindings(): Record<string, Command> {
   );
   bindIfKey(
     bindings,
+    shortcuts.getShortcut("underline"),
+    wrapWithMultiSelectionGuard("underline", (_state, _dispatch, view) => {
+      if (!view) return false;
+      return expandedToggleMark(view, "underline");
+    })
+  );
+  bindIfKey(
+    bindings,
     shortcuts.getShortcut("link"),
     wrapWithMultiSelectionGuard("link", (_state, _dispatch, view) => {
       if (!view) return false;

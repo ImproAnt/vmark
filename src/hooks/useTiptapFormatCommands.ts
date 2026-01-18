@@ -162,6 +162,10 @@ export function useTiptapFormatCommands(editor: TiptapEditor | null) {
       if (unlistenStrikethrough) unlistenRefs.current.push(unlistenStrikethrough);
       if (cancelled) return;
 
+      const unlistenUnderline = await createMarkListener("menu:underline", "underline");
+      if (unlistenUnderline) unlistenRefs.current.push(unlistenUnderline);
+      if (cancelled) return;
+
       const unlistenCode = await createMarkListener("menu:code", "code");
       if (unlistenCode) unlistenRefs.current.push(unlistenCode);
       if (cancelled) return;
