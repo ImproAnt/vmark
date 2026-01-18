@@ -10,21 +10,130 @@ import { applyFormat } from "@/plugins/sourceFormatPopup";
 import { useHeadingPickerStore } from "@/stores/headingPickerStore";
 import { useLinkReferenceDialogStore } from "@/stores/linkReferenceDialogStore";
 import { generateSlug, makeUniqueSlug, type HeadingWithId } from "@/utils/headingSlug";
+import { readClipboardUrl } from "@/utils/clipboardUrl";
+import { findWordBoundaries } from "@/utils/wordSegmentation";
 import { insertText } from "./sourceAdapterHelpers";
 
 /**
- * Insert a markdown hyperlink. Wraps selection or inserts template.
+ * Find word boundaries at cursor position in CodeMirror.
+ * Returns document positions for the word containing the cursor.
  */
-export function insertLink(view: EditorView): boolean {
+function findWordAtCursorSource(
+  view: EditorView,
+  pos: number
+): { from: number; to: number } | null {
+  const line = view.state.doc.lineAt(pos);
+  const lineText = line.text;
+  const offsetInLine = pos - line.from;
+
+  const boundaries = findWordBoundaries(lineText, offsetInLine);
+  if (!boundaries) return null;
+
+  return {
+    from: line.from + boundaries.start,
+    to: line.from + boundaries.end,
+  };
+}
+
+/**
+ * Insert a link with a known URL, wrapping the text from `from` to `to`.
+ * Places cursor at the end of the link.
+ */
+function insertLinkWithUrl(
+  view: EditorView,
+  from: number,
+  to: number,
+  url: string
+): void {
+  const linkText = view.state.doc.sliceString(from, to);
+  const markdown = `[${linkText}](${url})`;
+
+  view.dispatch({
+    changes: { from, to, insert: markdown },
+    selection: { anchor: from + markdown.length },
+  });
+  view.focus();
+}
+
+/**
+ * Insert a link template with cursor positioned in the URL part.
+ * Used when no clipboard URL is available.
+ */
+function insertLinkTemplate(
+  view: EditorView,
+  from: number,
+  to: number
+): void {
+  const linkText = view.state.doc.sliceString(from, to);
+  const template = `[${linkText}](url)`;
+  // Position cursor at start of "url"
+  const cursorPos = from + linkText.length + 3; // After "[text]("
+
+  view.dispatch({
+    changes: { from, to, insert: template },
+    selection: { anchor: cursorPos, head: cursorPos + 3 }, // Select "url"
+  });
+  view.focus();
+}
+
+/**
+ * Insert a markdown hyperlink with smart clipboard URL detection.
+ *
+ * Behavior:
+ * - Has selection + clipboard URL → [selection](clipboard_url)
+ * - Has selection, no URL → [selection](url) with cursor in url
+ * - No selection, word at cursor + clipboard URL → [word](clipboard_url)
+ * - No selection, word at cursor, no URL → [word](url) with cursor in url
+ * - No selection, no word + clipboard URL → [](clipboard_url) with cursor in text
+ * - No selection, no word, no URL → [](url) with cursor in text
+ */
+export async function insertLink(view: EditorView): Promise<boolean> {
+  const clipboardUrl = await readClipboardUrl();
   const { from, to } = view.state.selection.main;
+
+  // Case 1: Has selection
   if (from !== to) {
-    applyFormat(view, "link");
+    if (clipboardUrl) {
+      insertLinkWithUrl(view, from, to, clipboardUrl);
+    } else {
+      // Use existing format behavior: wrap and position cursor in URL
+      applyFormat(view, "link");
+    }
     return true;
   }
 
-  const text = "[](url)";
-  const cursorOffset = 3; // inside url
-  insertText(view, text, cursorOffset);
+  // Case 2: No selection - try word expansion
+  const wordRange = findWordAtCursorSource(view, from);
+  if (wordRange) {
+    if (clipboardUrl) {
+      insertLinkWithUrl(view, wordRange.from, wordRange.to, clipboardUrl);
+    } else {
+      insertLinkTemplate(view, wordRange.from, wordRange.to);
+    }
+    return true;
+  }
+
+  // Case 3: No selection, no word at cursor
+  if (clipboardUrl) {
+    // Insert [](clipboardUrl) with cursor in text position
+    const text = `[](${clipboardUrl})`;
+    const cursorOffset = 1; // After "["
+    insertText(view, text, cursorOffset);
+  } else {
+    // Insert [](url) with cursor in text position
+    const text = "[](url)";
+    const cursorOffset = 1; // After "["
+    insertText(view, text, cursorOffset);
+  }
+  return true;
+}
+
+/**
+ * Synchronous version of insertLink for use in keymap handlers.
+ * Fires the async insertLink and returns true immediately.
+ */
+export function insertLinkSync(view: EditorView): boolean {
+  void insertLink(view);
   return true;
 }
 

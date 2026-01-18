@@ -187,6 +187,7 @@ export interface AdvancedSettingsState {
   enableCommandMenu: boolean;
   mcpServer: McpServerSettings;
   terminalEnabled: boolean; // Show/hide terminal feature entirely
+  customLinkProtocols: string[]; // Custom URL protocols to recognize (e.g., "obsidian", "vscode")
 }
 
 export interface MarkdownSettings {
@@ -351,6 +352,7 @@ const initialState: SettingsState = {
       autoStart: false,
     },
     terminalEnabled: true,
+    customLinkProtocols: ["obsidian", "vscode", "dict", "x-dictionary"],
   },
   showDevSection: false,
 };

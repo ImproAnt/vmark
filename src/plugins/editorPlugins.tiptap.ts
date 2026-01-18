@@ -13,10 +13,11 @@ import { guardProseMirrorCommand } from "@/utils/imeGuard";
 import { canRunActionInMultiSelection } from "@/plugins/toolbarActions/multiSelectionPolicy";
 import { getWysiwygMultiSelectionContext } from "@/plugins/toolbarActions/multiSelectionContext";
 import { expandedToggleMark } from "@/plugins/editorPlugins/expandedToggleMark";
-import { findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
+import { findAnyMarkRangeAtCursor, findWordAtCursor } from "@/plugins/syntaxReveal/marks";
 import { resolveHardBreakStyle } from "@/utils/linebreaks";
 import { triggerPastePlainText } from "@/plugins/markdownPaste/tiptap";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { readClipboardUrl } from "@/utils/clipboardUrl";
 
 
 const editorKeymapPluginKey = new PluginKey("editorKeymaps");
@@ -80,6 +81,82 @@ function wrapWithMultiSelectionGuard(action: string, command: Command): Command 
   };
 }
 
+/**
+ * Apply a link mark with a specific href to a range.
+ */
+function applyLinkWithUrl(view: EditorView, from: number, to: number, url: string): void {
+  const { state, dispatch } = view;
+  const linkMark = state.schema.marks.link;
+  if (!linkMark) return;
+
+  const tr = state.tr.addMark(from, to, linkMark.create({ href: url }));
+  dispatch(tr);
+  view.focus();
+}
+
+/**
+ * Insert a new text node with link mark when no selection/word exists.
+ */
+function insertLinkAtCursor(view: EditorView, url: string): void {
+  const { state, dispatch } = view;
+  const linkMark = state.schema.marks.link;
+  if (!linkMark) return;
+
+  const { from } = state.selection;
+  const textNode = state.schema.text(url, [linkMark.create({ href: url })]);
+  const tr = state.tr.insert(from, textNode);
+  dispatch(tr);
+  view.focus();
+}
+
+/**
+ * Smart link insertion with clipboard URL detection for WYSIWYG mode.
+ * Checks clipboard for URL and applies link directly if found.
+ * Falls back to expandedToggleMark for normal link editing.
+ */
+function handleSmartLinkShortcut(view: EditorView): boolean {
+  const { from, to } = view.state.selection;
+  const $from = view.state.selection.$from;
+
+  // Check if we're inside an existing link - if so, use normal toggle behavior
+  const linkMark = view.state.schema.marks.link;
+  if (linkMark) {
+    const marksAtCursor = $from.marks();
+    const hasLinkMark = marksAtCursor.some((m) => m.type === linkMark);
+    if (hasLinkMark) {
+      return expandedToggleMark(view, "link");
+    }
+  }
+
+  // Try smart link insertion (async)
+  void (async () => {
+    const clipboardUrl = await readClipboardUrl();
+    if (!clipboardUrl) {
+      // No clipboard URL - fall back to normal behavior
+      expandedToggleMark(view, "link");
+      return;
+    }
+
+    // Has selection: apply link directly
+    if (from !== to) {
+      applyLinkWithUrl(view, from, to, clipboardUrl);
+      return;
+    }
+
+    // No selection: try word expansion
+    const wordRange = findWordAtCursor($from);
+    if (wordRange) {
+      applyLinkWithUrl(view, wordRange.from, wordRange.to, clipboardUrl);
+      return;
+    }
+
+    // No selection, no word: insert URL as linked text
+    insertLinkAtCursor(view, clipboardUrl);
+  })();
+
+  return true;
+}
+
 export function buildEditorKeymapBindings(): Record<string, Command> {
   const shortcuts = useShortcutsStore.getState();
   const bindings: Record<string, Command> = {};
@@ -137,7 +214,7 @@ export function buildEditorKeymapBindings(): Record<string, Command> {
     shortcuts.getShortcut("link"),
     wrapWithMultiSelectionGuard("link", (_state, _dispatch, view) => {
       if (!view) return false;
-      return expandedToggleMark(view, "link");
+      return handleSmartLinkShortcut(view);
     })
   );
   bindIfKey(

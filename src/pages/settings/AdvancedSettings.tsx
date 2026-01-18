@@ -5,7 +5,7 @@
  */
 
 import { useState } from "react";
-import { SettingRow, Toggle } from "./components";
+import { SettingRow, SettingsGroup, Toggle, TagInput } from "./components";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 export function AdvancedSettings() {
@@ -13,6 +13,7 @@ export function AdvancedSettings() {
   const [hardwareAccel, setHardwareAccel] = useState(true);
   const enableCommandMenu = useSettingsStore((state) => state.advanced.enableCommandMenu);
   const terminalEnabled = useSettingsStore((state) => state.advanced.terminalEnabled);
+  const customLinkProtocols = useSettingsStore((state) => state.advanced.customLinkProtocols);
   const updateAdvancedSetting = useSettingsStore((state) => state.updateAdvancedSetting);
 
   return (
@@ -49,6 +50,22 @@ export function AdvancedSettings() {
           <Toggle checked={hardwareAccel} onChange={setHardwareAccel} />
         </SettingRow>
       </div>
+
+      <SettingsGroup title="Link Protocols" className="mt-6">
+        <div className="py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="text-sm font-medium text-[var(--text-primary)] mb-1">
+            Custom link protocols
+          </div>
+          <div className="text-xs text-[var(--text-tertiary)] mb-2">
+            Additional URL protocols to recognize when inserting links (e.g., obsidian, vscode)
+          </div>
+          <TagInput
+            value={customLinkProtocols ?? []}
+            onChange={(v) => updateAdvancedSetting("customLinkProtocols", v)}
+            placeholder="Add protocol..."
+          />
+        </div>
+      </SettingsGroup>
     </div>
   );
 }

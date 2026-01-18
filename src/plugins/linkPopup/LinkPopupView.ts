@@ -88,6 +88,7 @@ export class LinkPopupView {
   private setupKeyboardNavigation() {
     this.keydownHandler = (e: KeyboardEvent) => {
       if (isImeKeyEvent(e)) return;
+
       if (e.key === "Tab") {
         const focusable = this.getFocusableElements();
         if (focusable.length === 0) return;
@@ -106,6 +107,13 @@ export class LinkPopupView {
         } else {
           const nextIndex = currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1;
           focusable[nextIndex].focus();
+        }
+      } else if (e.key === "Enter") {
+        // Handle Enter on focused buttons (input has its own handler)
+        const activeEl = document.activeElement as HTMLElement;
+        if (activeEl && activeEl.tagName === "BUTTON" && this.container.contains(activeEl)) {
+          e.preventDefault();
+          activeEl.click();
         }
       }
     };

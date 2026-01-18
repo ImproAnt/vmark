@@ -1,11 +1,14 @@
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import type { EditorView } from "@tiptap/pm/view";
 import { insertFootnoteAndOpenPopup } from "@/plugins/footnotePopup/tiptapInsertFootnote";
 import { expandedToggleMarkTiptap } from "@/plugins/editorPlugins.tiptap";
 import { resolveLinkPopupPayload } from "@/plugins/formatToolbar/linkPopupUtils";
 import { handleBlockquoteNest, handleBlockquoteUnnest, handleRemoveBlockquote, handleListIndent, handleListOutdent, handleRemoveList, handleToBulletList, handleToOrderedList } from "@/plugins/formatToolbar/nodeActions.tiptap";
 import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn, deleteCurrentColumn, deleteCurrentRow, deleteCurrentTable } from "@/plugins/tableUI/tableActions.tiptap";
+import { findWordAtCursor } from "@/plugins/syntaxReveal/marks";
 import { useLinkPopupStore } from "@/stores/linkPopupStore";
+import { readClipboardUrl } from "@/utils/clipboardUrl";
 import { canRunActionInMultiSelection } from "./multiSelectionPolicy";
 import type { WysiwygToolbarContext } from "./types";
 import { applyMultiSelectionBlockquoteAction, applyMultiSelectionHeading, applyMultiSelectionListAction } from "./wysiwygMultiSelection";
@@ -18,40 +21,110 @@ async function emitMenuEvent(eventName: string) {
   await emit(eventName, windowLabel);
 }
 
+/**
+ * Apply a link mark with a specific href to a range.
+ */
+function applyLinkWithUrl(view: EditorView, from: number, to: number, url: string): void {
+  const { state, dispatch } = view;
+  const linkMark = state.schema.marks.link;
+  if (!linkMark) return;
+
+  const tr = state.tr.addMark(from, to, linkMark.create({ href: url }));
+  dispatch(tr);
+  view.focus();
+}
+
+/**
+ * Insert a new text node with link mark when no selection exists.
+ */
+function insertLinkAtCursor(view: EditorView, url: string): void {
+  const { state, dispatch } = view;
+  const linkMark = state.schema.marks.link;
+  if (!linkMark) return;
+
+  const { from } = state.selection;
+  const textNode = state.schema.text(url, [linkMark.create({ href: url })]);
+  const tr = state.tr.insert(from, textNode);
+  dispatch(tr);
+  view.focus();
+}
+
+/**
+ * Smart link insertion with clipboard URL detection.
+ * Returns true if handled, false to fall back to popup.
+ */
+async function trySmartLinkInsertion(view: EditorView, inLink: boolean): Promise<boolean> {
+  // If already in a link, don't use clipboard - let user edit existing link
+  if (inLink) return false;
+
+  const clipboardUrl = await readClipboardUrl();
+  if (!clipboardUrl) return false;
+
+  const { from, to } = view.state.selection;
+
+  // Has selection: apply link directly
+  if (from !== to) {
+    applyLinkWithUrl(view, from, to, clipboardUrl);
+    return true;
+  }
+
+  // No selection: try word expansion
+  const $from = view.state.selection.$from;
+  const wordRange = findWordAtCursor($from);
+  if (wordRange) {
+    applyLinkWithUrl(view, wordRange.from, wordRange.to, clipboardUrl);
+    return true;
+  }
+
+  // No selection, no word: insert URL as linked text
+  insertLinkAtCursor(view, clipboardUrl);
+  return true;
+}
+
 function openLinkEditor(context: WysiwygToolbarContext): boolean {
   const view = context.view;
   if (!view) return false;
 
-  const selection = view.state.selection;
-  const payload = resolveLinkPopupPayload(
-    { from: selection.from, to: selection.to },
-    context.context?.inLink ?? null
-  );
+  const inLink = !!context.context?.inLink;
 
-  if (!payload) {
-    return expandedToggleMarkTiptap(view, "link");
-  }
+  // Try smart link insertion first (async, fires and forgets)
+  void trySmartLinkInsertion(view, inLink).then((handled) => {
+    if (handled) return;
 
-  try {
-    const start = view.coordsAtPos(payload.linkFrom);
-    const end = view.coordsAtPos(payload.linkTo);
+    // Fall back to popup or word expansion
+    const selection = view.state.selection;
+    const payload = resolveLinkPopupPayload(
+      { from: selection.from, to: selection.to },
+      context.context?.inLink ?? null
+    );
 
-    useLinkPopupStore.getState().openPopup({
-      href: payload.href,
-      linkFrom: payload.linkFrom,
-      linkTo: payload.linkTo,
-      anchorRect: {
-        top: Math.min(start.top, end.top),
-        left: Math.min(start.left, end.left),
-        bottom: Math.max(start.bottom, end.bottom),
-        right: Math.max(start.right, end.right),
-      },
-    });
-    view.focus();
-    return true;
-  } catch {
-    return expandedToggleMarkTiptap(view, "link");
-  }
+    if (!payload) {
+      expandedToggleMarkTiptap(view, "link");
+      return;
+    }
+
+    try {
+      const start = view.coordsAtPos(payload.linkFrom);
+      const end = view.coordsAtPos(payload.linkTo);
+
+      useLinkPopupStore.getState().openPopup({
+        href: payload.href,
+        linkFrom: payload.linkFrom,
+        linkTo: payload.linkTo,
+        anchorRect: {
+          top: Math.min(start.top, end.top),
+          left: Math.min(start.left, end.left),
+          bottom: Math.max(start.bottom, end.bottom),
+          right: Math.max(start.right, end.right),
+        },
+      });
+      view.focus();
+    } catch {
+      expandedToggleMarkTiptap(view, "link");
+    }
+  });
+
+  return true;
 }
 
 export function setWysiwygHeadingLevel(context: WysiwygToolbarContext, level: number): boolean {
