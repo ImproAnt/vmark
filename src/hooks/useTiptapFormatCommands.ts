@@ -4,6 +4,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open, message } from "@tauri-apps/plugin-dialog";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import type { Node as PMNode, Mark as PMMark } from "@tiptap/pm/model";
+import type { EditorView } from "@tiptap/pm/view";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { expandedToggleMarkTiptap } from "@/plugins/editorPlugins.tiptap";
@@ -11,8 +12,52 @@ import { copyImageToAssets, insertBlockImageNode } from "@/hooks/useImageOperati
 import { withReentryGuard } from "@/utils/reentryGuard";
 import { MultiSelection } from "@/plugins/multiCursor";
 import { isTerminalFocused } from "@/utils/focus";
+import { readClipboardImagePath } from "@/utils/clipboardImagePath";
+import { encodeMarkdownUrl } from "@/utils/markdownUrl";
 
 const INSERT_IMAGE_GUARD = "menu-insert-image";
+
+/**
+ * Try to insert image from clipboard path.
+ * Returns true if handled, false to fall back to file picker.
+ */
+async function tryClipboardImageInsertion(
+  view: EditorView,
+  windowLabel: string
+): Promise<boolean> {
+  const clipboardResult = await readClipboardImagePath();
+
+  // No valid clipboard image
+  if (!clipboardResult?.isImage || !clipboardResult.validated) {
+    return false;
+  }
+
+  let imagePath = clipboardResult.path;
+
+  // For local paths that need copying, copy to assets
+  if (clipboardResult.needsCopy) {
+    const docPath = getActiveFilePathForWindow(windowLabel);
+    if (!docPath) {
+      // Can't copy without document path, fall back to file picker
+      return false;
+    }
+
+    try {
+      const sourcePath = clipboardResult.resolvedPath ?? clipboardResult.path;
+      imagePath = await copyImageToAssets(sourcePath, docPath);
+    } catch {
+      // Copy failed, fall back to file picker
+      return false;
+    }
+  }
+
+  // Insert image node
+  insertBlockImageNode(
+    view as unknown as Parameters<typeof insertBlockImageNode>[0],
+    encodeMarkdownUrl(imagePath)
+  );
+  return true;
+}
 
 function getActiveFilePathForWindow(windowLabel: string): string | null {
   try {
@@ -75,6 +120,11 @@ export function useTiptapFormatCommands(editor: TiptapEditor | null) {
           const editor = editorRef.current;
           if (!editor) return;
 
+          // First try clipboard - if image path is in clipboard, insert directly
+          const handled = await tryClipboardImageInsertion(editor.view, windowLabel);
+          if (handled) return;
+
+          // No clipboard image, fall back to file picker
           const selected = await open({
             filters: [
               {

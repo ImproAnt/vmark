@@ -308,7 +308,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &MenuItem::with_id(app, "highlight", "Highlight", true, Some("CmdOrCtrl+Shift+M"))?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "link", "Link", true, Some("CmdOrCtrl+K"))?,
-            &MenuItem::with_id(app, "image", "Image...", true, Some("CmdOrCtrl+Shift+I"))?,
+            &MenuItem::with_id(app, "image", "Image...", true, Some("Alt+CmdOrCtrl+I"))?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(
                 app,
@@ -788,7 +788,7 @@ fn create_menu_with_shortcuts(
             &MenuItem::with_id(app, "highlight", "Highlight", true, get_accel("highlight", "CmdOrCtrl+Shift+M"))?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "link", "Link", true, get_accel("link", "CmdOrCtrl+K"))?,
-            &MenuItem::with_id(app, "image", "Image...", true, get_accel("image", "CmdOrCtrl+Shift+I"))?,
+            &MenuItem::with_id(app, "image", "Image...", true, get_accel("image", "Alt+CmdOrCtrl+I"))?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "clear-format", "Clear Format", true, get_accel("clear-format", "CmdOrCtrl+\\"))?,
             &PredefinedMenuItem::separator(app)?,
