@@ -14,6 +14,7 @@ import { clearAllHistory } from "@/hooks/useHistoryRecovery";
 import { historyLog } from "@/utils/debug";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
+import { runOrphanCleanup } from "@/utils/orphanAssetCleanup";
 import { resolveOpenAction } from "@/utils/openPolicy";
 import { getReplaceableTab } from "@/hooks/useReplaceableTab";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -176,6 +177,23 @@ export function useMenuEvents() {
       });
       if (cancelled) { unlistenClearHistory(); return; }
       unlistenRefs.current.push(unlistenClearHistory);
+
+      // Clean up unused images
+      const unlistenCleanupImages = await currentWindow.listen<string>("menu:cleanup-images", async (event) => {
+        if (event.payload !== windowLabel) return;
+
+        await withReentryGuard(windowLabel, "cleanup-images", async () => {
+          const tabId = useTabStore.getState().activeTabId[windowLabel];
+          if (!tabId) return;
+
+          const doc = useDocumentStore.getState().getDocument(tabId);
+          if (!doc) return;
+
+          await runOrphanCleanup(doc.filePath, doc.content);
+        });
+      });
+      if (cancelled) { unlistenCleanupImages(); return; }
+      unlistenRefs.current.push(unlistenCleanupImages);
 
       // Clear Recent Files
       const unlistenClearRecent = await currentWindow.listen<string>("menu:clear-recent", async (event) => {
