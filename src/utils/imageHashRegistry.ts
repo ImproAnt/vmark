@@ -2,14 +2,14 @@
  * Image Hash Registry
  *
  * Manages a registry of image content hashes to prevent duplicates.
- * Registry is stored as JSON in .assets/images/.image-hashes.json
+ * Registry is stored as JSON in assets/images/image-hashes.json
  */
 
 import { exists, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { dirname, join } from "@tauri-apps/api/path";
 import { ASSETS_FOLDER } from "@/utils/imageUtils";
 
-const REGISTRY_FILENAME = ".image-hashes.json";
+const REGISTRY_FILENAME = "image-hashes.json";
 const REGISTRY_VERSION = 1;
 
 interface HashRegistry {
