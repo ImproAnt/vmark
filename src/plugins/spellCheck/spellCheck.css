@@ -12,7 +12,7 @@
 }
 
 /* Dark theme adjustment */
-[data-theme="night"] .spell-error {
+.dark-theme .spell-error {
   text-decoration-color: #ff6b6b;
 }
 
