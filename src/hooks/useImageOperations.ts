@@ -10,7 +10,7 @@
  * Pure helpers (filename generation, etc.) are in utils/imageUtils.
  */
 
-import { mkdir, exists, copyFile, writeFile } from "@tauri-apps/plugin-fs";
+import { mkdir, exists, copyFile, writeFile, readFile } from "@tauri-apps/plugin-fs";
 import { dirname, join } from "@tauri-apps/api/path";
 import type { EditorView } from "@tiptap/pm/view";
 import {
@@ -19,8 +19,9 @@ import {
   getFilename,
   buildAssetRelativePath,
 } from "@/utils/imageUtils";
-import { computeDataHash, computeFileHash } from "@/utils/imageHash";
+import { computeDataHash } from "@/utils/imageHash";
 import { findExistingImage, registerImageHash } from "@/utils/imageHashRegistry";
+import { resizeImageIfNeeded } from "@/utils/imageResize";
 
 /**
  * Get the assets folder path relative to the document.
@@ -46,6 +47,7 @@ export async function ensureAssetsFolder(documentPath: string): Promise<string> 
 
 /**
  * Save image data (from clipboard or drag) to the assets folder.
+ * Resizes the image if it exceeds the configured max dimension.
  * Uses content-hash deduplication to avoid saving duplicates.
  * Returns the relative path for markdown insertion.
  */
@@ -54,8 +56,11 @@ export async function saveImageToAssets(
   originalFilename: string,
   documentPath: string
 ): Promise<string> {
-  // Compute hash for deduplication
-  const hash = await computeDataHash(imageData);
+  // Resize image if needed (based on settings)
+  const { data: finalData } = await resizeImageIfNeeded(imageData);
+
+  // Compute hash for deduplication (after resize)
+  const hash = await computeDataHash(finalData);
 
   // Check if this image already exists
   const existing = await findExistingImage(documentPath, hash);
@@ -68,7 +73,7 @@ export async function saveImageToAssets(
   const filename = generateUniqueFilename(originalFilename);
   const destPath = await join(assetsPath, filename);
 
-  await writeFile(destPath, imageData);
+  await writeFile(destPath, finalData);
 
   // Register hash for future deduplication
   await registerImageHash(documentPath, hash, filename);
@@ -78,6 +83,7 @@ export async function saveImageToAssets(
 
 /**
  * Copy an external image file to the assets folder.
+ * Resizes the image if it exceeds the configured max dimension.
  * Uses content-hash deduplication to avoid saving duplicates.
  * Used by "Insert Image" menu and drag-drop of file paths.
  */
@@ -85,8 +91,14 @@ export async function copyImageToAssets(
   sourcePath: string,
   documentPath: string
 ): Promise<string> {
-  // Compute hash for deduplication
-  const hash = await computeFileHash(sourcePath);
+  // Read the file
+  const imageData = await readFile(sourcePath);
+
+  // Resize if needed (based on settings)
+  const { data: finalData, wasResized } = await resizeImageIfNeeded(imageData);
+
+  // Compute hash for deduplication (after resize)
+  const hash = await computeDataHash(finalData);
 
   // Check if this image already exists
   const existing = await findExistingImage(documentPath, hash);
@@ -94,13 +106,19 @@ export async function copyImageToAssets(
     return existing; // Return existing path, no copy needed
   }
 
-  // Image is new, copy it
+  // Image is new, save it
   const assetsPath = await ensureAssetsFolder(documentPath);
   const originalName = getFilename(sourcePath);
   const filename = generateUniqueFilename(originalName);
   const destPath = await join(assetsPath, filename);
 
-  await copyFile(sourcePath, destPath);
+  if (wasResized) {
+    // Write resized data
+    await writeFile(destPath, finalData);
+  } else {
+    // Copy original file (faster for large files)
+    await copyFile(sourcePath, destPath);
+  }
 
   // Register hash for future deduplication
   await registerImageHash(documentPath, hash, filename);
