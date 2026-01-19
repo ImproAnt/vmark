@@ -2,8 +2,14 @@
  * UniversalToolbar - Bottom formatting toolbar
  *
  * A universal, single-line toolbar anchored at the bottom of the window.
- * Triggered by the configured shortcut, provides consistent formatting actions across
+ * Triggered by Shift+Cmd+P, provides consistent formatting actions across
  * both WYSIWYG and Source modes.
+ *
+ * Per redesign spec:
+ * - Focus toggle model (Shift+Cmd+P toggles focus, not visibility)
+ * - Two-step Escape (dropdown first, then toolbar)
+ * - Session memory (cleared on toolbar close)
+ * - Smart initial focus (active marks > selection > context > default)
  *
  * @module components/Editor/UniversalToolbar
  */
@@ -21,7 +27,9 @@ import { TOOLBAR_GROUPS, getGroupButtons } from "./toolbarGroups";
 import { ToolbarButton } from "./ToolbarButton";
 import { useToolbarKeyboard } from "./useToolbarKeyboard";
 import { getInitialFocusIndex } from "./toolbarFocus";
+import { getNextFocusableIndex, getPrevFocusableIndex } from "./toolbarNavigation";
 import { GroupDropdown } from "./GroupDropdown";
+import { toast } from "sonner";
 import "./universal-toolbar.css";
 
 /**
@@ -29,20 +37,12 @@ import "./universal-toolbar.css";
  *
  * Renders a fixed-position toolbar at the bottom of the editor window.
  * Visibility is controlled by the `universalToolbarVisible` state in uiStore.
- *
- * Uses FindBar geometry tokens for consistent bottom-bar alignment:
- * - Height: 40px
- * - Padding: 6px 12px
- * - Row height: 28px
- *
- * @example
- * // In App.tsx or EditorContainer
- * <UniversalToolbar />
  */
 export function UniversalToolbar() {
   const visible = useUIStore((state) => state.universalToolbarVisible);
   const toolbarHasFocus = useUIStore((state) => state.universalToolbarHasFocus);
-  const lastFocusedIndex = useUIStore((state) => state.lastFocusedToolbarIndex);
+  const sessionFocusIndex = useUIStore((state) => state.toolbarSessionFocusIndex);
+  const storeDropdownOpen = useUIStore((state) => state.toolbarDropdownOpen);
   const sourceMode = useEditorStore((state) => state.sourceMode);
   const wysiwygContext = useTiptapEditorStore((state) => state.context);
   const wysiwygView = useTiptapEditorStore((state) => state.editorView);
@@ -56,6 +56,7 @@ export function UniversalToolbar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wasVisibleRef = useRef(false);
+  const justOpenedRef = useRef(false);
 
   // One toolbar button per group
   const buttons = useMemo(() => getGroupButtons(), []);
@@ -88,6 +89,11 @@ export function UniversalToolbar() {
     [buttonStates]
   );
 
+  const isDropdownButton = useCallback(
+    (index: number) => buttons[index]?.type === "dropdown",
+    [buttons]
+  );
+
   const focusActiveEditor = useCallback(() => {
     const isSource = useEditorStore.getState().sourceMode;
     if (isSource) {
@@ -97,19 +103,38 @@ export function UniversalToolbar() {
     useTiptapEditorStore.getState().editorView?.focus();
   }, []);
 
+  // Close dropdown, optionally restore focus to toolbar button
   const closeMenu = useCallback((restoreFocus = true) => {
     setMenuOpen(false);
     setOpenGroupId(null);
+    useUIStore.getState().setToolbarDropdownOpen(false);
     if (!restoreFocus || !useUIStore.getState().universalToolbarVisible) return;
     requestAnimationFrame(() => {
       if (!useUIStore.getState().universalToolbarVisible) return;
-      const currentIndex = useUIStore.getState().lastFocusedToolbarIndex;
+      const currentIndex = useUIStore.getState().toolbarSessionFocusIndex;
+      if (currentIndex < 0) return;
       const target = containerRef.current?.querySelector<HTMLButtonElement>(
         `.universal-toolbar-btn[data-focus-index="${currentIndex}"]`
       );
       target?.focus();
     });
   }, []);
+
+  // Helper to open a menu and sync with store
+  const openMenu = useCallback((groupId: string, rect: DOMRect) => {
+    setMenuAnchor(rect);
+    setOpenGroupId(groupId);
+    setMenuOpen(true);
+    useUIStore.getState().setToolbarDropdownOpen(true);
+  }, []);
+
+  // Close toolbar completely
+  const closeToolbar = useCallback(() => {
+    useUIStore.getState().clearToolbarSession();
+    focusActiveEditor();
+    setMenuOpen(false);
+    setOpenGroupId(null);
+  }, [focusActiveEditor]);
 
   const handleFocusCapture = useCallback(() => {
     if (!useUIStore.getState().universalToolbarHasFocus) {
@@ -180,6 +205,7 @@ export function UniversalToolbar() {
     buttonCount: buttons.length,
     containerRef,
     isButtonFocusable,
+    isDropdownButton,
     focusMode: toolbarHasFocus,
     onActivate: (index) => {
       const button = buttons[index];
@@ -190,9 +216,7 @@ export function UniversalToolbar() {
           `.universal-toolbar-btn[data-focus-index="${index}"]`
         )?.getBoundingClientRect();
         if (rect) {
-          setMenuAnchor(rect);
-          setOpenGroupId(button.id);
-          setMenuOpen(true);
+          openMenu(button.id, rect);
         }
       }
     },
@@ -204,62 +228,102 @@ export function UniversalToolbar() {
         `.universal-toolbar-btn[data-focus-index="${index}"]`
       )?.getBoundingClientRect();
       if (rect) {
-        setMenuAnchor(rect);
-        setOpenGroupId(button.id);
-        setMenuOpen(true);
+        openMenu(button.id, rect);
       }
       return true;
     },
     onClose: () => {
-      useUIStore.getState().setUniversalToolbarVisible(false);
-      focusActiveEditor();
-      closeMenu(false);
+      // Two-step Escape: if dropdown open, close it first
+      if (menuOpen) {
+        closeMenu();
+        return;
+      }
+      // No dropdown open - close toolbar
+      closeToolbar();
     },
   });
 
+  // Update session focus index when user navigates
+  useEffect(() => {
+    if (focusedIndex >= 0) {
+      useUIStore.getState().setToolbarSessionFocusIndex(focusedIndex);
+    }
+  }, [focusedIndex]);
+
+  // Sync with store's dropdown state (for global Escape handling)
+  useEffect(() => {
+    // Store says dropdown should be closed, but local state says open
+    if (!storeDropdownOpen && menuOpen) {
+      closeMenu();
+    }
+  }, [storeDropdownOpen, menuOpen, closeMenu]);
+
+  // Close dropdown when focus leaves toolbar (focus toggle)
+  useEffect(() => {
+    if (!toolbarHasFocus && menuOpen) {
+      closeMenu(false);
+    }
+  }, [toolbarHasFocus, menuOpen, closeMenu]);
+
+  // Handle toolbar open/close and initial focus
   useEffect(() => {
     if (!visible) {
       wasVisibleRef.current = false;
+      justOpenedRef.current = false;
       closeMenu(false);
       return;
     }
 
+    // Toolbar just opened - compute smart focus
     if (!wasVisibleRef.current) {
+      justOpenedRef.current = true;
       const initialIndex = getInitialFocusIndex({
         buttons,
         states: buttonStates,
-        lastFocusedIndex,
         context: toolbarContext,
       });
+
+      // If no enabled buttons, close toolbar immediately
+      if (initialIndex < 0) {
+        useUIStore.getState().clearToolbarSession();
+        toast.info("No formatting actions available");
+        return;
+      }
+
       setFocusedIndex(initialIndex);
+      useUIStore.getState().setToolbarSessionFocusIndex(initialIndex);
+    } else if (sessionFocusIndex >= 0) {
+      // Toolbar was already open, use session memory
+      setFocusedIndex(sessionFocusIndex);
     }
 
     wasVisibleRef.current = true;
-  }, [visible, buttons, buttonStates, lastFocusedIndex, toolbarContext, setFocusedIndex, closeMenu]);
+  }, [visible, buttons, buttonStates, toolbarContext, setFocusedIndex, closeMenu, sessionFocusIndex]);
 
+  // Handle click outside dropdown
   useEffect(() => {
     if (!menuOpen) return;
 
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (menuRef.current && !menuRef.current.contains(target)) {
-        closeMenu();
-      }
-    };
+      const menu = menuRef.current;
+      const container = containerRef.current;
 
-    const handleKeyDownEvent = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeMenu();
+      // Click inside dropdown - ignore
+      if (menu && menu.contains(target)) return;
+
+      // Click on toolbar button - let click handler deal with it
+      if (container && container.contains(target)) {
+        closeMenu(false);
+        return;
       }
+
+      // Click outside - close dropdown, keep toolbar
+      closeMenu();
     };
 
     document.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("keydown", handleKeyDownEvent);
-
-    return () => {
-      document.removeEventListener("mousedown", handleMouseDown);
-      document.removeEventListener("keydown", handleKeyDownEvent);
-    };
+    return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [menuOpen, closeMenu]);
 
   const openGroup = openGroupId
@@ -286,6 +350,7 @@ export function UniversalToolbar() {
       ref={containerRef}
       role="toolbar"
       aria-label="Formatting toolbar"
+      aria-orientation="horizontal"
       className="universal-toolbar"
       onKeyDown={handleKeyDown}
       onFocusCapture={handleFocusCapture}
@@ -313,15 +378,25 @@ export function UniversalToolbar() {
                 focusEnabled={toolbarHasFocus}
                 focusIndex={currentIndex}
                 currentFocusIndex={focusedIndex}
+                ariaHasPopup={button.type === "dropdown" ? "menu" : undefined}
+                ariaExpanded={button.type === "dropdown" && openGroupId === button.id}
                 onClick={() => {
+                  // Update session focus on click (not just keyboard)
+                  setFocusedIndex(currentIndex);
+                  useUIStore.getState().setToolbarSessionFocusIndex(currentIndex);
+
                   if (button.type === "dropdown") {
+                    // If clicking same button with dropdown open, close it
+                    if (openGroupId === button.id && menuOpen) {
+                      closeMenu();
+                      return;
+                    }
+                    // Close any other dropdown and open this one
                     const rect = containerRef.current?.querySelector<HTMLButtonElement>(
                       `.universal-toolbar-btn[data-focus-index="${currentIndex}"]`
                     )?.getBoundingClientRect();
                     if (rect) {
-                      setMenuAnchor(rect);
-                      setOpenGroupId(button.id);
-                      setMenuOpen(true);
+                      openMenu(button.id, rect);
                     }
                   }
                 }}
@@ -336,11 +411,46 @@ export function UniversalToolbar() {
           ref={menuRef}
           anchorRect={menuAnchor}
           items={dropdownItems}
+          groupId={openGroup.id}
           onSelect={(action) => {
             handleAction(action);
             closeMenu();
           }}
           onClose={() => closeMenu()}
+          onNavigateOut={(direction) => {
+            // ← or → in dropdown moves to adjacent toolbar button (skip disabled)
+            closeMenu(false);
+            const current = focusedIndex;
+            const total = buttons.length;
+            const newIndex = direction === "left"
+              ? getPrevFocusableIndex(current, total, isButtonFocusable)
+              : getNextFocusableIndex(current, total, isButtonFocusable);
+            setFocusedIndex(newIndex);
+            useUIStore.getState().setToolbarSessionFocusIndex(newIndex);
+            requestAnimationFrame(() => {
+              const target = containerRef.current?.querySelector<HTMLButtonElement>(
+                `.universal-toolbar-btn[data-focus-index="${newIndex}"]`
+              );
+              target?.focus();
+            });
+          }}
+          onTabOut={(direction) => {
+            // Tab in dropdown moves to next/prev toolbar button (skip disabled)
+            closeMenu(false);
+            const current = focusedIndex;
+            const total = buttons.length;
+            const newIndex = direction === "forward"
+              ? getNextFocusableIndex(current, total, isButtonFocusable)
+              : getPrevFocusableIndex(current, total, isButtonFocusable);
+            setFocusedIndex(newIndex);
+            useUIStore.getState().setToolbarSessionFocusIndex(newIndex);
+            requestAnimationFrame(() => {
+              const target = containerRef.current?.querySelector<HTMLButtonElement>(
+                `.universal-toolbar-btn[data-focus-index="${newIndex}"]`
+              );
+              target?.focus();
+            });
+          }}
         />
       )}
     </div>

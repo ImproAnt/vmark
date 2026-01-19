@@ -16,6 +16,8 @@ interface ToolbarButtonProps {
   focusEnabled?: boolean;
   focusIndex?: number;
   currentFocusIndex?: number;
+  ariaHasPopup?: "menu" | "dialog" | "listbox";
+  ariaExpanded?: boolean;
   onClick: () => void;
 }
 
@@ -28,6 +30,8 @@ interface ToolbarButtonProps {
  * @param notImplemented - Whether the button is not yet implemented
  * @param focusIndex - This button's index in the focus order
  * @param currentFocusIndex - The currently focused button index (for roving tabindex)
+ * @param ariaHasPopup - ARIA popup type (for dropdown buttons)
+ * @param ariaExpanded - Whether the dropdown is expanded
  * @param onClick - Click handler
  */
 export function ToolbarButton({
@@ -38,6 +42,8 @@ export function ToolbarButton({
   focusEnabled = true,
   focusIndex,
   currentFocusIndex,
+  ariaHasPopup,
+  ariaExpanded,
   onClick,
 }: ToolbarButtonProps) {
   // Show "Not available yet" tooltip for unimplemented buttons
@@ -55,6 +61,9 @@ export function ToolbarButton({
       type="button"
       className={`universal-toolbar-btn${active ? " active" : ""}${button.type === "dropdown" ? " dropdown" : ""}`}
       title={title}
+      aria-label={button.label}
+      aria-haspopup={ariaHasPopup}
+      aria-expanded={ariaHasPopup ? ariaExpanded : undefined}
       disabled={disabled || notImplemented}
       onClick={onClick}
       tabIndex={tabIndex}

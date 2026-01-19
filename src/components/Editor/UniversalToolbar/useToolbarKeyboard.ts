@@ -2,21 +2,23 @@
  * useToolbarKeyboard - Keyboard navigation hook
  *
  * Handles keyboard events for the universal toolbar.
- * Implements roving tabindex pattern with group navigation.
+ * Implements simplified linear navigation per spec Section 3.1.
+ *
+ * Navigation:
+ * - ←/→ or Tab/Shift+Tab: Move between buttons (wrapping)
+ * - Home/End: Jump to first/last enabled button
+ * - Enter/Space: Activate button (open dropdown)
+ * - ↑/↓: Open dropdown (dropdown buttons only, no-op on action buttons)
+ * - Escape: Handled by parent (two-step cascade)
  *
  * @module components/Editor/UniversalToolbar/useToolbarKeyboard
  */
 import { useCallback, useRef, useEffect, useState } from "react";
-import { useUIStore } from "@/stores/uiStore";
 import {
   getNextFocusableIndex,
   getPrevFocusableIndex,
   getFirstFocusableIndex,
   getLastFocusableIndex,
-  getNextGroupFirstFocusableIndex,
-  getPrevGroupLastFocusableIndex,
-  getNextFocusableIndexInGroup,
-  getPrevFocusableIndexInGroup,
 } from "./toolbarNavigation";
 
 interface UseToolbarKeyboardOptions {
@@ -24,15 +26,17 @@ interface UseToolbarKeyboardOptions {
   buttonCount: number;
   /** Whether a button is focusable (enabled) */
   isButtonFocusable: (index: number) => boolean;
+  /** Whether a button is a dropdown (vs action button) */
+  isDropdownButton?: (index: number) => boolean;
   /** Optional external ref for the toolbar container */
   containerRef?: React.RefObject<HTMLDivElement | null>;
   /** Whether focus should be managed by the toolbar */
   focusMode: boolean;
   /** Callback when a button should be activated */
   onActivate: (index: number) => void;
-  /** Callback when a dropdown should open */
+  /** Callback when a dropdown should open (returns true if opened) */
   onOpenDropdown?: (index: number) => boolean;
-  /** Callback when toolbar should close */
+  /** Callback when toolbar should close (Escape pressed, no dropdown open) */
   onClose?: () => void;
 }
 
@@ -50,16 +54,8 @@ interface UseToolbarKeyboardReturn {
 /**
  * Hook for toolbar keyboard navigation.
  *
- * Implements:
- * - Tab/Shift+Tab: Cycle through buttons
- * - Left/Right: Move within group
- * - Ctrl+Left/Right (Option on Mac): Jump between groups
- * - Home/End: Jump to first/last button
- * - Enter/Space: Activate button
- * - Escape: Close toolbar
- *
- * @param options - Configuration options
- * @returns Keyboard handling state and handlers
+ * Implements linear navigation (no group jumping).
+ * Session memory is managed externally (cleared on toolbar close).
  */
 export function useToolbarKeyboard(
   options: UseToolbarKeyboardOptions
@@ -67,35 +63,23 @@ export function useToolbarKeyboard(
   const {
     buttonCount,
     isButtonFocusable,
+    isDropdownButton,
     onActivate,
     onOpenDropdown,
     onClose,
     containerRef: externalRef,
     focusMode,
   } = options;
+
   const internalRef = useRef<HTMLDivElement>(null);
   const containerRef = externalRef ?? internalRef;
 
-  // Get initial focus from store (persisted across opens)
-  const lastFocusedIndex = useUIStore((state) => state.lastFocusedToolbarIndex);
-  const [focusedIndex, setFocusedIndexState] = useState(() =>
-    Math.min(lastFocusedIndex, buttonCount - 1)
-  );
+  // Session-only focus tracking (no persistent store)
+  const [focusedIndex, setFocusedIndexState] = useState(0);
 
-  // Persist focus index to store
   const setFocusedIndex = useCallback((index: number) => {
     setFocusedIndexState(index);
-    useUIStore.getState().setLastFocusedToolbarIndex(index);
   }, []);
-
-  // Close toolbar action
-  const closeToolbar = useCallback(() => {
-    if (onClose) {
-      onClose();
-      return;
-    }
-    useUIStore.getState().setUniversalToolbarVisible(false);
-  }, [onClose]);
 
   // Move focus to a button
   const focusButton = useCallback((index: number) => {
@@ -112,53 +96,47 @@ export function useToolbarKeyboard(
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      // Prevent Cmd+A from selecting all page content when focus is on toolbar buttons
+      // Prevent Cmd+A from selecting all page content
       if ((e.metaKey || e.ctrlKey) && e.key === "a") {
         e.preventDefault();
         return;
       }
 
       const current = focusedIndex;
-      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-      const groupModifier = isMac ? e.altKey : e.ctrlKey;
 
       switch (e.key) {
+        // Linear navigation: → or Tab
+        case "ArrowRight":
         case "Tab":
-          e.preventDefault();
-          if (e.shiftKey) {
+          if (e.key === "Tab" && e.shiftKey) {
+            e.preventDefault();
             focusButton(getPrevFocusableIndex(current, buttonCount, isButtonFocusable));
           } else {
+            e.preventDefault();
             focusButton(getNextFocusableIndex(current, buttonCount, isButtonFocusable));
           }
           break;
 
-        case "ArrowRight":
-          e.preventDefault();
-          if (groupModifier) {
-            focusButton(getNextGroupFirstFocusableIndex(current, isButtonFocusable));
-          } else {
-            focusButton(getNextFocusableIndexInGroup(current, isButtonFocusable));
-          }
-          break;
-
+        // Linear navigation: ← or Shift+Tab
         case "ArrowLeft":
           e.preventDefault();
-          if (groupModifier) {
-            focusButton(getPrevGroupLastFocusableIndex(current, isButtonFocusable));
-          } else {
-            focusButton(getPrevFocusableIndexInGroup(current, isButtonFocusable));
-          }
+          focusButton(getPrevFocusableIndex(current, buttonCount, isButtonFocusable));
           break;
 
+        // Open dropdown (dropdown buttons only)
         case "ArrowDown":
-          if (onOpenDropdown) {
+        case "ArrowUp":
+          // Only open dropdown if this is a dropdown button
+          if (isDropdownButton?.(current) !== false && onOpenDropdown) {
             const opened = onOpenDropdown(current);
             if (opened) {
               e.preventDefault();
             }
           }
+          // No-op on action buttons (per spec Section 3.1)
           break;
 
+        // Jump to first/last
         case "Home":
           e.preventDefault();
           focusButton(getFirstFocusableIndex(buttonCount, isButtonFocusable));
@@ -169,6 +147,7 @@ export function useToolbarKeyboard(
           focusButton(getLastFocusableIndex(buttonCount, isButtonFocusable));
           break;
 
+        // Activate button
         case "Enter":
         case " ":
           e.preventDefault();
@@ -177,16 +156,19 @@ export function useToolbarKeyboard(
           }
           break;
 
+        // Close toolbar (handled by parent for two-step cascade)
         case "Escape":
           e.preventDefault();
-          closeToolbar();
+          if (onClose) {
+            onClose();
+          }
           break;
       }
     },
-    [buttonCount, focusButton, focusedIndex, onActivate, closeToolbar, isButtonFocusable, onOpenDropdown]
+    [buttonCount, focusButton, focusedIndex, onActivate, onClose, isButtonFocusable, isDropdownButton, onOpenDropdown]
   );
 
-  // Focus button when toolbar opens
+  // Focus button when toolbar gets focus
   useEffect(() => {
     if (!focusMode) return;
     const container = containerRef.current;

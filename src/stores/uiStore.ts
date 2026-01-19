@@ -17,7 +17,8 @@ interface UIState {
   statusBarVisible: boolean; // Simple toggle for status bar visibility (Cmd+J)
   universalToolbarVisible: boolean; // Universal formatting toolbar (shortcut configurable)
   universalToolbarHasFocus: boolean; // Keyboard focus is inside the universal toolbar
-  lastFocusedToolbarIndex: number; // Last focused button index in universal toolbar
+  toolbarSessionFocusIndex: number; // Session-only focus index (cleared on toolbar close)
+  toolbarDropdownOpen: boolean; // Whether a dropdown menu is currently open
 }
 
 interface UIActions {
@@ -30,10 +31,14 @@ interface UIActions {
   setActiveHeadingLine: (line: number | null) => void;
   setSidebarWidth: (width: number) => void;
   setStatusBarVisible: (visible: boolean) => void;
+  /** Focus toggle per spec Section 1.2 */
   toggleUniversalToolbar: () => void;
   setUniversalToolbarVisible: (visible: boolean) => void;
   setUniversalToolbarHasFocus: (hasFocus: boolean) => void;
-  setLastFocusedToolbarIndex: (index: number) => void;
+  setToolbarSessionFocusIndex: (index: number) => void;
+  setToolbarDropdownOpen: (open: boolean) => void;
+  /** Clear session memory when toolbar closes */
+  clearToolbarSession: () => void;
 }
 
 export const useUIStore = create<UIState & UIActions>((set) => ({
@@ -46,7 +51,8 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   statusBarVisible: true, // Default to visible
   universalToolbarVisible: false,
   universalToolbarHasFocus: false,
-  lastFocusedToolbarIndex: -1, // -1 = no previous focus, use smart context-based focus
+  toolbarSessionFocusIndex: -1, // Session-only, -1 = use smart focus
+  toolbarDropdownOpen: false,
 
   openSettings: () => set({ settingsOpen: true }),
   closeSettings: () => set({ settingsOpen: false }),
@@ -59,16 +65,44 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
     sidebarWidth: Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width)),
   }),
   setStatusBarVisible: (visible) => set({ statusBarVisible: visible }),
+
+  /**
+   * Focus toggle per spec Section 1.2:
+   * - Toolbar closed → Open + focus toolbar
+   * - Toolbar open, editor focused → Focus toolbar (use session memory)
+   * - Toolbar open, toolbar focused → Focus editor (toolbar stays open)
+   */
   toggleUniversalToolbar: () =>
-    set((state) => ({
-      universalToolbarVisible: !state.universalToolbarVisible,
-      universalToolbarHasFocus: !state.universalToolbarVisible,
-    })),
+    set((state) => {
+      if (!state.universalToolbarVisible) {
+        // Closed → Open + focus
+        return {
+          universalToolbarVisible: true,
+          universalToolbarHasFocus: true,
+        };
+      }
+      // Open → Toggle focus location
+      return {
+        universalToolbarHasFocus: !state.universalToolbarHasFocus,
+      };
+    }),
+
   setUniversalToolbarVisible: (visible) =>
     set((state) => ({
       universalToolbarVisible: visible,
       universalToolbarHasFocus: visible ? state.universalToolbarHasFocus : false,
+      // Clear session memory when closing
+      toolbarSessionFocusIndex: visible ? state.toolbarSessionFocusIndex : -1,
     })),
+
   setUniversalToolbarHasFocus: (hasFocus) => set({ universalToolbarHasFocus: hasFocus }),
-  setLastFocusedToolbarIndex: (index) => set({ lastFocusedToolbarIndex: index }),
+  setToolbarSessionFocusIndex: (index) => set({ toolbarSessionFocusIndex: index }),
+  setToolbarDropdownOpen: (open) => set({ toolbarDropdownOpen: open }),
+
+  clearToolbarSession: () => set({
+    universalToolbarVisible: false,
+    universalToolbarHasFocus: false,
+    toolbarSessionFocusIndex: -1,
+    toolbarDropdownOpen: false,
+  }),
 }));

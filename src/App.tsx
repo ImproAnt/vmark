@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 import { Editor } from "@/components/Editor";
 import { Sidebar } from "@/components/Sidebar";
 import { StatusBar } from "@/components/StatusBar";
@@ -244,6 +245,7 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/print-preview" element={<PrintPreviewPage />} />
         </Routes>
+        <Toaster position="top-center" />
       </WindowProvider>
     </ErrorBoundary>
   );

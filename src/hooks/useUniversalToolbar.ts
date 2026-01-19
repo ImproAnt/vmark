@@ -36,14 +36,32 @@ export function useUniversalToolbar(): void {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Escape with two-step cascade per spec Section 3.3
       if (e.key === "Escape" && useUIStore.getState().universalToolbarVisible) {
         const activeEl = document.activeElement as HTMLElement | null;
+        // Don't intercept Escape in inputs/textareas
         if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
           return;
         }
+        // Check if focus is inside toolbar - let toolbar handle it for two-step
+        const toolbarEl = document.querySelector(".universal-toolbar");
+        if (toolbarEl && toolbarEl.contains(activeEl)) {
+          // Toolbar's own keydown handler will implement two-step cascade
+          return;
+        }
+        // Focus outside toolbar - check dropdown state for two-step
+        const ui = useUIStore.getState();
+        if (ui.toolbarDropdownOpen) {
+          // Step 1: Close dropdown only (toolbar stays, dropdown state will be cleared by component)
+          e.preventDefault();
+          e.stopPropagation();
+          ui.setToolbarDropdownOpen(false);
+          return;
+        }
+        // Step 2: Close toolbar entirely
         e.preventDefault();
         e.stopPropagation();
-        useUIStore.getState().setUniversalToolbarVisible(false);
+        ui.clearToolbarSession();
         return;
       }
       const shortcut = useShortcutsStore.getState().getShortcut("formatToolbar");

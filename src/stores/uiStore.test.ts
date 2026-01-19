@@ -12,23 +12,38 @@ function resetUIStore() {
     statusBarVisible: true,
     universalToolbarVisible: false,
     universalToolbarHasFocus: false,
-    lastFocusedToolbarIndex: -1,
+    toolbarSessionFocusIndex: -1,
   });
 }
 
 beforeEach(resetUIStore);
 
 describe("uiStore", () => {
-  it("toggles toolbar visibility and focus together", () => {
+  it("opens toolbar with focus on first toggle", () => {
     const store = useUIStore.getState();
 
     store.toggleUniversalToolbar();
     expect(useUIStore.getState().universalToolbarVisible).toBe(true);
     expect(useUIStore.getState().universalToolbarHasFocus).toBe(true);
+  });
 
+  it("toggles focus (not visibility) when toolbar already visible", () => {
+    const store = useUIStore.getState();
+
+    // First toggle: opens toolbar with focus
     store.toggleUniversalToolbar();
-    expect(useUIStore.getState().universalToolbarVisible).toBe(false);
+    expect(useUIStore.getState().universalToolbarVisible).toBe(true);
+    expect(useUIStore.getState().universalToolbarHasFocus).toBe(true);
+
+    // Second toggle: keeps toolbar visible, toggles focus off
+    store.toggleUniversalToolbar();
+    expect(useUIStore.getState().universalToolbarVisible).toBe(true);
     expect(useUIStore.getState().universalToolbarHasFocus).toBe(false);
+
+    // Third toggle: keeps toolbar visible, toggles focus on
+    store.toggleUniversalToolbar();
+    expect(useUIStore.getState().universalToolbarVisible).toBe(true);
+    expect(useUIStore.getState().universalToolbarHasFocus).toBe(true);
   });
 
   it("clears focus when toolbar is hidden", () => {
