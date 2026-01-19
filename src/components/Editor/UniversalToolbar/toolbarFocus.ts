@@ -57,14 +57,6 @@ function getListAction(context: ToolbarContext): string {
   return "bulletList";
 }
 
-function isBlankBlock(context: ToolbarContext): boolean {
-  if (!context.context) return false;
-  if (context.surface === "source") {
-    return context.context.contextMode === "block-insert" || context.context.atBlankLine;
-  }
-  return context.context.contextMode === "insert-block";
-}
-
 export function getInitialFocusIndex(options: FocusOptions): number {
   const { buttons, states, lastFocusedIndex, context } = options;
 
@@ -129,10 +121,9 @@ export function getInitialFocusIndex(options: FocusOptions): number {
     if (isEnabled(states, codeIndex)) return codeIndex;
   }
 
-  if (isBlankBlock(context)) {
-    const headingIndex = findGroupIndexForAction(buttons, "heading:1");
-    if (isEnabled(states, headingIndex)) return headingIndex;
-  }
+  // Note: We intentionally don't auto-focus heading for blank paragraphs.
+  // Paragraphs are the most common block and need no special action.
+  // Heading button is only auto-focused when actually inside a heading (line 95-98).
 
   const boldIndex = findGroupIndexForAction(buttons, "bold");
   if (isEnabled(states, boldIndex)) return boldIndex;
