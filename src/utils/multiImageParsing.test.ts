@@ -1,0 +1,134 @@
+import { describe, it, expect } from "vitest";
+import { parseMultiplePaths, mightContainMultiplePaths } from "./multiImageParsing";
+
+describe("parseMultiplePaths", () => {
+  describe("newline-separated format", () => {
+    it("parses multiple paths separated by newlines", () => {
+      const input = "/path/to/image1.jpg\n/path/to/image2.png";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/to/image1.jpg", "/path/to/image2.png"]);
+      expect(result.format).toBe("newline");
+    });
+
+    it("handles empty lines between paths", () => {
+      const input = "/path/to/image1.jpg\n\n/path/to/image2.png";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/to/image1.jpg", "/path/to/image2.png"]);
+      expect(result.format).toBe("newline");
+    });
+
+    it("trims whitespace from each line", () => {
+      const input = "  /path/to/image1.jpg  \n  /path/to/image2.png  ";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/to/image1.jpg", "/path/to/image2.png"]);
+    });
+  });
+
+  describe("shell-style format", () => {
+    it("parses space-separated paths without quotes", () => {
+      const input = "/path/one.jpg /path/two.png";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/one.jpg", "/path/two.png"]);
+      expect(result.format).toBe("shell");
+    });
+
+    it("parses quoted paths with spaces", () => {
+      const input = '"/path/with spaces/image.png" /path/other.jpg';
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/with spaces/image.png", "/path/other.jpg"]);
+      expect(result.format).toBe("shell");
+    });
+
+    it("parses single-quoted paths", () => {
+      const input = "'/path/with spaces/image.png' /path/other.jpg";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/with spaces/image.png", "/path/other.jpg"]);
+      expect(result.format).toBe("shell");
+    });
+
+    it("handles mixed quotes", () => {
+      const input = `"/path/one.png" '/path/two.jpg'`;
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/one.png", "/path/two.jpg"]);
+      expect(result.format).toBe("shell");
+    });
+
+    it("handles home paths", () => {
+      const input = "~/image1.png ~/image2.jpg";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["~/image1.png", "~/image2.jpg"]);
+      expect(result.format).toBe("shell");
+    });
+
+    it("handles URLs mixed with paths", () => {
+      const input = "https://example.com/image.png /local/path.jpg";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["https://example.com/image.png", "/local/path.jpg"]);
+      expect(result.format).toBe("shell");
+    });
+  });
+
+  describe("single path", () => {
+    it("returns single format for one path", () => {
+      const input = "/path/to/image.jpg";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/to/image.jpg"]);
+      expect(result.format).toBe("single");
+    });
+
+    it("returns single format for one quoted path", () => {
+      const input = '"/path/with spaces/image.jpg"';
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/with spaces/image.jpg"]);
+      expect(result.format).toBe("single");
+    });
+  });
+
+  describe("edge cases", () => {
+    it("returns empty for empty input", () => {
+      const result = parseMultiplePaths("");
+      expect(result.paths).toEqual([]);
+      expect(result.format).toBe("single");
+    });
+
+    it("returns empty for whitespace-only input", () => {
+      const result = parseMultiplePaths("   ");
+      expect(result.paths).toEqual([]);
+      expect(result.format).toBe("single");
+    });
+
+    it("handles trailing spaces", () => {
+      const input = "/path/one.jpg /path/two.png   ";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/one.jpg", "/path/two.png"]);
+    });
+
+    it("handles multiple spaces between paths", () => {
+      const input = "/path/one.jpg    /path/two.png";
+      const result = parseMultiplePaths(input);
+      expect(result.paths).toEqual(["/path/one.jpg", "/path/two.png"]);
+    });
+  });
+});
+
+describe("mightContainMultiplePaths", () => {
+  it("returns true for text with newlines", () => {
+    expect(mightContainMultiplePaths("/path/one.jpg\n/path/two.jpg")).toBe(true);
+  });
+
+  it("returns true for text with quotes", () => {
+    expect(mightContainMultiplePaths('"/path/image.jpg"')).toBe(true);
+  });
+
+  it("returns true for paths with spaces", () => {
+    expect(mightContainMultiplePaths("/path/one.jpg /path/two.jpg")).toBe(true);
+  });
+
+  it("returns false for single path without spaces", () => {
+    expect(mightContainMultiplePaths("/path/to/image.jpg")).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(mightContainMultiplePaths("")).toBe(false);
+  });
+});

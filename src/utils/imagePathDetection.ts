@@ -237,3 +237,50 @@ export function looksLikeImagePath(text: string): boolean {
   // Check for image extension
   return hasImageExtension(firstLine);
 }
+
+/**
+ * Result of detecting multiple image paths.
+ */
+export interface MultiImageDetectionResult {
+  /** Whether ALL paths are valid images */
+  allImages: boolean;
+  /** Detection results for each path */
+  results: ImagePathResult[];
+  /** Count of valid images detected */
+  imageCount: number;
+}
+
+/**
+ * Detect if all paths are valid images.
+ * Returns early (allImages: false) on first non-image path.
+ *
+ * @param paths - Array of paths to check
+ * @returns Detection result with all individual results
+ *
+ * @example
+ * detectMultipleImagePaths(['/path/to/a.png', '/path/to/b.jpg'])
+ * // { allImages: true, results: [...], imageCount: 2 }
+ *
+ * @example
+ * detectMultipleImagePaths(['/path/to/a.png', 'not an image'])
+ * // { allImages: false, results: [...], imageCount: 1 }
+ */
+export function detectMultipleImagePaths(paths: string[]): MultiImageDetectionResult {
+  if (paths.length === 0) {
+    return { allImages: false, results: [], imageCount: 0 };
+  }
+
+  const results: ImagePathResult[] = [];
+
+  for (const path of paths) {
+    const result = detectImagePath(path);
+    results.push(result);
+
+    // Early return on first non-image
+    if (!result.isImage) {
+      return { allImages: false, results, imageCount: results.filter((r) => r.isImage).length };
+    }
+  }
+
+  return { allImages: true, results, imageCount: results.length };
+}

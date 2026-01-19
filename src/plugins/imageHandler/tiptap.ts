@@ -7,7 +7,8 @@ import { getWindowLabel } from "@/hooks/useWindowFocus";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useImagePasteToastStore } from "@/stores/imagePasteToastStore";
 import { useTabStore } from "@/stores/tabStore";
-import { detectImagePath, type ImagePathResult } from "@/utils/imagePathDetection";
+import { detectMultipleImagePaths, type ImagePathResult } from "@/utils/imagePathDetection";
+import { parseMultiplePaths } from "@/utils/multiImageParsing";
 import { withReentryGuard } from "@/utils/reentryGuard";
 
 const imageHandlerPluginKey = new PluginKey("imageHandler");
@@ -166,27 +167,45 @@ async function insertImageFromPath(
 /**
  * Check if pasted text is an image path and show toast.
  * Returns true if we're handling it (showing toast), false otherwise.
+ * Supports both single and multiple image paths.
  */
 function tryTextImagePaste(view: EditorView, text: string): boolean {
-  // Only consider single-line text
-  if (!text || text.includes("\n")) return false;
+  if (!text) return false;
 
-  const detection = detectImagePath(text.trim());
-  if (!detection.isImage) return false;
+  // Parse potential paths from clipboard text
+  const { paths } = parseMultiplePaths(text);
+  if (paths.length === 0) return false;
+
+  // Check if ALL parsed items are valid images
+  const detection = detectMultipleImagePaths(paths);
+  if (!detection.allImages) return false;
 
   // Capture selection state at paste time
   const { from, to } = view.state.selection;
 
-  // For local paths, we need to validate async - show toast immediately for URLs
-  if (detection.type === "url" || detection.type === "dataUrl") {
-    showImagePasteToast(view, detection, text, from, to);
+  if (detection.imageCount === 1) {
+    // Single image: use existing behavior
+    const result = detection.results[0];
+
+    // For URLs, show toast immediately
+    if (result.type === "url" || result.type === "dataUrl") {
+      showImagePasteToast(view, result, text, from, to);
+      return true;
+    }
+
+    // For local paths, validate first
+    validateAndShowToast(view, result, text, from, to).catch((error) => {
+      console.error("[imageHandler] Failed to validate path:", error);
+      if (isViewConnected(view)) {
+        pasteAsText(view, text, from, to);
+      }
+    });
     return true;
   }
 
-  // For local paths, validate first then show toast
-  validateAndShowToast(view, detection, text, from, to).catch((error) => {
-    console.error("[imageHandler] Failed to validate path:", error);
-    // On error, paste as text as fallback
+  // Multiple images: new behavior
+  validateAndShowMultiToast(view, detection.results, text, from, to).catch((error) => {
+    console.error("[imageHandler] Failed to validate multi-image paths:", error);
     if (isViewConnected(view)) {
       pasteAsText(view, text, from, to);
     }
@@ -274,6 +293,155 @@ function showImagePasteToast(
       pasteAsText(view, originalText, capturedFrom, capturedTo);
     },
   });
+}
+
+/**
+ * Validate multiple local paths and show multi-image toast if all valid.
+ */
+async function validateAndShowMultiToast(
+  view: EditorView,
+  results: ImagePathResult[],
+  originalText: string,
+  capturedFrom: number,
+  capturedTo: number
+): Promise<void> {
+  // Validate all local paths in parallel
+  const validationPromises = results.map(async (result) => {
+    // URLs don't need validation
+    if (result.type === "url" || result.type === "dataUrl") {
+      return { result, valid: true };
+    }
+
+    let pathToCheck = result.path;
+
+    // Expand home paths
+    if (result.type === "homePath") {
+      const expanded = await expandHomePath(result.path);
+      if (!expanded) {
+        return { result, valid: false };
+      }
+      pathToCheck = expanded;
+    }
+
+    // Validate absolute and home paths exist
+    if (result.type === "absolutePath" || result.type === "homePath") {
+      const exists = await validateLocalPath(pathToCheck);
+      return { result, valid: exists };
+    }
+
+    // Relative paths can't be validated without doc path, assume valid
+    return { result, valid: true };
+  });
+
+  const validations = await Promise.all(validationPromises);
+
+  // If any path is invalid, paste as text
+  if (validations.some((v) => !v.valid)) {
+    if (isViewConnected(view)) {
+      pasteAsText(view, originalText, capturedFrom, capturedTo);
+    }
+    return;
+  }
+
+  // Verify view is still connected
+  if (!isViewConnected(view)) {
+    return;
+  }
+
+  // All paths valid - show multi-image toast
+  showMultiImagePasteToast(view, results, originalText, capturedFrom, capturedTo);
+}
+
+/**
+ * Show the multi-image paste confirmation toast.
+ */
+function showMultiImagePasteToast(
+  view: EditorView,
+  results: ImagePathResult[],
+  originalText: string,
+  capturedFrom: number,
+  capturedTo: number
+): void {
+  const anchorRect = getToastAnchorRect(view);
+
+  useImagePasteToastStore.getState().showMultiToast({
+    imageResults: results,
+    anchorRect,
+    editorDom: view.dom,
+    onConfirm: () => {
+      if (!isViewConnected(view)) {
+        console.warn("[imageHandler] View disconnected, cannot insert images");
+        return;
+      }
+      insertMultipleImages(view, results, capturedFrom, capturedTo).catch((error) => {
+        console.error("Failed to insert images:", error);
+      });
+    },
+    onDismiss: () => {
+      if (!isViewConnected(view)) {
+        return;
+      }
+      pasteAsText(view, originalText, capturedFrom, capturedTo);
+    },
+  });
+}
+
+/**
+ * Insert multiple images as block nodes.
+ */
+async function insertMultipleImages(
+  view: EditorView,
+  results: ImagePathResult[],
+  _capturedFrom: number,
+  _capturedTo: number
+): Promise<void> {
+  // Verify view is still connected
+  if (!isViewConnected(view)) {
+    console.warn("[imageHandler] View disconnected, aborting multi-image insert");
+    return;
+  }
+
+  const filePath = getActiveFilePathForCurrentWindow();
+
+  // Process each image
+  for (const detection of results) {
+    let imagePath = detection.path;
+
+    if (detection.needsCopy) {
+      if (!filePath) {
+        await showUnsavedDocWarning();
+        return;
+      }
+
+      try {
+        // For home paths, expand first
+        let sourcePath = detection.path;
+        if (detection.type === "homePath") {
+          const expanded = await expandHomePath(detection.path);
+          if (!expanded) {
+            await message("Failed to resolve home directory path.", { kind: "error" });
+            return;
+          }
+          sourcePath = expanded;
+        }
+
+        imagePath = await copyImageToAssets(sourcePath, filePath);
+      } catch (error) {
+        console.error("Failed to copy image to assets:", error);
+        await message("Failed to copy image to assets folder.", { kind: "error" });
+        return;
+      }
+    }
+
+    // Re-verify view is still connected after async operations
+    if (!isViewConnected(view)) {
+      console.warn("[imageHandler] View disconnected after async, aborting image insert");
+      return;
+    }
+
+    // Insert each image as a block node
+    insertBlockImageNode(view as unknown as Parameters<typeof insertBlockImageNode>[0], imagePath);
+  }
 }
 
 /**

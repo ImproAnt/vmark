@@ -21,8 +21,8 @@ const AUTO_DISMISS_MS = 5000;
 const icons = {
   // Check mark for "Insert as Image"
   insert: `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`,
-  // X mark for "Paste as Text" (dismiss)
-  dismiss: `<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  // Lucide "Type" icon for "Paste as Text" (dismiss)
+  dismiss: `<svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`,
 };
 
 /**
@@ -44,7 +44,14 @@ export class ImagePasteToastView {
     // Subscribe to store changes
     this.unsubscribe = useImagePasteToastStore.subscribe((state) => {
       if (state.isOpen && state.anchorRect) {
-        this.show(state.imagePath, state.imageType, state.anchorRect, state.editorDom);
+        this.show(
+          state.imagePath,
+          state.imageType,
+          state.anchorRect,
+          state.editorDom,
+          state.isMultiple,
+          state.imageCount
+        );
       } else {
         this.hide();
       }
@@ -92,12 +99,24 @@ export class ImagePasteToastView {
     _imagePath: string,
     imageType: "url" | "localPath",
     anchorRect: AnchorRect,
-    editorDom: HTMLElement | null
+    editorDom: HTMLElement | null,
+    isMultiple: boolean = false,
+    imageCount: number = 1
   ) {
-    // Update message based on type (imagePath reserved for future tooltip use)
+    // Update message based on type and count
     const messageEl = this.container.querySelector(".image-paste-toast-message");
     if (messageEl) {
-      messageEl.textContent = imageType === "url" ? "Image URL" : "Image path";
+      if (isMultiple && imageCount > 1) {
+        messageEl.textContent = `${imageCount} images`;
+      } else {
+        messageEl.textContent = imageType === "url" ? "Image URL" : "Image path";
+      }
+    }
+
+    // Update button titles for multiple images
+    const insertBtn = this.container.querySelector(".image-paste-toast-btn-insert") as HTMLButtonElement;
+    if (insertBtn) {
+      insertBtn.title = isMultiple && imageCount > 1 ? "Insert All" : "Insert as Image";
     }
 
     this.container.style.display = "flex";
