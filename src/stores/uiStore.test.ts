@@ -12,7 +12,7 @@ function resetUIStore() {
     statusBarVisible: true,
     universalToolbarVisible: false,
     universalToolbarHasFocus: false,
-    lastFocusedToolbarIndex: 0,
+    lastFocusedToolbarIndex: -1,
   });
 }
 

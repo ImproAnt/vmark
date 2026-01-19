@@ -46,7 +46,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   statusBarVisible: true, // Default to visible
   universalToolbarVisible: false,
   universalToolbarHasFocus: false,
-  lastFocusedToolbarIndex: 0,
+  lastFocusedToolbarIndex: -1, // -1 = no previous focus, use smart context-based focus
 
   openSettings: () => set({ settingsOpen: true }),
   closeSettings: () => set({ settingsOpen: false }),

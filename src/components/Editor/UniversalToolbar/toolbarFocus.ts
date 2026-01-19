@@ -68,7 +68,8 @@ function isBlankBlock(context: ToolbarContext): boolean {
 export function getInitialFocusIndex(options: FocusOptions): number {
   const { buttons, states, lastFocusedIndex, context } = options;
 
-  if (isEnabled(states, lastFocusedIndex)) {
+  // Only use lastFocusedIndex if user has previously focused (>= 0)
+  if (lastFocusedIndex >= 0 && isEnabled(states, lastFocusedIndex)) {
     return lastFocusedIndex;
   }
 
