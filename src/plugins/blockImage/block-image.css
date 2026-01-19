@@ -18,11 +18,10 @@
   transition: border-color 0.15s ease;
 }
 
-/* Selected state */
-.ProseMirror-selectednode .block-image,
-.block-image.ProseMirror-selectednode {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
+/* Selected state - subtle border on the image, not the container */
+.ProseMirror-selectednode.block-image img,
+.block-image.ProseMirror-selectednode img {
+  border: 1px solid var(--border-color);
 }
 
 /* Media border styles - applied via container class */

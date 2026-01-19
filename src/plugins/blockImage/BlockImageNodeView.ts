@@ -77,7 +77,8 @@ export class BlockImageNodeView implements NodeView {
     this.updateSrc(this.originalSrc);
 
     this.img.addEventListener("contextmenu", this.handleContextMenu);
-    this.img.addEventListener("click", this.handleClick);
+    // Attach click to the figure so clicking anywhere in the block opens popup
+    this.dom.addEventListener("click", this.handleClick);
 
     this.dom.appendChild(this.img);
   }
@@ -221,12 +222,14 @@ export class BlockImageNodeView implements NodeView {
     this.destroyed = true;
     this.cleanupLoadHandlers();
     this.img.removeEventListener("contextmenu", this.handleContextMenu);
-    this.img.removeEventListener("click", this.handleClick);
+    this.dom.removeEventListener("click", this.handleClick);
   }
 
   stopEvent(event: Event): boolean {
     if (event.type === "mousedown" || event.type === "click") {
-      return (event.target as HTMLElement) === this.img;
+      // Stop events for both the figure and the image
+      const target = event.target as HTMLElement;
+      return target === this.img || target === this.dom;
     }
     return false;
   }
