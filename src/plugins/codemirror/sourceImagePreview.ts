@@ -28,7 +28,7 @@ interface ImageRange {
 
 /**
  * Find image markdown at cursor position.
- * Detects: ![alt](path) or ![alt](path "title")
+ * Detects: ![alt](path) or ![alt](path "title") or ![alt](<path with spaces>)
  *
  * Returns null if:
  * - Not inside an image markdown
@@ -40,9 +40,11 @@ function findImageAtCursor(view: EditorView, pos: number): ImageRange | null {
   const lineText = line.text;
   const lineStart = line.from;
 
-  // Regex to match ![alt](path) or ![alt](path "title")
-  // Captures: [1] = alt, [2] = path (without quotes and title)
-  const imageRegex = /!\[([^\]]*)\]\(([^)\s"]+)(?:\s+"[^"]*")?\)/g;
+  // Regex to match image syntax:
+  // - ![alt](path) or ![alt](path "title")
+  // - ![alt](<path with spaces>) - angle bracket syntax
+  // Captures: [1] = alt, [2] = angle bracket path, [3] = regular path
+  const imageRegex = /!\[([^\]]*)\]\((?:<([^>]+)>|([^)\s"]+))(?:\s+"[^"]*")?\)/g;
 
   let match;
   while ((match = imageRegex.exec(lineText)) !== null) {
@@ -52,7 +54,8 @@ function findImageAtCursor(view: EditorView, pos: number): ImageRange | null {
     // Check if cursor is inside this image markdown
     if (pos >= matchStart && pos <= matchEnd) {
       const alt = match[1];
-      const path = match[2];
+      // Group 2 is angle-bracket path, Group 3 is regular path
+      const path = match[2] || match[3];
 
       // Only show preview for image extensions (skip regular links)
       if (!hasImageExtension(path) && !path.startsWith("data:image/")) {
