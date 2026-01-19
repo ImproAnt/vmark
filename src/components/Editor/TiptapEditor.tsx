@@ -217,6 +217,7 @@ export function TiptapEditorInner() {
           return resolveHardBreakStyle(doc?.hardBreakStyle ?? "unknown", hardBreakStyleOnSaveRef.current);
         })(),
       });
+
       isInternalChange.current = true;
       lastExternalContent.current = markdown;
       setContent(markdown);
@@ -277,7 +278,9 @@ export function TiptapEditorInner() {
         cursorTrackingEnabled.current = true;
       }, CURSOR_TRACKING_DELAY_MS);
 
-      registerActiveWysiwygFlusher(() => flushToStore(editor));
+      // NOTE: Flusher registration moved to useEffect to avoid dual registration issues
+      // with React Strict Mode. The useEffect ensures proper cleanup on unmount.
+
       scheduleTiptapFocusAndRestore(
         editor,
         () => cursorInfoRef.current,
@@ -344,10 +347,16 @@ export function TiptapEditorInner() {
     };
   }, []);
 
-  // Ensure we don't keep a stale flusher if the editor is destroyed/recreated.
+  // Register flusher that captures the current editor directly.
+  // The useEffect re-runs whenever `editor` changes, so the flusher
+  // always has a fresh reference to the current editor instance.
+  // The cleanup function unregisters on unmount, preventing stale editors
+  // from being used in React Strict Mode scenarios.
   useEffect(() => {
     if (!editor) return;
-    registerActiveWysiwygFlusher(() => flushToStore(editor));
+    registerActiveWysiwygFlusher(() => {
+      flushToStore(editor);
+    });
     return () => {
       registerActiveWysiwygFlusher(null);
     };

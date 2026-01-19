@@ -91,6 +91,8 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &PredefinedMenuItem::separator(app)?,
             &export_submenu,
             &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
+            &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "close", "Close", true, Some("CmdOrCtrl+W"))?,
         ],
     )?;
@@ -646,6 +648,8 @@ fn create_menu_with_shortcuts(
             &MenuItem::with_id(app, "save-as", "Save As...", true, get_accel("save-as", "CmdOrCtrl+Shift+S"))?,
             &PredefinedMenuItem::separator(app)?,
             &export_submenu,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "close", "Close", true, get_accel("close", "CmdOrCtrl+W"))?,
         ],

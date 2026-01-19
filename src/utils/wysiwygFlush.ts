@@ -9,4 +9,3 @@ export function registerActiveWysiwygFlusher(flusher: WysiwygFlusher | null) {
 export function flushActiveWysiwygNow() {
   activeWysiwygFlusher?.();
 }
-

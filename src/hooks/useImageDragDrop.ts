@@ -82,44 +82,49 @@ export function useImageDragDrop({
     }
   }, [windowLabel]);
 
-  const insertImageInTiptap = useCallback(
-    (relativePath: string) => {
-      if (!tiptapEditor) return;
+  /**
+   * Insert multiple images into TipTap in a single transaction.
+   * This ensures all images are added atomically and avoids state sync issues.
+   */
+  const insertImagesInTiptap = useCallback(
+    (paths: string[]) => {
+      if (!tiptapEditor || paths.length === 0) return;
 
       const { state } = tiptapEditor;
       const blockImageType = state.schema.nodes.block_image;
 
       if (blockImageType) {
-        // Insert block_image - cursor will be positioned after it
-        // Use arrow keys to navigate to image, Enter when selected to add paragraph below
-        tiptapEditor
-          .chain()
-          .focus()
-          .insertContent({
-            type: "block_image",
-            attrs: { src: relativePath, alt: "", title: "" },
-          })
-          .run();
+        // Build content array for all images
+        const content = paths.map((src) => ({
+          type: "block_image",
+          attrs: { src, alt: "", title: "" },
+        }));
+
+        // Insert all images in a single transaction
+        tiptapEditor.chain().focus().insertContent(content).run();
       } else {
-        // Fallback to inline image
-        tiptapEditor
-          .chain()
-          .focus()
-          .setImage({ src: relativePath })
-          .run();
+        // Fallback: insert as inline images one by one
+        for (const src of paths) {
+          tiptapEditor.chain().focus().setImage({ src }).run();
+        }
       }
     },
     [tiptapEditor]
   );
 
-  const insertImageInCodeMirror = useCallback(
-    (relativePath: string) => {
+  /**
+   * Insert multiple images into CodeMirror in a single dispatch.
+   */
+  const insertImagesInCodeMirror = useCallback(
+    (paths: string[]) => {
       const cmView = cmViewRef?.current;
-      if (!cmView) return;
+      if (!cmView || paths.length === 0) return;
 
       const { state } = cmView;
       const pos = state.selection.main.head;
-      const markdown = `![](${encodeMarkdownUrl(relativePath)})\n`;
+
+      // Build markdown for all images
+      const markdown = paths.map((p) => `![](${encodeMarkdownUrl(p)})`).join("\n") + "\n";
 
       cmView.dispatch({
         changes: { from: pos, insert: markdown },
@@ -190,7 +195,9 @@ export function useImageDragDrop({
           return;
         }
 
-        // Process each image
+        // Process all images first, then insert them all at once
+        const processedPaths: string[] = [];
+
         for (const imagePath of imagePaths) {
           try {
             let insertPath: string;
@@ -206,15 +213,19 @@ export function useImageDragDrop({
               insertPath = imagePath;
             }
 
-            // Insert into editor based on mode
-            if (isSourceMode) {
-              insertImageInCodeMirror(insertPath);
-            } else {
-              insertImageInTiptap(insertPath);
-            }
+            processedPaths.push(insertPath);
           } catch (error) {
             console.error("[ImageDragDrop] Failed to process image:", imagePath, error);
             await message("Failed to insert dropped image.", { kind: "error" });
+          }
+        }
+
+        // Insert all processed images in a single transaction
+        if (processedPaths.length > 0) {
+          if (isSourceMode) {
+            insertImagesInCodeMirror(processedPaths);
+          } else {
+            insertImagesInTiptap(processedPaths);
           }
         }
       });
@@ -236,5 +247,5 @@ export function useImageDragDrop({
         unlistenRef.current = null;
       }
     };
-  }, [enabled, isSourceMode, getFilePath, insertImageInTiptap, insertImageInCodeMirror]);
+  }, [enabled, isSourceMode, getFilePath, insertImagesInTiptap, insertImagesInCodeMirror]);
 }
