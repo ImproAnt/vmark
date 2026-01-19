@@ -224,6 +224,8 @@ export interface ImageSettings {
   inlineThreshold: number;
   // Whether to copy images to assets folder on paste/drop
   copyToAssets: boolean;
+  // Auto-cleanup orphaned images when closing a document
+  cleanupOrphansOnClose: boolean;
 }
 
 export interface GeneralSettings {
@@ -359,6 +361,7 @@ const initialState: SettingsState = {
     autoResizeCustom: 1600,
     inlineThreshold: 1.0, // 1.0× line height
     copyToAssets: true,
+    cleanupOrphansOnClose: false, // Off by default - user must opt in
   },
   terminal: {
     shell: "system",

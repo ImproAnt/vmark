@@ -34,17 +34,27 @@ function isImageExtension(filename: string): boolean {
 /**
  * Extract all image references from markdown content.
  * Handles both inline images ![alt](path) and block images.
+ * Exported for testing.
  */
-function extractImageReferences(content: string): Set<string> {
+export function extractImageReferences(content: string): Set<string> {
   const refs = new Set<string>();
 
-  // Match markdown image syntax: ![alt](path) or ![alt](path "title")
-  const imageRegex = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+  // Match markdown image syntax:
+  // - ![alt](path) or ![alt](path "title")
+  // - ![alt](<path with spaces>) - angle bracket syntax
+  const imageRegex = /!\[[^\]]*\]\((?:<([^>]+)>|([^)\s]+))(?:\s+"[^"]*")?\)/g;
   let match;
   while ((match = imageRegex.exec(content)) !== null) {
-    const path = match[1];
-    // Normalize path: remove leading ./ if present
-    const normalized = path.startsWith("./") ? path.slice(2) : path;
+    // Group 1 is angle-bracket path, Group 2 is regular path
+    const path = match[1] || match[2];
+    if (!path) continue;
+    // Normalize path: remove leading ./ if present, decode URL encoding
+    let normalized = path.startsWith("./") ? path.slice(2) : path;
+    try {
+      normalized = decodeURIComponent(normalized);
+    } catch {
+      // If decoding fails, use as-is
+    }
     refs.add(normalized);
   }
 
@@ -52,7 +62,12 @@ function extractImageReferences(content: string): Set<string> {
   const imgTagRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
   while ((match = imgTagRegex.exec(content)) !== null) {
     const path = match[1];
-    const normalized = path.startsWith("./") ? path.slice(2) : path;
+    let normalized = path.startsWith("./") ? path.slice(2) : path;
+    try {
+      normalized = decodeURIComponent(normalized);
+    } catch {
+      // If decoding fails, use as-is
+    }
     refs.add(normalized);
   }
 
@@ -130,18 +145,35 @@ export async function deleteOrphanedImages(images: OrphanedImage[]): Promise<num
 }
 
 /**
- * Run orphan cleanup with user confirmation.
+ * Show orphan cleanup preview and optionally delete with confirmation.
  * Returns the number of deleted images, or -1 if cancelled/no orphans.
+ *
+ * @param documentPath - Path to the document file, or null if unsaved
+ * @param documentContent - Document content to analyze, or null if document has unsaved changes
+ * @param autoCleanupEnabled - Whether auto-cleanup on close is enabled
  */
 export async function runOrphanCleanup(
   documentPath: string | null,
-  documentContent: string
+  documentContent: string | null,
+  autoCleanupEnabled = false
 ): Promise<number> {
   if (!documentPath) {
-    await message("Please save the document first before cleaning up assets.", {
+    await message("Please save the document first before checking for unused images.", {
       title: "Unsaved Document",
       kind: "warning",
     });
+    return -1;
+  }
+
+  if (documentContent === null) {
+    await message(
+      "Please save your changes first before checking for unused images.\n\n" +
+        "This ensures the check analyzes your saved content.",
+      {
+        title: "Unsaved Changes",
+        kind: "warning",
+      }
+    );
     return -1;
   }
 
@@ -150,14 +182,14 @@ export async function runOrphanCleanup(
 
   if (result.orphanedImages.length === 0) {
     await message(
-      `No orphaned images found.\n\n` +
+      `No unused images found.\n\n` +
         `Assets folder has ${result.totalInFolder} image(s), all are referenced in the document.`,
-      { title: "Cleanup Complete", kind: "info" }
+      { title: "Image Status", kind: "info" }
     );
     return 0;
   }
 
-  // Show confirmation with list of orphans
+  // Show list of orphans
   const orphanList = result.orphanedImages
     .slice(0, 10)
     .map((img) => `• ${img.filename}`)
@@ -167,11 +199,16 @@ export async function runOrphanCleanup(
       ? `\n... and ${result.orphanedImages.length - 10} more`
       : "";
 
+  const settingHint = autoCleanupEnabled
+    ? "\n\nThese will be automatically deleted when you close this document."
+    : "\n\nTip: Enable \"Clean up unused images on close\" in Settings → Images " +
+      "to automatically remove these when closing the document.";
+
   const confirmed = await confirm(
-    `Found ${result.orphanedImages.length} orphaned image(s) not referenced in the document:\n\n` +
-      `${orphanList}${moreText}\n\n` +
-      `Delete these images?`,
-    { title: "Clean Up Unused Images", kind: "warning", okLabel: "Delete", cancelLabel: "Cancel" }
+    `Found ${result.orphanedImages.length} unused image(s) not referenced in the document:\n\n` +
+      `${orphanList}${moreText}${settingHint}\n\n` +
+      `Delete these images now?`,
+    { title: "Unused Images", kind: "warning", okLabel: "Delete Now", cancelLabel: "Later" }
   );
 
   if (!confirmed) {

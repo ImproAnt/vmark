@@ -13,6 +13,32 @@
 import { promptSaveForDirtyDocument } from "@/hooks/closeSave";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { findOrphanedImages, deleteOrphanedImages } from "@/utils/orphanAssetCleanup";
+
+/**
+ * Clean up orphaned images for a document if setting is enabled.
+ * Only runs on saved documents (not discarded changes).
+ */
+async function cleanupOrphansIfEnabled(
+  filePath: string | null,
+  content: string
+): Promise<void> {
+  if (!filePath) return;
+
+  const { cleanupOrphansOnClose } = useSettingsStore.getState().image;
+  if (!cleanupOrphansOnClose) return;
+
+  try {
+    const result = await findOrphanedImages(filePath, content);
+    if (result.orphanedImages.length > 0) {
+      await deleteOrphanedImages(result.orphanedImages);
+    }
+  } catch (error) {
+    // Silent failure - don't block close for cleanup errors
+    console.error("[OrphanCleanup] Error during close cleanup:", error);
+  }
+}
 
 /**
  * Close a tab with dirty check. If the document has unsaved changes,
@@ -30,8 +56,9 @@ export async function closeTabWithDirtyCheck(
   // Tab or document doesn't exist - treat as already closed
   if (!doc || !tab) return true;
 
-  // If not dirty, close immediately
+  // If not dirty, clean up orphans and close immediately
   if (!doc.isDirty) {
+    await cleanupOrphansIfEnabled(doc.filePath, doc.content);
     useTabStore.getState().closeTab(windowLabel, tabId);
     useDocumentStore.getState().removeDocument(tabId);
     return true;
@@ -50,7 +77,17 @@ export async function closeTabWithDirtyCheck(
     return false;
   }
 
-  // Either saved or discarded, proceed to close
+  // If user saved, clean up orphans based on saved content
+  // If user discarded, don't clean up (would delete based on unsaved changes)
+  if (result.action === "saved") {
+    // Re-fetch document content after save
+    const savedDoc = useDocumentStore.getState().getDocument(tabId);
+    if (savedDoc) {
+      await cleanupOrphansIfEnabled(savedDoc.filePath, savedDoc.content);
+    }
+  }
+
+  // Proceed to close
   useTabStore.getState().closeTab(windowLabel, tabId);
   useDocumentStore.getState().removeDocument(tabId);
   return true;

@@ -29,6 +29,7 @@ export function FilesSettings() {
   // Image settings
   const autoResizeMax = useSettingsStore((state) => state.image.autoResizeMax);
   const copyToAssets = useSettingsStore((state) => state.image.copyToAssets);
+  const cleanupOrphansOnClose = useSettingsStore((state) => state.image.cleanupOrphansOnClose);
   const updateImageSetting = useSettingsStore((state) => state.updateImageSetting);
 
   return (
@@ -100,6 +101,15 @@ export function FilesSettings() {
           <Toggle
             checked={copyToAssets}
             onChange={(value) => updateImageSetting("copyToAssets", value)}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Clean up unused images on close"
+          description="Automatically delete images from assets folder that are no longer referenced in the document"
+        >
+          <Toggle
+            checked={cleanupOrphansOnClose}
+            onChange={(value) => updateImageSetting("cleanupOrphansOnClose", value)}
           />
         </SettingRow>
       </SettingsGroup>

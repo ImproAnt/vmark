@@ -189,7 +189,13 @@ export function useMenuEvents() {
           const doc = useDocumentStore.getState().getDocument(tabId);
           if (!doc) return;
 
-          await runOrphanCleanup(doc.filePath, doc.content);
+          // Import settings lazily to check auto-cleanup setting
+          const { useSettingsStore } = await import("@/stores/settingsStore");
+          const autoCleanupEnabled = useSettingsStore.getState().image.cleanupOrphansOnClose;
+
+          // Require saved document - don't flush pending changes.
+          // This prevents data loss if user runs cleanup then undoes their edits.
+          await runOrphanCleanup(doc.filePath, doc.isDirty ? null : doc.content, autoCleanupEnabled);
         });
       });
       if (cancelled) { unlistenCleanupImages(); return; }
