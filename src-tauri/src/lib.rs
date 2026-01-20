@@ -179,6 +179,7 @@ pub fn run() {
                 }
                 // Handle files opened from Finder (double-click, "Open With", etc.)
                 // Each file opens in a new window with its folder as workspace root
+                #[cfg(target_os = "macos")]
                 tauri::RunEvent::Opened { urls } => {
                     for url in urls {
                         // Convert file:// URL to path

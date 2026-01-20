@@ -83,7 +83,7 @@ pub fn create_document_window(
     // Get cascaded position (always use minimum size for new windows)
     let (x, y) = get_cascaded_position(count);
 
-    // CRITICAL: Full window configuration for proper macOS behavior
+    // CRITICAL: Full window configuration for proper behavior
     let mut builder = WebviewWindowBuilder::new(app, &label, WebviewUrl::App(url.into()))
         .title(&title)
         .inner_size(MIN_WIDTH, MIN_HEIGHT)
@@ -91,14 +91,15 @@ pub fn create_document_window(
         .position(x, y)
         .resizable(true)
         .fullscreen(false)
-        .title_bar_style(tauri::TitleBarStyle::Overlay)
-        .hidden_title(true)
         .focused(true);
 
-    // macOS-specific: accept first mouse click for better UX
+    // macOS-specific: title bar styling and accept first mouse
     #[cfg(target_os = "macos")]
     {
-        builder = builder.accept_first_mouse(true);
+        builder = builder
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true)
+            .accept_first_mouse(true);
     }
 
     builder.build()?;
