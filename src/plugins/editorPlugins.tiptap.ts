@@ -13,7 +13,8 @@ import { guardProseMirrorCommand } from "@/utils/imeGuard";
 import { canRunActionInMultiSelection } from "@/plugins/toolbarActions/multiSelectionPolicy";
 import { getWysiwygMultiSelectionContext } from "@/plugins/toolbarActions/multiSelectionContext";
 import { expandedToggleMark } from "@/plugins/editorPlugins/expandedToggleMark";
-import { findAnyMarkRangeAtCursor, findWordAtCursor } from "@/plugins/syntaxReveal/marks";
+import { findAnyMarkRangeAtCursor, findMarkRange, findWordAtCursor } from "@/plugins/syntaxReveal/marks";
+import { useLinkPopupStore } from "@/stores/linkPopupStore";
 import { resolveHardBreakStyle } from "@/utils/linebreaks";
 import { triggerPastePlainText } from "@/plugins/markdownPaste/tiptap";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -238,18 +239,44 @@ function handleInlineMathShortcut(view: EditorView): boolean {
  * Smart link insertion with clipboard URL detection for WYSIWYG mode.
  * Checks clipboard for URL and applies link directly if found.
  * Falls back to expandedToggleMark for normal link editing.
+ *
+ * When cursor is inside an existing link, opens the link popup for editing.
  */
 function handleSmartLinkShortcut(view: EditorView): boolean {
   const { from, to } = view.state.selection;
   const $from = view.state.selection.$from;
 
-  // Check if we're inside an existing link - if so, use normal toggle behavior
-  const linkMark = view.state.schema.marks.link;
-  if (linkMark) {
+  // Check if we're inside an existing link - open popup for editing
+  const linkMarkType = view.state.schema.marks.link;
+  if (linkMarkType) {
     const marksAtCursor = $from.marks();
-    const hasLinkMark = marksAtCursor.some((m) => m.type === linkMark);
-    if (hasLinkMark) {
-      return expandedToggleMark(view, "link");
+    const linkMark = marksAtCursor.find((m) => m.type === linkMarkType);
+    if (linkMark) {
+      // Find the link's range
+      const markRange = findMarkRange($from.pos, linkMark, $from.start(), $from.parent);
+      if (markRange) {
+        // Open the popup with link info
+        try {
+          const start = view.coordsAtPos(markRange.from);
+          const end = view.coordsAtPos(markRange.to);
+          useLinkPopupStore.getState().openPopup({
+            href: linkMark.attrs.href || "",
+            linkFrom: markRange.from,
+            linkTo: markRange.to,
+            anchorRect: {
+              top: Math.min(start.top, end.top),
+              left: Math.min(start.left, end.left),
+              bottom: Math.max(start.bottom, end.bottom),
+              right: Math.max(start.right, end.right),
+            },
+          });
+          view.focus();
+          return true;
+        } catch {
+          // Fall back to toggle if coords fail
+          return expandedToggleMark(view, "link");
+        }
+      }
     }
   }
 
