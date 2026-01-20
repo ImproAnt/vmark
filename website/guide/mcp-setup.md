@@ -16,7 +16,7 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 ### Prerequisites
 
 - VMark installed and running
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI installed
+- Claude Code CLI installed
 
 ### Configuration
 
