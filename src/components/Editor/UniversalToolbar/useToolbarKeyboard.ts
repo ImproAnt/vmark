@@ -105,10 +105,9 @@ export function useToolbarKeyboard(
       const current = focusedIndex;
 
       switch (e.key) {
-        // Linear navigation: → or Tab
-        case "ArrowRight":
+        // Tab navigation: moves focus only (no dropdown open)
         case "Tab":
-          if (e.key === "Tab" && e.shiftKey) {
+          if (e.shiftKey) {
             e.preventDefault();
             focusButton(getPrevFocusableIndex(current, buttonCount, isButtonFocusable));
           } else {
@@ -117,11 +116,28 @@ export function useToolbarKeyboard(
           }
           break;
 
-        // Linear navigation: ← or Shift+Tab
-        case "ArrowLeft":
+        // Arrow navigation: moves focus AND opens dropdown
+        case "ArrowRight": {
           e.preventDefault();
-          focusButton(getPrevFocusableIndex(current, buttonCount, isButtonFocusable));
+          const nextIndex = getNextFocusableIndex(current, buttonCount, isButtonFocusable);
+          focusButton(nextIndex);
+          // Auto-open dropdown when navigating with arrows
+          if (isDropdownButton?.(nextIndex) && onOpenDropdown) {
+            onOpenDropdown(nextIndex);
+          }
           break;
+        }
+
+        case "ArrowLeft": {
+          e.preventDefault();
+          const prevIndex = getPrevFocusableIndex(current, buttonCount, isButtonFocusable);
+          focusButton(prevIndex);
+          // Auto-open dropdown when navigating with arrows
+          if (isDropdownButton?.(prevIndex) && onOpenDropdown) {
+            onOpenDropdown(prevIndex);
+          }
+          break;
+        }
 
         // Open dropdown (dropdown buttons only)
         case "ArrowDown":

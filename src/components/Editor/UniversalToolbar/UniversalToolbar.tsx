@@ -283,6 +283,18 @@ export function UniversalToolbar() {
     }
   }, [toolbarHasFocus, menuOpen, closeMenu]);
 
+  // Move focus to editor when toolbar focus is toggled off (but toolbar stays visible)
+  useEffect(() => {
+    if (visible && !toolbarHasFocus) {
+      // Check if focus is still inside the toolbar
+      const container = containerRef.current;
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (container && activeEl && container.contains(activeEl)) {
+        focusActiveEditor();
+      }
+    }
+  }, [visible, toolbarHasFocus, focusActiveEditor]);
+
   // Handle toolbar open/close and initial focus
   useEffect(() => {
     if (!visible) {
