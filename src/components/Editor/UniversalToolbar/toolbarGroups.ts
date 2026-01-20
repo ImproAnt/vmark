@@ -144,12 +144,11 @@ const TABLE_GROUP: ToolbarGroup = {
 const BLOCKQUOTE_GROUP: ToolbarGroup = {
   id: "blockquote",
   label: "Blockquote",
-  icon: icons.blockquote,
+  icon: icons.textQuote,
   items: [
-    { id: "insert-blockquote", icon: icons.blockquote, label: "Insert Blockquote", shortcut: "⌥⌘Q", action: "insertBlockquote", enabledIn: ["textblock"] },
+    { id: "blockquote", icon: icons.blockquote, label: "Blockquote", shortcut: "⌥⌘Q", action: "insertBlockquote", enabledIn: ["textblock", "blockquote"] },
     { id: "nest-quote", icon: icons.nestQuote, label: "Nest Deeper", action: "nestQuote", enabledIn: ["blockquote"] },
     { id: "unnest-quote", icon: icons.unnestQuote, label: "Unnest", action: "unnestQuote", enabledIn: ["blockquote"] },
-    { id: "remove-quote", icon: icons.removeQuote, label: "Remove Blockquote", action: "removeQuote", enabledIn: ["blockquote"] },
   ],
 };
 
@@ -161,24 +160,14 @@ const INSERT_GROUP: ToolbarGroup = {
   items: [
     { id: "insert-image", icon: icons.image, label: "Image", shortcut: "⌥⌘I", action: "insertImage", enabledIn: ["textblock"] },
     { id: "insert-code-block", icon: icons.codeBlock, label: "Code Block", shortcut: "⌥⌘C", action: "insertCodeBlock", enabledIn: ["textblock"] },
-    { id: "insert-divider", icon: icons.divider, label: "Divider", shortcut: "⌥⌘-", action: "insertDivider", enabledIn: ["textblock"] },
-    { id: "insert-math", icon: icons.math, label: "Math Block", action: "insertMath", enabledIn: ["textblock"] },
-    { id: "insert-table-block", icon: icons.table, label: "Table", action: "insertTableBlock", enabledIn: ["textblock"] },
-  ],
-};
-
-// --- Expandables Group ---
-const EXPANDABLES_GROUP: ToolbarGroup = {
-  id: "expandables",
-  label: "Expandables",
-  icon: icons.expand,
-  items: [
+    { id: "insert-math", icon: icons.math, label: "Math Block", shortcut: "⇧⌥⌘M", action: "insertMath", enabledIn: ["textblock"] },
     { id: "insert-details", icon: icons.expand, label: "Details", action: "insertDetails", enabledIn: ["textblock"] },
     { id: "insert-alert-note", icon: icons.alertIcon, label: "Alert Note", action: "insertAlertNote", enabledIn: ["textblock"] },
     { id: "insert-alert-tip", icon: icons.alertIcon, label: "Alert Tip", action: "insertAlertTip", enabledIn: ["textblock"] },
     { id: "insert-alert-important", icon: icons.alertIcon, label: "Alert Important", action: "insertAlertImportant", enabledIn: ["textblock"] },
     { id: "insert-alert-warning", icon: icons.alertIcon, label: "Alert Warning", action: "insertAlertWarning", enabledIn: ["textblock"] },
     { id: "insert-alert-caution", icon: icons.alertIcon, label: "Alert Caution", action: "insertAlertCaution", enabledIn: ["textblock"] },
+    { id: "insert-divider", icon: icons.divider, label: "Divider", shortcut: "⌥⌘-", action: "insertDivider", enabledIn: ["textblock"] },
   ],
 };
 
@@ -207,9 +196,8 @@ export const TOOLBAR_GROUPS: ToolbarGroup[] = [
   LIST_GROUP,
   TABLE_GROUP,
   BLOCKQUOTE_GROUP,
-  INSERT_GROUP,
-  EXPANDABLES_GROUP,
   LINK_GROUP,
+  INSERT_GROUP,
 ];
 
 /**
