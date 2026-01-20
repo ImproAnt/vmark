@@ -164,9 +164,6 @@ const INSERT_GROUP: ToolbarGroup = {
     { id: "insert-divider", icon: icons.divider, label: "Divider", shortcut: "⌥⌘-", action: "insertDivider", enabledIn: ["textblock"] },
     { id: "insert-math", icon: icons.math, label: "Math Block", action: "insertMath", enabledIn: ["textblock"] },
     { id: "insert-table-block", icon: icons.table, label: "Table", action: "insertTableBlock", enabledIn: ["textblock"] },
-    { id: "insert-bullet-list", icon: icons.unorderedList, label: "Bullet List", action: "insertBulletList", enabledIn: ["textblock"] },
-    { id: "insert-ordered-list", icon: icons.orderedList, label: "Ordered List", action: "insertOrderedList", enabledIn: ["textblock"] },
-    { id: "insert-task-list", icon: icons.taskList, label: "Task List", action: "insertTaskList", enabledIn: ["textblock"] },
   ],
 };
 
