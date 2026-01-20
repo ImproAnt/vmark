@@ -51,7 +51,7 @@
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   background: transparent;
   color: var(--text-color);
   cursor: pointer;
@@ -90,29 +90,62 @@
   cursor: not-allowed;
 }
 
-/* Focus state: background + ring (prominent) */
-.universal-toolbar-btn:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: -2px;
-  background-color: var(--accent-bg);
+/* Focus state: U-shape underline indicator */
+.universal-toolbar-btn.focused {
+  position: relative;
   color: var(--accent-primary);
 }
 
+.universal-toolbar-btn.focused::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 6px;
+  right: 6px;
+  height: 4px;
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  border-top: none;
+  border-radius: 2px;
+}
+
+/* Also show on :focus-visible for keyboard accessibility */
+.universal-toolbar-btn:focus-visible {
+  outline: none;
+  color: var(--accent-primary);
+}
+
+.universal-toolbar-btn:focus-visible::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 6px;
+  right: 6px;
+  height: 4px;
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  border-top: none;
+  border-radius: 2px;
+}
+
 /* Focused + Active: contrasting dot for visibility */
+.universal-toolbar-btn.active.focused::before,
 .universal-toolbar-btn.active:focus-visible::before {
   background: var(--bg-color);
 }
 
 /* High contrast mode */
 @media (forced-colors: active) {
-  .universal-toolbar-btn:focus-visible {
-    outline: 2px solid Highlight;
+  .universal-toolbar-btn.focused::after,
+  .universal-toolbar-btn:focus-visible::after {
+    background: Highlight;
   }
 
   .universal-toolbar-btn.active::before {
     background: CanvasText;
   }
 
+  .universal-toolbar-btn.active.focused::before,
   .universal-toolbar-btn.active:focus-visible::before {
     background: Canvas;
   }
@@ -148,7 +181,7 @@
   align-items: center;
   height: 28px;
   padding: 0 8px;
-  padding-left: 28px; /* Space for checkmark */
+  padding-left: 16px; /* Space for checkmark */
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -169,8 +202,8 @@
 .universal-toolbar-dropdown-item.active::before {
   content: "✓";
   position: absolute;
-  left: 8px;
-  font-size: 12px;
+  left: 4px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--accent-primary);
 }

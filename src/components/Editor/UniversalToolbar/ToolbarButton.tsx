@@ -54,12 +54,13 @@ export function ToolbarButton({
   }
 
   // Roving tabindex: only focused button has tabIndex=0 when focus is active
-  const tabIndex = focusEnabled && focusIndex === currentFocusIndex ? 0 : -1;
+  const isFocused = focusEnabled && focusIndex === currentFocusIndex;
+  const tabIndex = isFocused ? 0 : -1;
 
   return (
     <button
       type="button"
-      className={`universal-toolbar-btn${active ? " active" : ""}${button.type === "dropdown" ? " dropdown" : ""}`}
+      className={`universal-toolbar-btn${active ? " active" : ""}${isFocused ? " focused" : ""}${button.type === "dropdown" ? " dropdown" : ""}`}
       title={title}
       aria-label={button.label}
       aria-haspopup={ariaHasPopup}
