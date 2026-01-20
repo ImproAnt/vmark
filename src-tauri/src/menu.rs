@@ -173,6 +173,17 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
+    // Text Cleanup submenu
+    let cleanup_submenu = Submenu::with_items(
+        app,
+        "Text Cleanup",
+        true,
+        &[
+            &MenuItem::with_id(app, "remove-trailing-spaces", "Remove Trailing Spaces", true, None::<&str>)?,
+            &MenuItem::with_id(app, "collapse-blank-lines", "Collapse Blank Lines", true, None::<&str>)?,
+        ],
+    )?;
+
     // Edit menu
     let edit_menu = Submenu::with_items(
         app,
@@ -189,15 +200,16 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &PredefinedMenuItem::separator(app)?,
             &selection_submenu,
             &find_submenu,
+            &cleanup_submenu,
             &PredefinedMenuItem::separator(app)?,
             &history_submenu,
         ],
     )?;
 
-    // Paragraph menu (block-level formatting only)
-    let paragraph_menu = Submenu::with_items(
+    // Block menu (block-level formatting only)
+    let block_menu = Submenu::with_items(
         app,
-        "Paragraph",
+        "Block",
         true,
         &[
             &MenuItem::with_id(app, "heading-1", "Heading 1", true, Some("CmdOrCtrl+1"))?,
@@ -251,7 +263,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
-    // CJK submenu (text cleanup operations)
+    // CJK submenu (CJK-specific formatting)
     let cjk_submenu = Submenu::with_items(
         app,
         "CJK",
@@ -270,21 +282,6 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
                 "Format Entire File",
                 true,
                 Some("Alt+CmdOrCtrl+Shift+F"),
-            )?,
-            &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(
-                app,
-                "remove-trailing-spaces",
-                "Remove Trailing Spaces",
-                true,
-                None::<&str>,
-            )?,
-            &MenuItem::with_id(
-                app,
-                "collapse-blank-lines",
-                "Collapse Blank Lines",
-                true,
-                None::<&str>,
             )?,
         ],
     )?;
@@ -310,11 +307,6 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &MenuItem::with_id(app, "subscript", "Subscript", true, Some("Alt+CmdOrCtrl+="))?,
             &MenuItem::with_id(app, "superscript", "Superscript", true, Some("Alt+CmdOrCtrl+Shift+="))?,
             &MenuItem::with_id(app, "highlight", "Highlight", true, Some("CmdOrCtrl+Shift+M"))?,
-            &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, "link", "Link", true, Some("CmdOrCtrl+K"))?,
-            &MenuItem::with_id(app, "wiki-link", "Wiki Link", true, None::<&str>)?,
-            &MenuItem::with_id(app, "bookmark", "Bookmark", true, None::<&str>)?,
-            &MenuItem::with_id(app, "image", "Image...", true, Some("Alt+CmdOrCtrl+I"))?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(
                 app,
@@ -377,12 +369,27 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
-    // Insert menu (NEW - for insertable elements)
+    // Links submenu
+    let links_submenu = Submenu::with_items(
+        app,
+        "Links",
+        true,
+        &[
+            &MenuItem::with_id(app, "link", "Link", true, Some("CmdOrCtrl+K"))?,
+            &MenuItem::with_id(app, "wiki-link", "Wiki Link", true, None::<&str>)?,
+            &MenuItem::with_id(app, "bookmark", "Bookmark", true, None::<&str>)?,
+        ],
+    )?;
+
+    // Insert menu (for insertable elements)
     let insert_menu = Submenu::with_items(
         app,
         "Insert",
         true,
         &[
+            &links_submenu,
+            &MenuItem::with_id(app, "image", "Image...", true, Some("Alt+CmdOrCtrl+I"))?,
+            &PredefinedMenuItem::separator(app)?,
             &table_submenu,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(
@@ -482,7 +489,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &app_menu,
             &file_menu,
             &edit_menu,
-            &paragraph_menu,
+            &block_menu,
             &format_menu,
             &insert_menu,
             &view_menu,
@@ -496,7 +503,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         &[
             &file_menu,
             &edit_menu,
-            &paragraph_menu,
+            &block_menu,
             &format_menu,
             &insert_menu,
             &view_menu,
@@ -722,6 +729,17 @@ fn create_menu_with_shortcuts(
         ],
     )?;
 
+    // Text Cleanup submenu
+    let cleanup_submenu = Submenu::with_items(
+        app,
+        "Text Cleanup",
+        true,
+        &[
+            &MenuItem::with_id(app, "remove-trailing-spaces", "Remove Trailing Spaces", true, None::<&str>)?,
+            &MenuItem::with_id(app, "collapse-blank-lines", "Collapse Blank Lines", true, None::<&str>)?,
+        ],
+    )?;
+
     // Edit menu
     let edit_menu = Submenu::with_items(
         app,
@@ -739,15 +757,16 @@ fn create_menu_with_shortcuts(
             &selection_submenu,
             &find_submenu,
             &line_endings_submenu,
+            &cleanup_submenu,
             &PredefinedMenuItem::separator(app)?,
             &history_submenu,
         ],
     )?;
 
-    // Paragraph menu
-    let paragraph_menu = Submenu::with_items(
+    // Block menu
+    let block_menu = Submenu::with_items(
         app,
-        "Paragraph",
+        "Block",
         true,
         &[
             &MenuItem::with_id(app, "heading-1", "Heading 1", true, get_accel("heading-1", "CmdOrCtrl+1"))?,
@@ -777,7 +796,7 @@ fn create_menu_with_shortcuts(
         ],
     )?;
 
-    // CJK submenu
+    // CJK submenu (CJK-specific formatting)
     let cjk_submenu = Submenu::with_items(
         app,
         "CJK",
@@ -785,9 +804,6 @@ fn create_menu_with_shortcuts(
         &[
             &MenuItem::with_id(app, "format-cjk", "Format Selection", true, get_accel("format-cjk", "CmdOrCtrl+Shift+F"))?,
             &MenuItem::with_id(app, "format-cjk-file", "Format Entire File", true, get_accel("format-cjk-file", "Alt+CmdOrCtrl+Shift+F"))?,
-            &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, "remove-trailing-spaces", "Remove Trailing Spaces", true, None::<&str>)?,
-            &MenuItem::with_id(app, "collapse-blank-lines", "Collapse Blank Lines", true, None::<&str>)?,
         ],
     )?;
 
@@ -806,11 +822,6 @@ fn create_menu_with_shortcuts(
             &MenuItem::with_id(app, "subscript", "Subscript", true, get_accel("subscript", "Alt+CmdOrCtrl+="))?,
             &MenuItem::with_id(app, "superscript", "Superscript", true, get_accel("superscript", "Alt+CmdOrCtrl+Shift+="))?,
             &MenuItem::with_id(app, "highlight", "Highlight", true, get_accel("highlight", "CmdOrCtrl+Shift+M"))?,
-            &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, "link", "Link", true, get_accel("link", "CmdOrCtrl+K"))?,
-            &MenuItem::with_id(app, "wiki-link", "Wiki Link", true, None::<&str>)?,
-            &MenuItem::with_id(app, "bookmark", "Bookmark", true, None::<&str>)?,
-            &MenuItem::with_id(app, "image", "Image...", true, get_accel("image", "Alt+CmdOrCtrl+I"))?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "clear-format", "Clear Format", true, get_accel("clear-format", "CmdOrCtrl+\\"))?,
             &PredefinedMenuItem::separator(app)?,
@@ -861,12 +872,27 @@ fn create_menu_with_shortcuts(
         ],
     )?;
 
+    // Links submenu
+    let links_submenu = Submenu::with_items(
+        app,
+        "Links",
+        true,
+        &[
+            &MenuItem::with_id(app, "link", "Link", true, get_accel("link", "CmdOrCtrl+K"))?,
+            &MenuItem::with_id(app, "wiki-link", "Wiki Link", true, None::<&str>)?,
+            &MenuItem::with_id(app, "bookmark", "Bookmark", true, None::<&str>)?,
+        ],
+    )?;
+
     // Insert menu
     let insert_menu = Submenu::with_items(
         app,
         "Insert",
         true,
         &[
+            &links_submenu,
+            &MenuItem::with_id(app, "image", "Image...", true, get_accel("image", "Alt+CmdOrCtrl+I"))?,
+            &PredefinedMenuItem::separator(app)?,
             &table_submenu,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "horizontal-line", "Horizontal Line", true, get_accel("horizontal-line", "Alt+CmdOrCtrl+-"))?,
@@ -916,7 +942,7 @@ fn create_menu_with_shortcuts(
             &app_menu,
             &file_menu,
             &edit_menu,
-            &paragraph_menu,
+            &block_menu,
             &format_menu,
             &insert_menu,
             &view_menu,
@@ -930,7 +956,7 @@ fn create_menu_with_shortcuts(
         &[
             &file_menu,
             &edit_menu,
-            &paragraph_menu,
+            &block_menu,
             &format_menu,
             &insert_menu,
             &view_menu,
