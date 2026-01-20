@@ -1,8 +1,10 @@
 import type { EditorView } from "@tiptap/pm/view";
-import { alignColumn, type TableAlignment, addColLeft, addColRight, addRowAbove, addRowBelow, deleteCurrentColumn, deleteCurrentRow, deleteCurrentTable } from "./tableActions.tiptap";
+import { alignColumn, type TableAlignment, addColLeft, addColRight, addRowAbove, addRowBelow, deleteCurrentColumn, deleteCurrentRow, deleteCurrentTable, formatTable } from "./tableActions.tiptap";
+import { icons } from "@/utils/icons";
 
 interface MenuAction {
   label: string;
+  icon: string;
   action: () => void;
   dividerAfter?: boolean;
   danger?: boolean;
@@ -38,26 +40,37 @@ export class TiptapTableContextMenu {
     const alignAll = (alignment: TableAlignment) => () => alignColumn(this.editorView, alignment, true);
 
     const actions: MenuAction[] = [
-      { label: "Insert Row Above", action: () => addRowAbove(this.editorView) },
-      { label: "Insert Row Below", action: () => addRowBelow(this.editorView) },
-      { label: "Insert Column Left", action: () => addColLeft(this.editorView) },
-      { label: "Insert Column Right", action: () => addColRight(this.editorView), dividerAfter: true },
-      { label: "Delete Row", action: () => deleteCurrentRow(this.editorView), danger: true },
-      { label: "Delete Column", action: () => deleteCurrentColumn(this.editorView), danger: true },
-      { label: "Delete Table", action: () => deleteCurrentTable(this.editorView), danger: true, dividerAfter: true },
-      { label: "Align Column Left", action: alignCol("left") },
-      { label: "Align Column Center", action: alignCol("center") },
-      { label: "Align Column Right", action: alignCol("right"), dividerAfter: true },
-      { label: "Align All Left", action: alignAll("left") },
-      { label: "Align All Center", action: alignAll("center") },
-      { label: "Align All Right", action: alignAll("right") },
+      { label: "Insert Row Above", icon: icons.rowAbove, action: () => addRowAbove(this.editorView) },
+      { label: "Insert Row Below", icon: icons.rowBelow, action: () => addRowBelow(this.editorView) },
+      { label: "Insert Column Left", icon: icons.colLeft, action: () => addColLeft(this.editorView) },
+      { label: "Insert Column Right", icon: icons.colRight, action: () => addColRight(this.editorView), dividerAfter: true },
+      { label: "Delete Row", icon: icons.deleteRow, action: () => deleteCurrentRow(this.editorView), danger: true },
+      { label: "Delete Column", icon: icons.deleteCol, action: () => deleteCurrentColumn(this.editorView), danger: true },
+      { label: "Delete Table", icon: icons.deleteTable, action: () => deleteCurrentTable(this.editorView), danger: true, dividerAfter: true },
+      { label: "Align Column Left", icon: icons.alignLeft, action: alignCol("left") },
+      { label: "Align Column Center", icon: icons.alignCenter, action: alignCol("center") },
+      { label: "Align Column Right", icon: icons.alignRight, action: alignCol("right"), dividerAfter: true },
+      { label: "Align All Left", icon: icons.alignAllLeft, action: alignAll("left") },
+      { label: "Align All Center", icon: icons.alignAllCenter, action: alignAll("center") },
+      { label: "Align All Right", icon: icons.alignAllRight, action: alignAll("right"), dividerAfter: true },
+      { label: "Format Table", icon: icons.formatTable, action: () => formatTable(this.editorView) },
     ];
 
     for (const item of actions) {
       const menuItem = document.createElement("button");
       menuItem.className = `table-context-menu-item${item.danger ? " table-context-menu-item-danger" : ""}`;
       menuItem.type = "button";
-      menuItem.textContent = item.label;
+
+      const iconSpan = document.createElement("span");
+      iconSpan.className = "table-context-menu-icon";
+      iconSpan.innerHTML = item.icon;
+      menuItem.appendChild(iconSpan);
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "table-context-menu-label";
+      labelSpan.textContent = item.label;
+      menuItem.appendChild(labelSpan);
+
       menuItem.addEventListener("mousedown", (e) => e.preventDefault());
       menuItem.addEventListener("click", (e) => {
         e.preventDefault();
