@@ -93,6 +93,8 @@ struct BridgeState {
     pending: HashMap<String, oneshot::Sender<McpResponse>>,
     /// Channel to send messages to the connected client.
     client_tx: Option<mpsc::UnboundedSender<String>>,
+    /// Shutdown signal for the current connection (to close old connections when new one arrives).
+    connection_shutdown: Option<oneshot::Sender<()>>,
 }
 
 /// Global bridge state.
@@ -109,6 +111,7 @@ fn get_bridge_state() -> Arc<Mutex<BridgeState>> {
             Arc::new(Mutex::new(BridgeState {
                 pending: HashMap::new(),
                 client_tx: None,
+                connection_shutdown: None,
             }))
         })
         .clone()
@@ -155,8 +158,6 @@ pub async fn start_bridge(app: AppHandle, port: u16) -> Result<(), String> {
                 result = listener.accept() => {
                     match result {
                         Ok((stream, addr)) => {
-                            #[cfg(debug_assertions)]
-                            eprintln!("[MCP Bridge] New connection from {}", addr);
                             let app = app_handle.clone();
                             tauri::async_runtime::spawn(handle_connection(stream, addr, app));
                         }
@@ -186,6 +187,12 @@ pub async fn stop_bridge() {
     // Clear client connection
     let state = get_bridge_state();
     let mut guard = state.lock().await;
+
+    // Signal current connection to close
+    if let Some(shutdown_tx) = guard.connection_shutdown.take() {
+        let _ = shutdown_tx.send(());
+    }
+
     guard.client_tx = None;
 
     // Reject all pending requests
@@ -200,6 +207,20 @@ pub async fn stop_bridge() {
 
 /// Handle a single WebSocket connection.
 async fn handle_connection(stream: TcpStream, addr: SocketAddr, app: AppHandle) {
+    // Check if there's already an active connection BEFORE accepting WebSocket
+    {
+        let state = get_bridge_state();
+        let guard = state.lock().await;
+        if guard.client_tx.is_some() {
+            // Already have an active connection - reject this one silently
+            // Don't even complete the WebSocket handshake to avoid triggering reconnect
+            #[cfg(debug_assertions)]
+            eprintln!("[MCP Bridge] Rejecting connection from {} - already have active client", addr);
+            drop(stream); // Close the TCP connection
+            return;
+        }
+    }
+
     let ws_stream = match accept_async(stream).await {
         Ok(ws) => ws,
         Err(e) => {
@@ -214,12 +235,28 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr, app: AppHandle) 
     // Create channel for sending messages to this client
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();
 
+    // Create shutdown channel for this connection
+    let (shutdown_tx, mut shutdown_rx) = oneshot::channel::<()>();
+
     // Store the sender in bridge state
+    // Double-check no one else connected while we were doing the handshake
     {
         let state = get_bridge_state();
         let mut guard = state.lock().await;
+
+        if guard.client_tx.is_some() {
+            // Race condition: someone else connected while we were handshaking
+            #[cfg(debug_assertions)]
+            eprintln!("[MCP Bridge] Rejecting connection from {} - another client connected during handshake", addr);
+            return;
+        }
+
         guard.client_tx = Some(tx);
+        guard.connection_shutdown = Some(shutdown_tx);
     }
+
+    #[cfg(debug_assertions)]
+    eprintln!("[MCP Bridge] Client connected from {}", addr);
 
     // Spawn task to forward messages from channel to WebSocket
     let send_task = tauri::async_runtime::spawn(async move {
@@ -230,34 +267,54 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr, app: AppHandle) 
         }
     });
 
-    // Process incoming messages
-    while let Some(result) = ws_receiver.next().await {
-        match result {
-            Ok(Message::Text(text)) => {
-                if let Err(e) = handle_message(&text, &app).await {
-                    #[cfg(debug_assertions)]
-                    eprintln!("[MCP Bridge] Error handling message: {}", e);
+    // Process incoming messages until disconnect or shutdown signal
+    loop {
+        tokio::select! {
+            // Check for shutdown signal (bridge stopping)
+            _ = &mut shutdown_rx => {
+                #[cfg(debug_assertions)]
+                eprintln!("[MCP Bridge] Connection {} closing due to bridge shutdown", addr);
+                break;
+            }
+            // Process incoming messages
+            result = ws_receiver.next() => {
+                match result {
+                    Some(Ok(Message::Text(text))) => {
+                        if let Err(e) = handle_message(&text, &app).await {
+                            #[cfg(debug_assertions)]
+                            eprintln!("[MCP Bridge] Error handling message: {}", e);
+                        }
+                    }
+                    Some(Ok(Message::Close(_))) => {
+                        #[cfg(debug_assertions)]
+                        eprintln!("[MCP Bridge] Client {} disconnected", addr);
+                        break;
+                    }
+                    Some(Err(e)) => {
+                        #[cfg(debug_assertions)]
+                        eprintln!("[MCP Bridge] WebSocket error from {}: {}", addr, e);
+                        break;
+                    }
+                    None => {
+                        #[cfg(debug_assertions)]
+                        eprintln!("[MCP Bridge] Connection {} stream ended", addr);
+                        break;
+                    }
+                    _ => {}
                 }
             }
-            Ok(Message::Close(_)) => {
-                #[cfg(debug_assertions)]
-                eprintln!("[MCP Bridge] Client {} disconnected", addr);
-                break;
-            }
-            Err(e) => {
-                #[cfg(debug_assertions)]
-                eprintln!("[MCP Bridge] WebSocket error from {}: {}", addr, e);
-                break;
-            }
-            _ => {}
         }
     }
 
-    // Cleanup
+    // Cleanup - clear state so new connections can be accepted
     {
         let state = get_bridge_state();
         let mut guard = state.lock().await;
         guard.client_tx = None;
+        guard.connection_shutdown = None;
+
+        #[cfg(debug_assertions)]
+        eprintln!("[MCP Bridge] Connection slot released, ready for new client");
     }
 
     send_task.abort();

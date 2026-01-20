@@ -167,7 +167,9 @@ async function main(): Promise<void> {
   const bridge = new WebSocketBridge({
     port,
     autoReconnect: true,
-    maxReconnectAttempts: Infinity, // Keep trying to reconnect
+    maxReconnectAttempts: 30, // Reasonable limit to avoid infinite reconnection storms
+    reconnectDelay: 2000, // Start with 2 second delay
+    maxReconnectDelay: 60000, // Max 1 minute between attempts
     logger,
   });
 

@@ -69,6 +69,8 @@ pub fn run() {
             workspace::write_workspace_config,
             workspace::has_workspace_config,
             get_pending_open_files,
+            mcp_server::mcp_bridge_start,
+            mcp_server::mcp_bridge_stop,
             mcp_server::mcp_server_start,
             mcp_server::mcp_server_stop,
             mcp_server::mcp_server_status,

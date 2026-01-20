@@ -1,8 +1,8 @@
 /**
- * MCP Server Control Hook
+ * MCP Bridge Control Hook
  *
- * Provides React state and controls for the VMark MCP server.
- * Connects to Tauri commands for process management.
+ * Provides React state and controls for the VMark MCP bridge (WebSocket server).
+ * AI clients (Claude Code, Codex, etc.) spawn their own sidecars that connect to this bridge.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -21,25 +21,28 @@ interface UseMcpServerResult {
   loading: boolean;
   /** Error message if the last operation failed */
   error: string | null;
-  /** Start the MCP server on the given port */
+  /** Start the MCP bridge on the given port */
   start: (port: number) => Promise<void>;
-  /** Stop the MCP server */
+  /** Stop the MCP bridge */
   stop: () => Promise<void>;
-  /** Refresh the server status */
+  /** Refresh the bridge status */
   refresh: () => Promise<void>;
 }
 
 /**
- * Hook to control the VMark MCP server.
+ * Hook to control the VMark MCP bridge.
+ *
+ * The bridge is a WebSocket server that AI client sidecars connect to.
+ * VMark only starts the bridge; AI clients spawn their own sidecars.
  *
  * Usage:
  * ```tsx
  * const { running, loading, error, start, stop } = useMcpServer();
  *
- * // Start the server
- * await start(9224);
+ * // Start the bridge
+ * await start(9223);
  *
- * // Stop the server
+ * // Stop the bridge
  * await stop();
  * ```
  */
@@ -59,12 +62,12 @@ export function useMcpServer(): UseMcpServerResult {
     }
   }, []);
 
-  // Start the server
+  // Start the bridge (not the sidecar - AI clients spawn their own)
   const start = useCallback(async (port: number) => {
     setLoading(true);
     setError(null);
     try {
-      const status = await invoke<McpServerStatus>("mcp_server_start", { port });
+      const status = await invoke<McpServerStatus>("mcp_bridge_start", { port });
       setRunning(status.running);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -75,12 +78,12 @@ export function useMcpServer(): UseMcpServerResult {
     }
   }, []);
 
-  // Stop the server
+  // Stop the bridge
   const stop = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const status = await invoke<McpServerStatus>("mcp_server_stop");
+      const status = await invoke<McpServerStatus>("mcp_bridge_stop");
       setRunning(status.running);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -28,13 +28,15 @@ export function useMcpAutoStart() {
     // Only auto-start if enabled
     if (!mcpServer.autoStart) return;
 
-    // Start the MCP server
-    invoke("mcp_server_start", { port: mcpServer.port })
+    // Start only the MCP bridge (WebSocket server).
+    // AI clients (Claude Code, Codex, etc.) spawn their own sidecars that connect to this bridge.
+    // We don't start a local sidecar - that would conflict with the AI client's sidecar.
+    invoke("mcp_bridge_start", { port: mcpServer.port })
       .then(() => {
-        console.log("[MCP] Auto-started MCP server on port", mcpServer.port);
+        console.log("[MCP] Auto-started MCP bridge on port", mcpServer.port);
       })
       .catch((error) => {
-        console.error("[MCP] Failed to auto-start MCP server:", error);
+        console.error("[MCP] Failed to auto-start MCP bridge:", error);
       });
   }, []);
 }
