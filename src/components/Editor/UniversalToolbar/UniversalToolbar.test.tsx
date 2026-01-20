@@ -543,8 +543,7 @@ describe("UniversalToolbar", () => {
       expect(useUIStore.getState().toolbarSessionFocusIndex).toBe(0);
     });
 
-    // TODO: Needs investigation - test environment doesn't properly simulate enabled buttons
-    it.skip("3.2d/3.3b: ArrowLeft in dropdown closes it and moves to previous toolbar button", async () => {
+    it("3.2d/3.3b: ArrowLeft in dropdown switches to previous toolbar button's dropdown", async () => {
       useUIStore.setState({
         universalToolbarVisible: true,
         universalToolbarHasFocus: true,
@@ -554,25 +553,27 @@ describe("UniversalToolbar", () => {
 
       const buttons = screen.getAllByRole("button");
 
-      // Open dropdown on button 1
+      // Open dropdown on button 1 (inline)
       fireEvent.click(buttons[1]);
       await waitFor(() => {
         expect(screen.queryByRole("menu")).toBeInTheDocument();
+        expect(screen.getByRole("menu")).toHaveAttribute("aria-label", "inline options");
       });
 
       // Press ArrowLeft in dropdown
       const menu = screen.getByRole("menu");
       fireEvent.keyDown(menu, { key: "ArrowLeft" });
 
+      // Dropdown switches to previous button's menu (block)
       await waitFor(() => {
-        expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+        expect(screen.queryByRole("menu")).toBeInTheDocument();
+        expect(screen.getByRole("menu")).toHaveAttribute("aria-label", "block options");
         // Focus should move to previous button (index 0)
         expect(useUIStore.getState().toolbarSessionFocusIndex).toBe(0);
       });
     });
 
-    // TODO: Needs investigation - test environment doesn't properly simulate enabled buttons
-    it.skip("3.2d/3.3b: ArrowRight in dropdown closes it and moves to next toolbar button", async () => {
+    it("3.2d/3.3b: ArrowRight in dropdown switches to next toolbar button's dropdown", async () => {
       useUIStore.setState({
         universalToolbarVisible: true,
         universalToolbarHasFocus: true,
@@ -582,25 +583,27 @@ describe("UniversalToolbar", () => {
 
       const buttons = screen.getAllByRole("button");
 
-      // Open dropdown on button 1
+      // Open dropdown on button 1 (inline)
       fireEvent.click(buttons[1]);
       await waitFor(() => {
         expect(screen.queryByRole("menu")).toBeInTheDocument();
+        expect(screen.getByRole("menu")).toHaveAttribute("aria-label", "inline options");
       });
 
       // Press ArrowRight in dropdown
       const menu = screen.getByRole("menu");
       fireEvent.keyDown(menu, { key: "ArrowRight" });
 
+      // Dropdown switches to next button's menu (list)
       await waitFor(() => {
-        expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+        expect(screen.queryByRole("menu")).toBeInTheDocument();
+        expect(screen.getByRole("menu")).toHaveAttribute("aria-label", "list options");
         // Focus should move to next button (index 2)
         expect(useUIStore.getState().toolbarSessionFocusIndex).toBe(2);
       });
     });
 
-    // TODO: Needs investigation - test environment doesn't properly simulate enabled buttons
-    it.skip("3.2e/3.3c: Tab in dropdown closes it and moves to next toolbar button", async () => {
+    it("3.2e/3.3c: Tab in dropdown closes it and moves to next toolbar button", async () => {
       useUIStore.setState({
         universalToolbarVisible: true,
         universalToolbarHasFocus: true,
