@@ -156,7 +156,7 @@ const BLOCKQUOTE_GROUP: ToolbarGroup = {
 const INSERT_GROUP: ToolbarGroup = {
   id: "insert",
   label: "Insert",
-  icon: icons.codeBlock,
+  icon: icons.insert,
   items: [
     { id: "insert-image", icon: icons.image, label: "Image", action: "insertImage", enabledIn: ["textblock"] },
     { id: "insert-code-block", icon: icons.codeBlock, label: "Code Block", action: "insertCodeBlock", enabledIn: ["textblock"] },
@@ -174,9 +174,9 @@ const INSERT_GROUP: ToolbarGroup = {
 const EXPANDABLES_GROUP: ToolbarGroup = {
   id: "expandables",
   label: "Expandables",
-  icon: icons.details,
+  icon: icons.expand,
   items: [
-    { id: "insert-details", icon: icons.details, label: "Details", action: "insertDetails", enabledIn: ["textblock"] },
+    { id: "insert-details", icon: icons.expand, label: "Details", action: "insertDetails", enabledIn: ["textblock"] },
     { id: "insert-alert-note", icon: icons.alertIcon, label: "Alert Note", action: "insertAlertNote", enabledIn: ["textblock"] },
     { id: "insert-alert-tip", icon: icons.alertIcon, label: "Alert Tip", action: "insertAlertTip", enabledIn: ["textblock"] },
     { id: "insert-alert-important", icon: icons.alertIcon, label: "Alert Important", action: "insertAlertImportant", enabledIn: ["textblock"] },

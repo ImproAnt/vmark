@@ -70,6 +70,9 @@ export const icons = {
   // Block insert icons
   codeBlock: `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m10 10-2 2 2 2"/><path d="m14 14 2-2-2-2"/></svg>`,
   details: `<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`,
+  // Borderless variants for toolbar buttons
+  insert: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+  expand: `<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>`,
   alertIcon: `<svg viewBox="0 0 24 24"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2.7a2 2 0 0 1 3.376 0l5.025 8.026a2 2 0 0 1 0 2.121L18.688 20.9a2 2 0 0 1-3.376 0L10.287 12.9a2 2 0 0 1 0-2.122L15.312 2.7Z"/></svg>`,
 
   // Link type icons
