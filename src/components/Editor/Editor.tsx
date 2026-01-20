@@ -12,6 +12,7 @@ import "@/plugins/linkPopup/link-popup.css";
 import "@/plugins/imagePopup/image-popup.css";
 import "@/plugins/mathPopup/math-popup.css";
 import "@/plugins/wikiLinkPopup/wiki-link-popup.css";
+import "@/plugins/footnotePopup/footnote-popup.css";
 import "@/styles/popup-shared.css";
 import "@/plugins/htmlBlockPopup/html-popup.css";
 import "@/plugins/alertBlock/alert-block.css";

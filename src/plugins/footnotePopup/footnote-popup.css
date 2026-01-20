@@ -1,0 +1,143 @@
+/**
+ * Footnote Popup Styles
+ * Matches link-popup design: compact, borderless inputs, U-shaped focus indicator
+ */
+
+.footnote-popup {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: footnote-popup-fade-in 0.1s ease-out;
+  min-width: 240px;
+  max-width: 320px;
+}
+
+@keyframes footnote-popup-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Textarea - borderless style */
+.footnote-popup-textarea {
+  width: 100%;
+  min-height: 40px;
+  max-height: 120px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  outline: none;
+  resize: none;
+  line-height: 1.4;
+}
+
+.footnote-popup-textarea:focus {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.footnote-popup-textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.footnote-popup-textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+/* Button row */
+.footnote-popup-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Icon-only buttons - same as link-popup */
+.footnote-popup-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: default;
+  user-select: none;
+}
+
+.footnote-popup-btn:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.06));
+  color: var(--text-color);
+}
+
+.footnote-popup-btn:active {
+  opacity: 0.8;
+}
+
+/* Focus state - U-shaped underline (same as link-popup) */
+.footnote-popup-btn:focus {
+  outline: none;
+}
+
+.footnote-popup-btn:focus::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 4px;
+  right: 4px;
+  height: 4px;
+  background: transparent;
+  border-bottom: 2px solid var(--primary-color, #0066cc);
+  border-radius: 0 0 4px 4px;
+}
+
+/* Icon sizing */
+.footnote-popup-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* Save button - primary color on hover */
+.footnote-popup-btn-save:hover {
+  color: var(--primary-color, #0066cc);
+}
+
+/* Delete button - danger color on hover */
+.footnote-popup-btn-delete:hover {
+  color: #e53935;
+}
+
+/* Dark theme */
+.dark-theme .footnote-popup-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dark-theme .footnote-popup-btn-delete:hover {
+  color: #ff6b6b;
+}

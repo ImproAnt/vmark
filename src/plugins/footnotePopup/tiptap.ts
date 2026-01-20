@@ -52,8 +52,9 @@ function handleMouseOver(view: EditorView, event: MouseEvent): boolean {
     const definition = findFootnoteDefinition(view, label);
     const content = definition?.content ?? "Footnote not found";
     const defPos = definition?.pos ?? null;
+    const refPos = findFootnoteReference(view, label);
 
-    useFootnotePopupStore.getState().openPopup(label, content, refElement.getBoundingClientRect(), defPos);
+    useFootnotePopupStore.getState().openPopup(label, content, refElement.getBoundingClientRect(), defPos, refPos);
   }, HOVER_OPEN_DELAY_MS);
 
   return false;

@@ -13,6 +13,7 @@ import {
   type AnchorRect,
 } from "@/utils/popupPosition";
 import { isImeKeyEvent } from "@/utils/imeGuard";
+import { handlePopupTabNavigation } from "@/utils/popupComponents";
 import type { EditorView } from "@tiptap/pm/view";
 import { scrollToPosition } from "./tiptapDomUtils";
 import {
@@ -36,6 +37,7 @@ export class FootnotePopupView {
   private lastAutoFocus = false;
   private focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private blurTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(view: EditorView) {
     this.view = view;
@@ -47,6 +49,7 @@ export class FootnotePopupView {
       onTextareaBlur: this.handleTextareaBlur,
       onGoto: this.handleGoto,
       onSave: this.handleSave,
+      onDelete: this.handleDelete,
     });
     this.container = dom.container;
     this.textarea = dom.textarea;
@@ -94,8 +97,6 @@ export class FootnotePopupView {
 
   private show(content: string, anchorRect: DOMRect, definitionPos: number | null) {
     const state = useFootnotePopupStore.getState();
-    const labelEl = this.container.querySelector(".footnote-popup-label");
-    if (labelEl) labelEl.textContent = `[${state.label}]`;
 
     this.textarea.value = content;
     this.container.style.display = "flex";
@@ -108,6 +109,8 @@ export class FootnotePopupView {
 
     this.updatePosition(anchorRect);
     this.autoResizeTextarea();
+
+    this.setupKeyboardNavigation();
 
     if (state.autoFocus) {
       this.container.classList.add("editing");
@@ -126,6 +129,7 @@ export class FootnotePopupView {
     this.container.style.display = "none";
     this.clearFocusTimeout();
     this.clearBlurTimeout();
+    this.removeKeyboardNavigation();
   }
 
   private clearFocusTimeout() {
@@ -139,6 +143,21 @@ export class FootnotePopupView {
     if (this.blurTimeoutId) {
       clearTimeout(this.blurTimeoutId);
       this.blurTimeoutId = null;
+    }
+  }
+
+  private setupKeyboardNavigation() {
+    this.keydownHandler = (e: KeyboardEvent) => {
+      if (isImeKeyEvent(e)) return;
+      handlePopupTabNavigation(e, this.container);
+    };
+    document.addEventListener("keydown", this.keydownHandler);
+  }
+
+  private removeKeyboardNavigation() {
+    if (this.keydownHandler) {
+      document.removeEventListener("keydown", this.keydownHandler);
+      this.keydownHandler = null;
     }
   }
 
@@ -253,6 +272,60 @@ export class FootnotePopupView {
     }
   };
 
+  private handleDelete = () => {
+    const state = useFootnotePopupStore.getState();
+    const { referencePos, definitionPos } = state;
+
+    if (referencePos === null) {
+      this.closeAndFocus();
+      return;
+    }
+
+    try {
+      const { state: editorState, dispatch } = this.view;
+
+      // Delete reference first, then definition (in reverse order to preserve positions)
+      // We need to delete from the end to preserve positions
+      let tr = editorState.tr;
+
+      // Get node sizes before deletion
+      const refNode = editorState.doc.nodeAt(referencePos);
+      if (!refNode || refNode.type.name !== "footnote_reference") {
+        console.warn("[FootnotePopup] Reference node not found at position");
+        this.closeAndFocus();
+        return;
+      }
+
+      // Delete definition first if it exists (it's typically at the end of doc)
+      if (definitionPos !== null) {
+        const defNode = editorState.doc.nodeAt(definitionPos);
+        if (defNode && defNode.type.name === "footnote_definition") {
+          // Definition is after reference, delete it first
+          if (definitionPos > referencePos) {
+            tr = tr.delete(definitionPos, definitionPos + defNode.nodeSize);
+            tr = tr.delete(referencePos, referencePos + refNode.nodeSize);
+          } else {
+            // Definition is before reference (unusual but handle it)
+            tr = tr.delete(referencePos, referencePos + refNode.nodeSize);
+            tr = tr.delete(definitionPos, definitionPos + defNode.nodeSize);
+          }
+        } else {
+          // Definition not found, just delete reference
+          tr = tr.delete(referencePos, referencePos + refNode.nodeSize);
+        }
+      } else {
+        // No definition, just delete reference
+        tr = tr.delete(referencePos, referencePos + refNode.nodeSize);
+      }
+
+      dispatch(tr);
+      this.closeAndFocus();
+    } catch (error) {
+      console.error("[FootnotePopup] Delete failed:", error);
+      this.closeAndFocus();
+    }
+  };
+
   private handlePopupMouseLeave = () => {
     if (!this.container.classList.contains("editing")) {
       useFootnotePopupStore.getState().closePopup();
@@ -281,6 +354,7 @@ export class FootnotePopupView {
   destroy() {
     this.clearFocusTimeout();
     this.clearBlurTimeout();
+    this.removeKeyboardNavigation();
     this.unsubscribe();
     this.container.removeEventListener("mouseleave", this.handlePopupMouseLeave);
     document.removeEventListener("mousedown", this.handleClickOutside);

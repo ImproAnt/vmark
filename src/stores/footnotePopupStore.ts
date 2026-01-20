@@ -11,7 +11,10 @@ interface FootnotePopupState {
   label: string;
   content: string;
   anchorRect: DOMRect | null;
+  /** Position of the footnote definition in the document */
   definitionPos: number | null;
+  /** Position of the footnote reference in the document */
+  referencePos: number | null;
   /** When true, auto-focus textarea (for new footnote) */
   autoFocus: boolean;
 }
@@ -22,6 +25,7 @@ interface FootnotePopupActions {
     content: string,
     anchorRect: DOMRect,
     definitionPos: number | null,
+    referencePos: number | null,
     autoFocus?: boolean
   ) => void;
   setContent: (content: string) => void;
@@ -35,14 +39,15 @@ export const useFootnotePopupStore = create<FootnotePopupState & FootnotePopupAc
     content: "",
     anchorRect: null,
     definitionPos: null,
+    referencePos: null,
     autoFocus: false,
 
-    openPopup: (label, content, anchorRect, definitionPos, autoFocus = false) =>
-      set({ isOpen: true, label, content, anchorRect, definitionPos, autoFocus }),
+    openPopup: (label, content, anchorRect, definitionPos, referencePos, autoFocus = false) =>
+      set({ isOpen: true, label, content, anchorRect, definitionPos, referencePos, autoFocus }),
 
     setContent: (content) => set({ content }),
 
     closePopup: () =>
-      set({ isOpen: false, label: "", content: "", anchorRect: null, definitionPos: null, autoFocus: false }),
+      set({ isOpen: false, label: "", content: "", anchorRect: null, definitionPos: null, referencePos: null, autoFocus: false }),
   })
 );

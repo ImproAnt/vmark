@@ -48,7 +48,7 @@ export function insertFootnoteAndOpenPopup(editor: TiptapEditor): void {
     ) as HTMLElement | null;
     if (!refEl) return;
 
-    useFootnotePopupStore.getState().openPopup(ref.label, "", refEl.getBoundingClientRect(), defPos, true);
+    useFootnotePopupStore.getState().openPopup(ref.label, "", refEl.getBoundingClientRect(), defPos, ref.pos, true);
   });
 }
 
