@@ -135,12 +135,6 @@ export function UniversalToolbar() {
     setOpenGroupId(null);
   }, [focusActiveEditor]);
 
-  const handleFocusCapture = useCallback(() => {
-    if (!useUIStore.getState().universalToolbarHasFocus) {
-      useUIStore.getState().setUniversalToolbarHasFocus(true);
-    }
-  }, []);
-
   const handleBlurCapture = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
       const nextTarget = event.relatedTarget as Node | null;
@@ -241,6 +235,27 @@ export function UniversalToolbar() {
       closeToolbar();
     },
   });
+
+  // Handle focus capture - update focusedIndex when a button receives focus
+  // This ensures state is updated BEFORE the re-render triggered by toolbarHasFocus change
+  const handleFocusCapture = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      const target = event.target as HTMLElement;
+      const focusIndexAttr = target.getAttribute("data-focus-index");
+      if (focusIndexAttr !== null) {
+        const index = parseInt(focusIndexAttr, 10);
+        if (!isNaN(index)) {
+          setFocusedIndex(index);
+          useUIStore.getState().setToolbarSessionFocusIndex(index);
+        }
+      }
+
+      if (!useUIStore.getState().universalToolbarHasFocus) {
+        useUIStore.getState().setUniversalToolbarHasFocus(true);
+      }
+    },
+    [setFocusedIndex]
+  );
 
   // Handle dropdown exit (arrow keys or Tab) - moves to adjacent toolbar button
   const handleDropdownExit = useCallback(
