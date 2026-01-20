@@ -12,7 +12,7 @@ import { getBlockquoteInfo, nestBlockquote, removeBlockquote, unnestBlockquote }
 import { convertToHeading, getHeadingInfo, setHeadingLevel } from "@/plugins/sourceFormatPopup/headingDetection";
 import { getListItemInfo, indentListItem, outdentListItem, removeList, toBulletList, toOrderedList, toTaskList } from "@/plugins/sourceFormatPopup/listDetection";
 import { getSourceTableInfo } from "@/plugins/sourceFormatPopup/tableDetection";
-import { deleteColumn, deleteRow, deleteTable, insertColumnLeft, insertColumnRight, insertRowAbove, insertRowBelow, setAllColumnsAlignment, setColumnAlignment } from "@/plugins/sourceFormatPopup/tableActions";
+import { deleteColumn, deleteRow, deleteTable, formatTable, insertColumnLeft, insertColumnRight, insertRowAbove, insertRowBelow, setAllColumnsAlignment, setColumnAlignment } from "@/plugins/sourceFormatPopup/tableActions";
 import { canRunActionInMultiSelection } from "./multiSelectionPolicy";
 import type { SourceToolbarContext } from "./types";
 import { applyMultiSelectionBlockquoteAction, applyMultiSelectionHeading, applyMultiSelectionListAction } from "./sourceMultiSelection";
@@ -299,6 +299,7 @@ export function performSourceToolbarAction(action: string, context: SourceToolba
     case "alignAllLeft":
     case "alignAllCenter":
     case "alignAllRight":
+    case "formatTable":
       return handleTableAction(view, action);
 
     // Blockquote operations
@@ -423,6 +424,9 @@ function handleTableAction(view: EditorView, action: string): boolean {
       return true;
     case "alignAllRight":
       setAllColumnsAlignment(view, info, "right");
+      return true;
+    case "formatTable":
+      formatTable(view, info);
       return true;
     default:
       return false;

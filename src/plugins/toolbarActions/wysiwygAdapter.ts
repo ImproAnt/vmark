@@ -6,7 +6,7 @@ import { insertFootnoteAndOpenPopup } from "@/plugins/footnotePopup/tiptapInsert
 import { expandedToggleMarkTiptap } from "@/plugins/editorPlugins.tiptap";
 import { resolveLinkPopupPayload } from "@/plugins/formatToolbar/linkPopupUtils";
 import { handleBlockquoteNest, handleBlockquoteUnnest, handleRemoveBlockquote, handleListIndent, handleListOutdent, handleRemoveList, handleToBulletList, handleToOrderedList } from "@/plugins/formatToolbar/nodeActions.tiptap";
-import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn, deleteCurrentColumn, deleteCurrentRow, deleteCurrentTable } from "@/plugins/tableUI/tableActions.tiptap";
+import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn, deleteCurrentColumn, deleteCurrentRow, deleteCurrentTable, formatTable } from "@/plugins/tableUI/tableActions.tiptap";
 import { findWordAtCursor } from "@/plugins/syntaxReveal/marks";
 import { copyImageToAssets } from "@/hooks/useImageOperations";
 import { getWindowLabel } from "@/hooks/useWindowFocus";
@@ -489,6 +489,8 @@ export function performWysiwygToolbarAction(action: string, context: WysiwygTool
       return view ? alignColumn(view, "center", true) : false;
     case "alignAllRight":
       return view ? alignColumn(view, "right", true) : false;
+    case "formatTable":
+      return view ? formatTable(view) : false;
     case "nestQuote":
       if (view && applyMultiSelectionBlockquoteAction(view, action)) return true;
       return view ? (handleBlockquoteNest(view), true) : false;

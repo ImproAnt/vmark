@@ -65,6 +65,7 @@ const TABLE_ACTIONS = [
   { event: "menu:align-left", action: "alignLeft" },
   { event: "menu:align-center", action: "alignCenter" },
   { event: "menu:align-right", action: "alignRight" },
+  { event: "menu:format-table", action: "formatTable" },
 ] as const;
 
 function buildSourceContext(view: EditorView) {

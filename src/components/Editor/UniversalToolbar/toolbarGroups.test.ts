@@ -16,9 +16,8 @@ describe("toolbarGroups", () => {
         "list",
         "table",
         "blockquote",
-        "insert",
-        "expandables",
         "link",
+        "insert",
       ]);
     });
 
@@ -116,13 +115,13 @@ describe("toolbarGroups", () => {
     });
   });
 
-  describe("expandables group", () => {
-    it("contains 5 alert type items instead of single alert", () => {
-      const expandables = TOOLBAR_GROUPS.find((g) => g.id === "expandables");
-      expect(expandables).toBeDefined();
+  describe("insert group alert items", () => {
+    it("contains 5 alert type items (merged from expandables)", () => {
+      const insert = TOOLBAR_GROUPS.find((g) => g.id === "insert");
+      expect(insert).toBeDefined();
 
-      const itemIds = expandables!.items.map((item) => item.id);
-      const actionItems = expandables!.items.filter((item) => !isSeparator(item));
+      const itemIds = insert!.items.map((item) => item.id);
+      const actionItems = insert!.items.filter((item) => !isSeparator(item));
       const itemActions = actionItems.map((item) => !isSeparator(item) ? item.action : "");
 
       // Should NOT have single insertAlert
@@ -144,8 +143,8 @@ describe("toolbarGroups", () => {
     });
 
     it("alert items are enabled in textblock context", () => {
-      const expandables = TOOLBAR_GROUPS.find((g) => g.id === "expandables");
-      const alertItems = expandables!.items.filter((item) =>
+      const insert = TOOLBAR_GROUPS.find((g) => g.id === "insert");
+      const alertItems = insert!.items.filter((item) =>
         item.id.startsWith("insert-alert-")
       );
 

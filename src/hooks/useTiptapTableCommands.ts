@@ -5,7 +5,7 @@ import type { Editor as TiptapEditor } from "@tiptap/core";
 import type { EditorView } from "@tiptap/pm/view";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { CellSelection } from "@tiptap/pm/tables";
-import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn } from "@/plugins/tableUI/tableActions.tiptap";
+import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn, formatTable } from "@/plugins/tableUI/tableActions.tiptap";
 import { isTerminalFocused } from "@/utils/focus";
 
 function clearSelectedCells(view: EditorView): boolean {
@@ -178,6 +178,19 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
         return;
       }
       unlistenRefs.current.push(unlistenAlignRight);
+
+      const unlistenFormatTable = await currentWindow.listen<string>("menu:format-table", (event) => {
+        if (event.payload !== windowLabel) return;
+        if (isTerminalFocused()) return;
+        const editor = editorRef.current;
+        if (!editor) return;
+        formatTable(editor.view as unknown as EditorView);
+      });
+      if (cancelled) {
+        unlistenFormatTable();
+        return;
+      }
+      unlistenRefs.current.push(unlistenFormatTable);
     };
 
     setupListeners();

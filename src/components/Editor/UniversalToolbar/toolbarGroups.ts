@@ -137,6 +137,7 @@ const TABLE_GROUP: ToolbarGroup = {
     { id: "align-all-left", icon: icons.alignAllLeft, label: "Align All Left", action: "alignAllLeft", enabledIn: ["table"] },
     { id: "align-all-center", icon: icons.alignAllCenter, label: "Align All Center", action: "alignAllCenter", enabledIn: ["table"] },
     { id: "align-all-right", icon: icons.alignAllRight, label: "Align All Right", action: "alignAllRight", enabledIn: ["table"] },
+    { id: "format-table", icon: icons.formatTable, label: "Format Table", action: "formatTable", enabledIn: ["table"] },
   ],
 };
 
