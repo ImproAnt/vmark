@@ -99,14 +99,13 @@
 .universal-toolbar-btn.focused::after {
   content: "";
   position: absolute;
-  bottom: 3px;
-  left: 6px;
-  right: 6px;
+  bottom: 2px;
+  left: 4px;
+  right: 4px;
   height: 4px;
   background: transparent;
-  border: 1px solid var(--accent-primary);
-  border-top: none;
-  border-radius: 0 0 2px 2px;
+  border-bottom: 2px solid var(--accent-primary);
+  border-radius: 0 0 4px 4px;
 }
 
 /* Also show on :focus-visible for keyboard accessibility */
@@ -118,14 +117,13 @@
 .universal-toolbar-btn:focus-visible::after {
   content: "";
   position: absolute;
-  bottom: 3px;
-  left: 6px;
-  right: 6px;
+  bottom: 2px;
+  left: 4px;
+  right: 4px;
   height: 4px;
   background: transparent;
-  border: 1px solid var(--accent-primary);
-  border-top: none;
-  border-radius: 0 0 2px 2px;
+  border-bottom: 2px solid var(--accent-primary);
+  border-radius: 0 0 4px 4px;
 }
 
 /* Focused + Active: dot stays visible (same accent color) */
