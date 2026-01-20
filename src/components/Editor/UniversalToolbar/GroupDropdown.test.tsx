@@ -246,8 +246,9 @@ describe("GroupDropdown", () => {
     });
   });
 
-  describe("initial focus per spec Section 3.4", () => {
-    it("focuses active+enabled item first", () => {
+  describe("initial focus", () => {
+    it("focuses first enabled item (simple focus, not smart focus)", () => {
+      // Even with active item at index 1, we now focus first enabled (index 0)
       const items = [makeItem("heading:0"), makeActiveItem("heading:1"), makeItem("heading:2")];
 
       render(
@@ -260,9 +261,9 @@ describe("GroupDropdown", () => {
         />
       );
 
-      // Active item (heading:1) should be focused
+      // First enabled item should be focused (not active item)
       const buttons = screen.getAllByRole("menuitemradio");
-      expect(document.activeElement).toBe(buttons[1]);
+      expect(document.activeElement).toBe(buttons[0]);
     });
 
     it("focuses first enabled if no active item", () => {
@@ -305,7 +306,7 @@ describe("GroupDropdown", () => {
       expect(document.activeElement).toBe(buttons[1]);
     });
 
-    it("focuses active item even if earlier items are disabled", () => {
+    it("skips disabled items to focus first enabled", () => {
       const items = [
         makeDisabledItem("heading:0"),
         makeActiveItem("heading:1"),
@@ -322,7 +323,7 @@ describe("GroupDropdown", () => {
         />
       );
 
-      // Active item should be focused
+      // First enabled item (index 1) should be focused
       const buttons = screen.getAllByRole("menuitemradio");
       expect(document.activeElement).toBe(buttons[1]);
     });

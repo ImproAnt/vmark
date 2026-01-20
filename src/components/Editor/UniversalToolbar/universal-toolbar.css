@@ -184,6 +184,7 @@
 }
 
 .universal-toolbar-dropdown-item:hover,
+.universal-toolbar-dropdown-item:focus,
 .universal-toolbar-dropdown-item:focus-visible {
   background-color: var(--bg-tertiary);
   outline: none;
@@ -207,6 +208,7 @@
 }
 
 .universal-toolbar-dropdown-item.disabled:hover,
+.universal-toolbar-dropdown-item.disabled:focus,
 .universal-toolbar-dropdown-item.disabled:focus-visible {
   background-color: transparent;
 }

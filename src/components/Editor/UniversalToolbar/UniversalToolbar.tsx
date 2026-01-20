@@ -303,12 +303,10 @@ export function UniversalToolbar() {
       return;
     }
 
-    // Toolbar just opened - compute smart focus
+    // Toolbar just opened - focus first enabled button
     if (!wasVisibleRef.current) {
       const initialIndex = getInitialFocusIndex({
-        buttons,
         states: buttonStates,
-        context: toolbarContext,
       });
 
       // If no enabled buttons, close toolbar immediately
@@ -326,7 +324,7 @@ export function UniversalToolbar() {
     }
 
     wasVisibleRef.current = true;
-  }, [visible, buttons, buttonStates, toolbarContext, setFocusedIndex, closeMenu, sessionFocusIndex]);
+  }, [visible, buttonStates, setFocusedIndex, closeMenu, sessionFocusIndex]);
 
   // Handle click outside dropdown
   useEffect(() => {

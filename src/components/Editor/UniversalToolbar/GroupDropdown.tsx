@@ -59,37 +59,22 @@ const GroupDropdown = forwardRef<HTMLDivElement, GroupDropdownProps>(
   ({ anchorRect, items, groupId, onSelect, onClose, onNavigateOut, onTabOut }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Find enabled item indices
-    const enabledIndices = useMemo(
-      () =>
-        items
-          .map((entry, index) => {
-            if (isSeparator(entry.item)) return -1;
-            return entry.state.disabled ? -1 : index;
-          })
-          .filter((i) => i >= 0),
-      [items]
-    );
-
-    // Find initial focus: active+enabled, else first enabled, else first
-    const initialFocusIndex = useMemo(() => {
-      // First: active + enabled
-      for (let i = 0; i < items.length; i++) {
-        const entry = items[i];
-        if (isSeparator(entry.item)) continue;
-        if (entry.state.active && !entry.state.disabled) {
-          return i;
+    // Find enabled button indices (in button-space, excludes separators)
+    const enabledButtonIndices = useMemo(() => {
+      const indices: number[] = [];
+      let buttonIndex = 0;
+      items.forEach((entry) => {
+        if (!isSeparator(entry.item)) {
+          if (!entry.state.disabled) {
+            indices.push(buttonIndex);
+          }
+          buttonIndex++;
         }
-      }
-      // Second: first enabled
-      if (enabledIndices.length > 0) {
-        return enabledIndices[0];
-      }
-      // Third: first item (even if disabled)
-      return 0;
-    }, [items, enabledIndices]);
+      });
+      return indices;
+    }, [items]);
 
-    // Focus initial item on mount
+    // Focus first enabled button on mount
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
@@ -97,24 +82,25 @@ const GroupDropdown = forwardRef<HTMLDivElement, GroupDropdownProps>(
       const buttons = container.querySelectorAll<HTMLButtonElement>(
         ".universal-toolbar-dropdown-item"
       );
-      const targetButton = buttons[initialFocusIndex] ?? buttons[0];
-      targetButton?.focus();
-    }, [initialFocusIndex]);
+      const firstEnabled = enabledButtonIndices[0] ?? 0;
+      buttons[firstEnabled]?.focus();
+    }, [enabledButtonIndices]);
 
     /**
-     * Find next enabled index in direction (wrapping).
+     * Find next enabled button index in direction (wrapping).
+     * Works in button-space (excludes separators).
      */
-    const findNextEnabledIndex = (current: number, direction: 1 | -1): number => {
-      if (enabledIndices.length === 0) return current;
+    const findNextEnabledButtonIndex = (currentButtonIndex: number, direction: 1 | -1): number => {
+      if (enabledButtonIndices.length === 0) return currentButtonIndex;
 
-      const currentEnabledPos = enabledIndices.indexOf(current);
+      const currentEnabledPos = enabledButtonIndices.indexOf(currentButtonIndex);
       if (currentEnabledPos === -1) {
         // Current is disabled, find nearest enabled
-        return enabledIndices[0];
+        return enabledButtonIndices[0];
       }
 
-      const nextPos = (currentEnabledPos + direction + enabledIndices.length) % enabledIndices.length;
-      return enabledIndices[nextPos];
+      const nextPos = (currentEnabledPos + direction + enabledButtonIndices.length) % enabledButtonIndices.length;
+      return enabledButtonIndices[nextPos];
     };
 
     const handleKeyDown = (event: ReactKeyboardEvent) => {
@@ -123,7 +109,8 @@ const GroupDropdown = forwardRef<HTMLDivElement, GroupDropdownProps>(
       );
       if (!buttons || buttons.length === 0) return;
 
-      const activeIndex = Array.from(buttons).indexOf(document.activeElement as HTMLButtonElement);
+      // activeIndex is in button-space (excludes separators)
+      const activeButtonIndex = Array.from(buttons).indexOf(document.activeElement as HTMLButtonElement);
 
       switch (event.key) {
         case "Escape":
@@ -163,31 +150,31 @@ const GroupDropdown = forwardRef<HTMLDivElement, GroupDropdownProps>(
 
         case "ArrowDown":
           event.preventDefault();
-          if (enabledIndices.length > 0) {
-            const nextIndex = findNextEnabledIndex(activeIndex, 1);
+          if (enabledButtonIndices.length > 0) {
+            const nextIndex = findNextEnabledButtonIndex(activeButtonIndex, 1);
             buttons[nextIndex]?.focus();
           }
           break;
 
         case "ArrowUp":
           event.preventDefault();
-          if (enabledIndices.length > 0) {
-            const prevIndex = findNextEnabledIndex(activeIndex, -1);
+          if (enabledButtonIndices.length > 0) {
+            const prevIndex = findNextEnabledButtonIndex(activeButtonIndex, -1);
             buttons[prevIndex]?.focus();
           }
           break;
 
         case "Home":
           event.preventDefault();
-          if (enabledIndices.length > 0) {
-            buttons[enabledIndices[0]]?.focus();
+          if (enabledButtonIndices.length > 0) {
+            buttons[enabledButtonIndices[0]]?.focus();
           }
           break;
 
         case "End":
           event.preventDefault();
-          if (enabledIndices.length > 0) {
-            buttons[enabledIndices[enabledIndices.length - 1]]?.focus();
+          if (enabledButtonIndices.length > 0) {
+            buttons[enabledButtonIndices[enabledButtonIndices.length - 1]]?.focus();
           }
           break;
 
