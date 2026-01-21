@@ -8,10 +8,6 @@ on:
       - 'website/**'
       - '.github/workflows/deploy-website.yml'
 
-  # Trigger when a release is published
-  release:
-    types: [published]
-
   # Allow manual trigger
   workflow_dispatch:
 
