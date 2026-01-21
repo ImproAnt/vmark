@@ -151,6 +151,25 @@ features:
 </div>
 </div>
 
+## AI-Powered Writing
+
+Let Claude write directly to your documents via MCP integration:
+
+<div class="screenshots-section">
+<div class="screenshots-grid">
+  <div class="screenshot-card">
+    <img src="/screenshots/mcp-claude.png" alt="Claude Desktop writing to VMark" loading="lazy" />
+    <div class="caption">Claude Desktop writes to VMark</div>
+  </div>
+  <div class="screenshot-card">
+    <img src="/screenshots/mcp-result.png" alt="AI content in VMark" loading="lazy" />
+    <div class="caption">Content rendered instantly</div>
+  </div>
+</div>
+</div>
+
+[Learn how to set up MCP →](/guide/mcp-setup)
+
 ## Built With Modern Technology
 
 <div class="tech-stack">

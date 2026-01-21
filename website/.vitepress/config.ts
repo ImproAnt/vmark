@@ -29,6 +29,8 @@ export default defineConfig({
             { text: 'Getting Started', link: '/guide/' },
             { text: 'Features', link: '/guide/features' },
             { text: 'Keyboard Shortcuts', link: '/guide/shortcuts' },
+            { text: 'Multi-Cursor Editing', link: '/guide/multi-cursor' },
+            { text: 'Inline Popups', link: '/guide/popups' },
             { text: 'CJK Formatting', link: '/guide/cjk-formatting' },
           ]
         },

@@ -11,22 +11,107 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 - Navigate and manage documents
 - Insert special content (math, diagrams, wiki links)
 
-## Setup for Claude Code
+## Quick Setup
 
-### Prerequisites
+VMark makes it easy to connect AI assistants with one-click installation.
 
-- VMark installed and running
-- Claude Code CLI installed
+### 1. Enable MCP Server
 
-### Configuration
+Open **Settings → Integrations** and enable the MCP Server:
 
-Add VMark to your Claude Code MCP configuration file (`~/.claude.json` or project-level `.claude.json`):
+<div class="screenshot-container">
+  <img src="/screenshots/mcp-settings-server.png" alt="VMark MCP Server Settings" />
+</div>
+
+- **Enable MCP Server** - Turn on to allow AI connections
+- **WebSocket Port** - Default is 9223
+- **Start on launch** - Auto-start when VMark opens
+
+### 2. Install Configuration
+
+Click **Install** for your AI assistant:
+
+<div class="screenshot-container">
+  <img src="/screenshots/mcp-settings-install.png" alt="VMark MCP Install Configuration" />
+</div>
+
+Supported AI assistants:
+- **Claude Desktop** - Anthropic's desktop app
+- **Claude Code** - CLI for developers
+- **Codex CLI** - OpenAI's coding assistant
+- **Gemini CLI** - Google's AI assistant
+
+### 3. Restart Your AI Assistant
+
+After installing, **restart your AI assistant** completely (quit and reopen) to load the new configuration.
+
+### 4. Try It Out
+
+In your AI assistant, try commands like:
+- *"What's in my VMark document?"*
+- *"Write a summary of quantum computing to VMark"*
+- *"Add a table of contents to my document"*
+
+## See It in Action
+
+Ask Claude a question and have it write the answer directly to your VMark document:
+
+<div class="screenshot-container">
+  <img src="/screenshots/mcp-claude.png" alt="Claude Desktop using VMark MCP" />
+  <p class="screenshot-caption">Claude Desktop calls <code>document_set_content</code> to write to VMark</p>
+</div>
+
+<div class="screenshot-container">
+  <img src="/screenshots/mcp-result.png" alt="Content rendered in VMark" />
+  <p class="screenshot-caption">The content appears instantly in VMark, fully formatted</p>
+</div>
+
+<style>
+.screenshot-container {
+  margin: 1.5rem 0;
+}
+.screenshot-container img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.screenshot-caption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--vp-c-text-2);
+  text-align: center;
+}
+</style>
+
+## Manual Configuration
+
+If you prefer to configure manually, here are the config file locations:
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
   "mcpServers": {
     "vmark": {
-      "command": "/path/to/VMark.app/Contents/MacOS/vmark-mcp-server-aarch64-apple-darwin",
+      "command": "/Applications/VMark.app/Contents/MacOS/vmark-mcp-server-aarch64-apple-darwin",
+      "args": ["--port", "9223"]
+    }
+  }
+}
+```
+
+### Claude Code
+
+Edit `~/.claude.json` or project `.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "vmark": {
+      "command": "/Applications/VMark.app/Contents/MacOS/vmark-mcp-server-aarch64-apple-darwin",
       "args": ["--port", "9223"]
     }
   }
@@ -34,41 +119,31 @@ Add VMark to your Claude Code MCP configuration file (`~/.claude.json` or projec
 ```
 
 ::: tip Finding the Binary Path
-On macOS, the MCP server binary is located at:
+On macOS, the MCP server binary is inside VMark.app:
 - **Apple Silicon**: `VMark.app/Contents/MacOS/vmark-mcp-server-aarch64-apple-darwin`
 - **Intel**: `VMark.app/Contents/MacOS/vmark-mcp-server-x86_64-apple-darwin`
 
 On Windows:
-- `VMark/vmark-mcp-server-x86_64-pc-windows-msvc.exe`
+- `C:\Program Files\VMark\vmark-mcp-server-x86_64-pc-windows-msvc.exe`
 
 On Linux:
-- `VMark/vmark-mcp-server-x86_64-unknown-linux-gnu`
+- `/usr/bin/vmark-mcp-server-x86_64-unknown-linux-gnu` (or where you installed it)
 :::
 
-### How It Works
+## How It Works
+
+```
+AI Assistant <--stdio--> MCP Server <--WebSocket--> VMark Editor
+```
 
 1. **VMark starts a WebSocket bridge** on port 9223 when launched
 2. **The MCP server** connects to this WebSocket bridge
-3. **Claude Code** communicates with the MCP server via stdio
+3. **AI assistant** communicates with the MCP server via stdio
 4. **Commands are relayed** to VMark's editor through the bridge
-
-```
-Claude Code <--stdio--> MCP Server <--WebSocket--> VMark Editor
-```
-
-## Verifying the Connection
-
-Once configured, start Claude Code and ask it to interact with VMark:
-
-```
-> Get the content of my document
-```
-
-If properly connected, Claude will use the VMark MCP tools to read your document.
 
 ## Available Capabilities
 
-When connected, Claude can:
+When connected, your AI assistant can:
 
 | Category | Capabilities |
 |----------|-------------|
@@ -88,14 +163,15 @@ See the [MCP Tools Reference](/guide/mcp-tools) for complete documentation.
 ### "Connection refused" or "No active editor"
 
 - Ensure VMark is running and has a document open
-- Check that the MCP bridge port (9223) is not blocked
+- Check that the MCP Server is enabled in Settings → Integrations
+- Verify the MCP bridge shows "Running" status
 - Restart VMark if the connection was interrupted
 
-### Tools not appearing in Claude
+### Tools not appearing in AI assistant
 
-- Restart Claude Code after updating the MCP configuration
-- Verify the binary path is correct
-- Check Claude Code logs for MCP connection errors
+- Restart your AI assistant after installing the configuration
+- Verify the configuration was installed (check for green checkmark in Settings)
+- Check your AI assistant's logs for MCP connection errors
 
 ### Commands fail with "No active editor"
 
@@ -109,25 +185,6 @@ See the [MCP Tools Reference](/guide/mcp-tools) for complete documentation.
 - No data is sent to external servers
 - All processing happens on your machine
 - The WebSocket bridge is only accessible locally
-
-## Advanced Configuration
-
-### Custom Port
-
-If port 9223 is in use, specify a different port:
-
-```json
-{
-  "mcpServers": {
-    "vmark": {
-      "command": "/path/to/vmark-mcp-server",
-      "args": ["--port", "9224"]
-    }
-  }
-}
-```
-
-Note: You'll also need to configure VMark to use the same port (settings coming soon).
 
 ## Next Steps
 

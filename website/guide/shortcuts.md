@@ -1,82 +1,92 @@
 # Keyboard Shortcuts
 
-VMark is designed for keyboard-first workflows. Most shortcuts can be customized in Settings.
+VMark is designed for keyboard-first workflows. All shortcuts can be customized in Settings.
 
 ## Notation
 
 - **Mod** = Cmd on macOS, Ctrl on Windows/Linux
 - **Alt** = Option on macOS
 
-## Formatting
+## Text Formatting
 
 | Action | Shortcut |
 |--------|----------|
 | Bold | `Mod + B` |
 | Italic | `Mod + I` |
-| Inline Code | `Mod + Shift + `` ` `` |
+| Underline | `Mod + U` |
 | Strikethrough | `Mod + Shift + X` |
-| Link | `Mod + K` |
+| Inline Code | `Mod + Shift + `` ` `` |
 | Highlight | `Mod + Shift + M` |
 | Subscript | `Alt + Mod + =` |
 | Superscript | `Alt + Mod + Shift + =` |
+| Link | `Mod + K` |
 | Clear Formatting | `Mod + \` |
 
-## Blocks
+## Block Formatting
 
 | Action | Shortcut |
 |--------|----------|
-| Heading 1 | `Mod + 1` |
-| Heading 2 | `Mod + 2` |
-| Heading 3 | `Mod + 3` |
-| Heading 4 | `Mod + 4` |
-| Heading 5 | `Mod + 5` |
-| Heading 6 | `Mod + 6` |
+| Heading 1-6 | `Mod + 1` through `Mod + 6` |
 | Paragraph | `Mod + Shift + 0` |
-| Increase Heading | `Mod + Alt + ]` |
-| Decrease Heading | `Mod + Alt + [` |
+| Increase Heading Level | `Alt + Mod + ]` |
+| Decrease Heading Level | `Alt + Mod + [` |
 | Blockquote | `Alt + Mod + Q` |
 | Code Block | `Alt + Mod + C` |
 | Bullet List | `Alt + Mod + U` |
 | Ordered List | `Alt + Mod + O` |
 | Task List | `Alt + Mod + X` |
-| Insert Table | `Mod + Shift + T` |
-| Horizontal Line | `Alt + Mod + -` |
-| Insert Image | `Mod + Shift + I` |
 | Indent | `Mod + ]` |
 | Outdent | `Mod + [` |
+| Horizontal Line | `Alt + Mod + -` |
 
-## Navigation
+## Insert
+
+| Action | Shortcut |
+|--------|----------|
+| Insert Image | `Mod + Shift + I` |
+| Insert Table | `Mod + Shift + T` |
+| Inline Math | `Alt + Mod + M` |
+| Math Block | `Alt + Mod + Shift + M` |
+| Insert Note | `Alt + Mod + N` |
+| Insert Tip | `Alt + Mod + Shift + T` |
+| Insert Warning | `Mod + Shift + W` |
+| Insert Important | `Alt + Mod + Shift + I` |
+| Insert Caution | `Mod + Shift + U` |
+| Insert Collapsible | `Alt + Mod + D` |
+| Toggle Comment | `Mod + Shift + /` |
+
+## Selection & Multi-Cursor
 
 | Action | Shortcut |
 |--------|----------|
 | Select Line | `Mod + L` |
 | Expand Selection | `Ctrl + Shift + Up` |
-| Universal Toolbar | `Mod + Shift + P` |
-| Source Peek | `Mod + Alt + /` |
+| Select Next Occurrence | `Mod + D` |
+| Select All Occurrences | `Mod + Shift + L` |
+| Collapse Multi-Cursor | `Escape` |
+
+## Find & Replace
+
+| Action | Shortcut |
+|--------|----------|
 | Find & Replace | `Mod + F` |
 | Find Next | `Mod + G` |
 | Find Previous | `Mod + Shift + G` |
 
-## Editing
-
-| Action | Shortcut | Notes |
-|--------|----------|-------|
-| Format CJK Selection | `Mod + Shift + F` | |
-| Format CJK Document | `Alt + Mod + Shift + F` | |
-| Copy as HTML | `Mod + Shift + C` | |
-| Toggle Comment | `Mod + Shift + \` | Source mode only |
-
-## View
+## View & Mode
 
 | Action | Shortcut |
 |--------|----------|
-| Toggle Sidebar | `Mod + Shift + B` |
-| Toggle Outline | `Mod + Alt + 1` |
-| Source Mode | `F7` or `Mod + /` |
+| Toggle Source Mode | `Mod + /` or `F7` |
 | Focus Mode | `F8` |
 | Typewriter Mode | `F9` |
 | Word Wrap | `Alt + Z` |
-| View History | `Mod + Shift + H` |
+| Toggle Sidebar | `Mod + Shift + B` |
+| Toggle Outline | `Alt + Mod + 1` |
+| Toggle Terminal | `` Ctrl + ` `` |
+| Toggle Status Bar | `Mod + J` |
+| Universal Toolbar | `Mod + Shift + P` |
+| Source Peek | `Alt + Mod + /` |
 
 ## File Operations
 
@@ -92,6 +102,20 @@ VMark is designed for keyboard-first workflows. Most shortcuts can be customized
 | Print | `Mod + P` |
 | Settings | `Mod + ,` |
 
+## Clipboard
+
+| Action | Shortcut |
+|--------|----------|
+| Copy as HTML | `Mod + Shift + C` |
+| Paste Plain Text | `Mod + Shift + V` |
+
+## CJK Formatting
+
+| Action | Shortcut |
+|--------|----------|
+| Format Selection | `Mod + Shift + F` |
+| Format Document | `Alt + Mod + Shift + F` |
+
 ## Window & Tabs
 
 | Action | Shortcut |
@@ -99,11 +123,16 @@ VMark is designed for keyboard-first workflows. Most shortcuts can be customized
 | New Window | `Mod + Shift + N` |
 | New Tab | `Mod + T` |
 | Close Tab | `Mod + W` |
-| Toggle Status Bar | `Mod + J` |
+| View History | `Mod + Shift + H` |
+| Toggle Hidden Files | `Mod + Shift + .` |
 
-## Table Navigation
+::: tip Windows/Linux Note
+Toggle Hidden Files uses `Ctrl + H` on Windows and Linux.
+:::
 
-When editing tables:
+## Table Editing
+
+When cursor is inside a table:
 
 | Action | Shortcut |
 |--------|----------|
@@ -114,10 +143,29 @@ When editing tables:
 | Delete Row | `Mod + Backspace` |
 | Exit Table | Arrow keys at table edge |
 
+## Popup Navigation
+
+When a popup is open (link, image, math, etc.):
+
+| Action | Shortcut |
+|--------|----------|
+| Close Popup | `Escape` |
+| Confirm/Save | `Enter` |
+| Navigate Fields | `Tab` / `Shift + Tab` |
+
+## Math Block Editing
+
+When editing a math block:
+
+| Action | Shortcut |
+|--------|----------|
+| Commit & Exit | `Mod + Enter` |
+| Cancel & Exit | `Escape` |
+
 ## Customizing Shortcuts
 
 1. Open Settings with `Mod + ,`
-2. Navigate to the Shortcuts tab
+2. Navigate to the **Shortcuts** tab
 3. Click on any shortcut to edit
 4. Press your desired key combination
 5. Changes are saved automatically
