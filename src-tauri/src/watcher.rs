@@ -35,9 +35,13 @@ fn event_kind_to_string(kind: &notify::EventKind) -> Option<&'static str> {
     use notify::EventKind::*;
     match kind {
         Create(_) => Some("create"),
-        Modify(_) => Some("modify"),
         Remove(_) => Some("remove"),
-        // Rename events come as pairs - handle as special case
+        Modify(modify_kind) => {
+            match modify_kind {
+                notify::event::ModifyKind::Name(_) => Some("rename"),
+                _ => Some("modify"),
+            }
+        }
         _ => None,
     }
 }

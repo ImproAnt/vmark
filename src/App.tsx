@@ -77,6 +77,7 @@ import { useTabShortcuts } from "@/hooks/useTabShortcuts";
 import { useReloadGuard } from "@/hooks/useReloadGuard";
 import { useDragDropOpen } from "@/hooks/useDragDropOpen";
 import { useExternalFileChanges } from "@/hooks/useExternalFileChanges";
+import { useWindowFileWatcher } from "@/hooks/useWindowFileWatcher";
 import { useSidebarResize } from "@/hooks/useSidebarResize";
 import { useUniversalToolbar } from "@/hooks/useUniversalToolbar";
 import { useMcpAutoStart } from "@/hooks/useMcpAutoStart";
@@ -92,6 +93,7 @@ function DocumentWindowHooks() {
   useWindowClose();
   useWindowTitle();
   useDragDropOpen(); // Open dropped markdown files
+  useWindowFileWatcher(); // Start file watcher for this window
   useExternalFileChanges(); // Handle external file changes (auto-reload or prompt)
   return null;
 }

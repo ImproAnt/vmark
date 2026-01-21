@@ -8,6 +8,7 @@
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import type { ReconcileResult } from "@/utils/pathReconciliation";
+import { normalizePath } from "@/utils/paths";
 
 /**
  * Apply reconciliation results to update open tabs and documents.
@@ -22,18 +23,24 @@ export function applyPathReconciliation(results: ReconcileResult[]): void {
   const docStore = useDocumentStore.getState();
 
   for (const result of results) {
+    const targetPath = normalizePath(result.oldPath);
     if (result.action === "update_path") {
-      // Find the tab with this path
-      const found = tabStore.findTabByFilePath(result.oldPath);
-      if (found) {
-        tabStore.updateTabPath(found.tab.id, result.newPath);
-        docStore.setFilePath(found.tab.id, result.newPath);
+      const newPath = normalizePath(result.newPath);
+      for (const windowTabs of Object.values(tabStore.tabs)) {
+        for (const tab of windowTabs) {
+          if (tab.filePath && normalizePath(tab.filePath) === targetPath) {
+            tabStore.updateTabPath(tab.id, newPath);
+            docStore.setFilePath(tab.id, newPath);
+          }
+        }
       }
     } else if (result.action === "mark_missing") {
-      // Find the tab with this path and mark document as missing
-      const found = tabStore.findTabByFilePath(result.oldPath);
-      if (found) {
-        docStore.markMissing(found.tab.id);
+      for (const windowTabs of Object.values(tabStore.tabs)) {
+        for (const tab of windowTabs) {
+          if (tab.filePath && normalizePath(tab.filePath) === targetPath) {
+            docStore.markMissing(tab.id);
+          }
+        }
       }
     }
   }

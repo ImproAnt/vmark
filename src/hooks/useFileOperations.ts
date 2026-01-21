@@ -8,7 +8,7 @@ import { useWindowLabel } from "@/contexts/WindowContext";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
-import { useWorkspaceStore, type WorkspaceConfig } from "@/stores/workspaceStore";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { getDefaultSaveFolderWithFallback } from "@/hooks/useDefaultSaveFolder";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
@@ -18,6 +18,7 @@ import {
   resolvePostSaveWorkspaceAction,
   resolveMissingFileSaveAction,
 } from "@/utils/openPolicy";
+import { openWorkspaceWithConfig } from "@/hooks/openWorkspaceWithConfig";
 import { getReplaceableTab, findExistingTabForPath } from "@/hooks/useReplaceableTab";
 import { createUntitledTab } from "@/utils/newFile";
 import { getDirectory } from "@/utils/pathUtils";
@@ -95,8 +96,8 @@ export function useFileOperations() {
               decision.filePath,
               detectLinebreaks(content)
             );
-            // Open workspace with the file's parent folder
-            useWorkspaceStore.getState().openWorkspace(decision.workspaceRoot);
+            // Open workspace with config for the file's parent folder
+            await openWorkspaceWithConfig(decision.workspaceRoot);
             // Add to recent files
             useRecentFilesStore.getState().addFile(path);
           } catch (error) {
@@ -175,17 +176,7 @@ export function useFileOperations() {
 
         if (postSaveAction.action === "open_workspace") {
           try {
-            // Open workspace with default config
-            useWorkspaceStore.getState().openWorkspace(postSaveAction.workspaceRoot);
-
-            // Load real config from disk (if it exists)
-            const config = await invoke<WorkspaceConfig | null>(
-              "read_workspace_config",
-              { rootPath: postSaveAction.workspaceRoot }
-            );
-            if (config) {
-              useWorkspaceStore.getState().bootstrapConfig(config);
-            }
+            await openWorkspaceWithConfig(postSaveAction.workspaceRoot);
           } catch (error) {
             console.error("[FileOps] Failed to open workspace after save:", error);
           }

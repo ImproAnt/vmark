@@ -5,12 +5,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { useDocumentStore } from "../stores/documentStore";
 import { useTabStore } from "../stores/tabStore";
 import { useRecentFilesStore } from "../stores/recentFilesStore";
-import { useWorkspaceStore, type WorkspaceConfig } from "../stores/workspaceStore";
+import { useWorkspaceStore } from "../stores/workspaceStore";
 import { detectLinebreaks } from "../utils/linebreakDetection";
+import { openWorkspaceWithConfig } from "../hooks/openWorkspaceWithConfig";
 import {
   setCurrentWindowLabel,
   migrateWorkspaceStorage,
+  getWorkspaceStorageKey,
 } from "../utils/workspaceStorage";
+import { resolveWorkspaceRootForExternalFile } from "../utils/openPolicy";
+import { isWithinRoot } from "../utils/paths";
 
 interface WindowContextValue {
   windowLabel: string;
@@ -50,6 +54,12 @@ export function WindowProvider({ children }: WindowProviderProps) {
         // This must happen before store rehydration
         setCurrentWindowLabel(label);
 
+        // Clear any stale persisted workspace state for doc windows
+        if (label.startsWith("doc-")) {
+          const storageKey = getWorkspaceStorageKey(label);
+          localStorage.removeItem(storageKey);
+        }
+
         // Rehydrate workspace store from window-specific storage key
         // This ensures new windows don't inherit main's workspace
         useWorkspaceStore.persist.rehydrate();
@@ -68,21 +78,23 @@ export function WindowProvider({ children }: WindowProviderProps) {
             const urlParams = new URLSearchParams(globalThis.location?.search || "");
             let filePath = urlParams.get("file");
             const workspaceRootParam = urlParams.get("workspaceRoot");
+            const filesParam = urlParams.get("files");
+            let filePaths: string[] | null = null;
+            if (filesParam) {
+              try {
+                const parsed = JSON.parse(filesParam);
+                if (Array.isArray(parsed)) {
+                  filePaths = parsed.filter((value) => typeof value === "string");
+                }
+              } catch (error) {
+                console.error("[WindowContext] Failed to parse files param:", error);
+              }
+            }
 
             // If workspace root is provided, open it first and load config from disk
             if (workspaceRootParam) {
               try {
-                // First open the workspace with default config
-                useWorkspaceStore.getState().openWorkspace(workspaceRootParam);
-
-                // Then load the real config from disk (if it exists)
-                const config = await invoke<WorkspaceConfig | null>(
-                  "read_workspace_config",
-                  { rootPath: workspaceRootParam }
-                );
-                if (config) {
-                  useWorkspaceStore.getState().bootstrapConfig(config);
-                }
+                await openWorkspaceWithConfig(workspaceRootParam);
               } catch (e) {
                 console.error("[WindowContext] Failed to open workspace from URL param:", e);
               }
@@ -99,17 +111,7 @@ export function WindowProvider({ children }: WindowProviderProps) {
                   // (empty string means no workspace root could be determined)
                   if (!workspaceRootParam && first.workspaceRoot && first.workspaceRoot.length > 0) {
                     try {
-                      // Open workspace with default config
-                      useWorkspaceStore.getState().openWorkspace(first.workspaceRoot);
-
-                      // Load real config from disk (if it exists)
-                      const config = await invoke<WorkspaceConfig | null>(
-                        "read_workspace_config",
-                        { rootPath: first.workspaceRoot }
-                      );
-                      if (config) {
-                        useWorkspaceStore.getState().bootstrapConfig(config);
-                      }
+                      await openWorkspaceWithConfig(first.workspaceRoot);
                     } catch (e) {
                       console.error("[WindowContext] Failed to open workspace from pending:", e);
                     }
@@ -130,30 +132,61 @@ export function WindowProvider({ children }: WindowProviderProps) {
               }
             }
 
+            if (filePath && !workspaceRootParam) {
+              const { rootPath, isWorkspaceMode } = useWorkspaceStore.getState();
+              const isWithinWorkspace = rootPath
+                ? isWithinRoot(rootPath, filePath)
+                : false;
+
+              if (!isWorkspaceMode || !rootPath || !isWithinWorkspace) {
+                const derivedRoot = resolveWorkspaceRootForExternalFile(filePath);
+                if (derivedRoot) {
+                  await openWorkspaceWithConfig(derivedRoot);
+                } else if (label === "main") {
+                  useWorkspaceStore.getState().closeWorkspace();
+                }
+              }
+            }
+
             // If opening fresh (no file and no workspace root), clear any persisted workspace
             // This ensures a clean slate when launching the app without a file
             if (!filePath && !workspaceRootParam && label === "main") {
               useWorkspaceStore.getState().closeWorkspace();
             }
 
-            // Create the initial tab
-            const tabId = useTabStore.getState().createTab(label, filePath);
-
-            if (filePath) {
-              // Load file content from disk
-              try {
-                const content = await readTextFile(filePath);
-                useDocumentStore.getState().initDocument(tabId, content, filePath);
-                useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
-                useRecentFilesStore.getState().addFile(filePath);
-              } catch (error) {
-                console.error("[WindowContext] Failed to load file:", filePath, error);
-                // Initialize with empty content if file can't be read
-                useDocumentStore.getState().initDocument(tabId, "", null);
+            if (filePaths && filePaths.length > 0) {
+              for (const path of filePaths) {
+                const tabId = useTabStore.getState().createTab(label, path);
+                try {
+                  const content = await readTextFile(path);
+                  useDocumentStore.getState().initDocument(tabId, content, path);
+                  useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
+                  useRecentFilesStore.getState().addFile(path);
+                } catch (error) {
+                  console.error("[WindowContext] Failed to load file:", path, error);
+                  useDocumentStore.getState().initDocument(tabId, "", null);
+                }
               }
             } else {
-              // No file path - initialize empty document
-              useDocumentStore.getState().initDocument(tabId, "", null);
+              // Create the initial tab
+              const tabId = useTabStore.getState().createTab(label, filePath);
+
+              if (filePath) {
+                // Load file content from disk
+                try {
+                  const content = await readTextFile(filePath);
+                  useDocumentStore.getState().initDocument(tabId, content, filePath);
+                  useDocumentStore.getState().setLineMetadata(tabId, detectLinebreaks(content));
+                  useRecentFilesStore.getState().addFile(filePath);
+                } catch (error) {
+                  console.error("[WindowContext] Failed to load file:", filePath, error);
+                  // Initialize with empty content if file can't be read
+                  useDocumentStore.getState().initDocument(tabId, "", null);
+                }
+              } else {
+                // No file path - initialize empty document
+                useDocumentStore.getState().initDocument(tabId, "", null);
+              }
             }
           }
         }

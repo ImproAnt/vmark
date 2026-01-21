@@ -174,6 +174,11 @@ export function resolveWorkspaceRootForExternalFile(filePath: string): string | 
     return null;
   }
 
+  // Windows drive root (e.g., "C:") is not a valid workspace root
+  if (/^[A-Za-z]:$/.test(parentDir)) {
+    return null;
+  }
+
   return parentDir;
 }
 

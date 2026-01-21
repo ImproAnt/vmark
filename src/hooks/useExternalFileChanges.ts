@@ -24,7 +24,7 @@ interface FsChangeEvent {
   watchId: string;
   rootPath: string;
   paths: string[];
-  kind: "create" | "modify" | "remove";
+  kind: "create" | "modify" | "remove" | "rename";
 }
 
 /**
@@ -155,6 +155,31 @@ export function useExternalFileChanges(): void {
         if (watchId !== windowLabel) return;
 
         const openPaths = getOpenFilePaths();
+
+        if (kind === "rename") {
+          let handled = false;
+          for (let i = 0; i + 1 < paths.length; i += 2) {
+            const oldPath = normalizePath(paths[i]);
+            const newPath = normalizePath(paths[i + 1]);
+            const tabId = openPaths.get(oldPath);
+            if (!tabId) continue;
+
+            useTabStore.getState().updateTabPath(tabId, newPath);
+            useDocumentStore.getState().setFilePath(tabId, newPath);
+            useDocumentStore.getState().clearMissing(tabId);
+            handled = true;
+          }
+          if (!handled) {
+            for (const changedPath of paths) {
+              const normalizedPath = normalizePath(changedPath);
+              const tabId = openPaths.get(normalizedPath);
+              if (tabId) {
+                handleDeletion(tabId);
+              }
+            }
+          }
+          return;
+        }
 
         for (const changedPath of paths) {
           const normalizedPath = normalizePath(changedPath);

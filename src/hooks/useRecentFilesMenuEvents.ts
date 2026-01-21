@@ -12,6 +12,7 @@ import { withReentryGuard } from "@/utils/reentryGuard";
 import { resolveOpenAction } from "@/utils/openPolicy";
 import { getReplaceableTab } from "@/hooks/useReplaceableTab";
 import { detectLinebreaks } from "@/utils/linebreakDetection";
+import { openWorkspaceWithConfig } from "@/hooks/openWorkspaceWithConfig";
 
 /**
  * Handles recent files menu events: open-recent-file, clear-recent.
@@ -110,7 +111,7 @@ export function useRecentFilesMenuEvents(): void {
                   result.filePath,
                   detectLinebreaks(content)
                 );
-                useWorkspaceStore.getState().openWorkspace(result.workspaceRoot);
+                await openWorkspaceWithConfig(result.workspaceRoot);
                 useRecentFilesStore.getState().addFile(file.path);
               } catch (error) {
                 console.error("[Menu] Failed to replace tab with recent file:", error);

@@ -3,13 +3,14 @@ import { type UnlistenFn } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { readTextFile } from "@tauri-apps/plugin-fs";
-import { open } from "@tauri-apps/plugin-dialog";
-import { useWorkspaceStore, type WorkspaceConfig } from "@/stores/workspaceStore";
+import { ask, open } from "@tauri-apps/plugin-dialog";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { persistWorkspaceSession } from "@/hooks/workspaceSession";
 import { detectLinebreaks } from "@/utils/linebreakDetection";
+import { openWorkspaceWithConfig } from "@/hooks/openWorkspaceWithConfig";
 
 /**
  * Hook to handle workspace-related menu events
@@ -47,12 +48,32 @@ export function useWorkspaceMenuEvents() {
           const path = typeof selected === "string" ? selected : selected[0];
           if (!path) return;
 
-          // Try to read existing config
-          const existing = await invoke<WorkspaceConfig | null>(
-            "read_workspace_config",
-            { rootPath: path }
-          );
-          useWorkspaceStore.getState().openWorkspace(path, existing);
+          const tabs = useTabStore.getState().getTabsByWindow(windowLabel);
+          const dirtyTabs = tabs.filter((tab) => {
+            const doc = useDocumentStore.getState().getDocument(tab.id);
+            return doc?.isDirty;
+          });
+
+          if (dirtyTabs.length > 0) {
+            const confirmed = await ask(
+              "This window has unsaved changes. Open the workspace in a new window instead?",
+              {
+                title: "Unsaved Changes",
+                kind: "warning",
+                okLabel: "Open in New Window",
+                cancelLabel: "Cancel",
+              }
+            );
+            if (confirmed) {
+              await invoke("open_workspace_in_new_window", {
+                workspaceRoot: path,
+                filePath: null,
+              });
+            }
+            return;
+          }
+
+          const existing = await openWorkspaceWithConfig(path);
           // Show sidebar with files view
           useUIStore.getState().showSidebarWithView("files");
 

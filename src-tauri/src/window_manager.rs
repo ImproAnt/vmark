@@ -58,6 +58,58 @@ fn build_window_url(file_path: Option<&str>, workspace_root: Option<&str>) -> St
     }
 }
 
+/// Build window URL with workspace root and multiple file paths.
+fn build_window_url_with_files(file_paths: &[String], workspace_root: Option<&str>) -> String {
+    let mut params = Vec::new();
+
+    if let Some(root) = workspace_root {
+        params.push(format!("workspaceRoot={}", urlencoding::encode(root)));
+    }
+
+    if !file_paths.is_empty() {
+        let serialized = serde_json::to_string(file_paths).unwrap_or_default();
+        params.push(format!("files={}", urlencoding::encode(&serialized)));
+    }
+
+    if params.is_empty() {
+        "/".to_string()
+    } else {
+        format!("/?{}", params.join("&"))
+    }
+}
+
+/// Create a new document window from a pre-built URL.
+fn create_document_window_with_url(
+    app: &AppHandle,
+    url: String,
+) -> Result<String, tauri::Error> {
+    let count = WINDOW_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let label = format!("doc-{}", count);
+
+    let title = String::new();
+    let (x, y) = get_cascaded_position(count);
+
+    let mut builder = WebviewWindowBuilder::new(app, &label, WebviewUrl::App(url.into()))
+        .title(&title)
+        .inner_size(MIN_WIDTH, MIN_HEIGHT)
+        .min_inner_size(800.0, 600.0)
+        .position(x, y)
+        .resizable(true)
+        .fullscreen(false)
+        .focused(true);
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true)
+            .accept_first_mouse(true);
+    }
+
+    builder.build()?;
+
+    Ok(label)
+}
 
 /// Create a new document window with optional file path and workspace root.
 /// Returns the window label on success.
@@ -135,6 +187,17 @@ pub fn open_workspace_in_new_window(
         Some(&workspace_root),
     )
     .map_err(|e| e.to_string())
+}
+
+/// Open a workspace in a new window with multiple files.
+#[tauri::command]
+pub fn open_workspace_with_files_in_new_window(
+    app: AppHandle,
+    workspace_root: String,
+    file_paths: Vec<String>,
+) -> Result<String, String> {
+    let url = build_window_url_with_files(&file_paths, Some(&workspace_root));
+    create_document_window_with_url(&app, url).map_err(|e| e.to_string())
 }
 
 /// Close a specific window by label

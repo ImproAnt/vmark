@@ -128,11 +128,6 @@ export function useFileTree(
 
     loadTree();
 
-    // Start file watcher with watchId for scoping
-    invoke("start_watching", { watchId, path: rootPath }).catch((err) => {
-      console.warn("[FileTree] Failed to start watcher:", err);
-    });
-
     // Listen for fs changes
     let cancelled = false;
     listen<FsChangeEvent>("fs:changed", (event) => {
@@ -155,9 +150,6 @@ export function useFileTree(
         unlistenRef.current();
         unlistenRef.current = null;
       }
-      invoke("stop_watching", { watchId }).catch(() => {
-        // Ignore errors on cleanup
-      });
     };
   }, [rootPath, loadTree, watchId]);
 

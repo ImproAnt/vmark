@@ -65,6 +65,7 @@ export function useWindowClose() {
         closeLog(windowLabel, "no dirty tabs, closing window");
         tabs.forEach((tab) => useDocumentStore.getState().removeDocument(tab.id));
         await persistWorkspaceSession(windowLabel);
+        useTabStore.getState().removeWindow(windowLabel);
         closeLog(windowLabel, "invoking close_window with label:", windowLabel);
         await invoke("close_window", { label: windowLabel });
         closeLog(windowLabel, "close_window returned");
@@ -94,6 +95,7 @@ export function useWindowClose() {
       // All dirty tabs handled - close the window
       tabs.forEach((tab) => useDocumentStore.getState().removeDocument(tab.id));
       await persistWorkspaceSession(windowLabel);
+      useTabStore.getState().removeWindow(windowLabel);
       await invoke("close_window", { label: windowLabel });
       return true;
     } catch (error) {

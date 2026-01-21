@@ -264,6 +264,11 @@ describe("resolveWorkspaceRootForExternalFile", () => {
     expect(result).toBe("C:/Users/test");
   });
 
+  it("returns null for Windows root-level file", () => {
+    const result = resolveWorkspaceRootForExternalFile("C:\\file.md");
+    expect(result).toBeNull();
+  });
+
   it("handles trailing slashes", () => {
     const result = resolveWorkspaceRootForExternalFile("/Users/test/project/file.md/");
     expect(result).toBe("/Users/test/project");

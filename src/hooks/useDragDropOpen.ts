@@ -17,9 +17,10 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useRecentFilesStore } from "@/stores/recentFilesStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { filterMarkdownPaths } from "@/utils/dropPaths";
-import { resolveOpenAction } from "@/utils/openPolicy";
+import { resolveOpenAction, resolveWorkspaceRootForExternalFile } from "@/utils/openPolicy";
 import { getReplaceableTab, findExistingTabForPath } from "@/hooks/useReplaceableTab";
 import { detectLinebreaks } from "@/utils/linebreakDetection";
+import { openWorkspaceWithConfig } from "@/hooks/openWorkspaceWithConfig";
 
 /**
  * Opens a file in a new tab (or activates existing tab if already open).
@@ -76,65 +77,144 @@ export function useDragDropOpen(): void {
 
         const paths = event.payload.paths;
         const markdownPaths = filterMarkdownPaths(paths);
+        if (markdownPaths.length === 0) return;
 
         // Get current workspace state for policy decisions
         const { isWorkspaceMode, rootPath } = useWorkspaceStore.getState();
+        const tabs = useTabStore.getState().getTabsByWindow(windowLabel);
+        const hasDirtyTabs = tabs.some((tab) => {
+          const doc = useDocumentStore.getState().getDocument(tab.id);
+          return doc?.isDirty;
+        });
 
-        // Check for replaceable tab (single clean untitled tab)
-        const replaceableTab = getReplaceableTab(windowLabel);
+        const initialReplaceableTab = getReplaceableTab(windowLabel);
+        let replaceableTabUsed = false;
 
-        // Open each markdown file using the policy
-        await Promise.all(
-          markdownPaths.map(async (path) => {
-            const existingTabId = findExistingTabForPath(windowLabel, path);
+        if (!isWorkspaceMode && hasDirtyTabs) {
+          const groups = new Map<string, string[]>();
+          const rootless: string[] = [];
 
-            const decision = resolveOpenAction({
-              filePath: path,
-              workspaceRoot: rootPath,
-              isWorkspaceMode,
-              existingTabId,
-              replaceableTab,
-            });
+          for (const path of markdownPaths) {
+            const root = resolveWorkspaceRootForExternalFile(path);
+            if (root) {
+              const existing = groups.get(root) ?? [];
+              existing.push(path);
+              groups.set(root, existing);
+            } else {
+              rootless.push(path);
+            }
+          }
 
-            switch (decision.action) {
-              case "activate_tab":
-                useTabStore.getState().setActiveTab(windowLabel, decision.tabId);
-                break;
-              case "create_tab":
-                await openFileInNewTab(windowLabel, path);
-                break;
-              case "replace_tab":
-                // Replace the clean untitled tab with the file content
+          for (const [workspaceRoot, files] of groups.entries()) {
+            try {
+              await invoke("open_workspace_with_files_in_new_window", {
+                workspaceRoot,
+                filePaths: files,
+              });
+            } catch (error) {
+              console.error("[DragDrop] Failed to open workspace in new window:", error);
+            }
+          }
+
+          for (const path of rootless) {
+            try {
+              await invoke("open_file_in_new_window", { path });
+            } catch (error) {
+              console.error("[DragDrop] Failed to open file in new window:", error);
+            }
+          }
+
+          return;
+        }
+
+        // If not in workspace mode, and all dropped files share the same root,
+        // open that workspace in the current window and load as tabs.
+        if (!isWorkspaceMode) {
+          const roots = markdownPaths
+            .map((path) => resolveWorkspaceRootForExternalFile(path))
+            .filter((root): root is string => Boolean(root));
+          const uniqueRoots = new Set(roots);
+
+          if (uniqueRoots.size === 1) {
+            const [batchRoot] = uniqueRoots;
+            await openWorkspaceWithConfig(batchRoot);
+
+            for (const path of markdownPaths) {
+              if (!replaceableTabUsed && initialReplaceableTab) {
                 try {
                   const content = await readTextFile(path);
-                  useTabStore.getState().updateTabPath(decision.tabId, decision.filePath);
+                  useTabStore.getState().updateTabPath(initialReplaceableTab.tabId, path);
                   useDocumentStore.getState().loadContent(
-                    decision.tabId,
+                    initialReplaceableTab.tabId,
                     content,
-                    decision.filePath,
+                    path,
                     detectLinebreaks(content)
                   );
-                  useWorkspaceStore.getState().openWorkspace(decision.workspaceRoot);
                   useRecentFilesStore.getState().addFile(path);
+                  replaceableTabUsed = true;
+                  continue;
                 } catch (error) {
                   console.error("[DragDrop] Failed to replace tab with file:", path, error);
                 }
-                break;
-              case "open_workspace_in_new_window":
-                try {
-                  await invoke("open_workspace_in_new_window", {
-                    workspaceRoot: decision.workspaceRoot,
-                    filePath: decision.filePath,
-                  });
-                } catch (error) {
-                  console.error("[DragDrop] Failed to open workspace in new window:", path, error);
-                }
-                break;
-              case "no_op":
-                break;
+              }
+
+              await openFileInNewTab(windowLabel, path);
             }
-          })
-        );
+            return;
+          }
+        }
+
+        for (const path of markdownPaths) {
+          const existingTabId = findExistingTabForPath(windowLabel, path);
+          const replaceableTab = replaceableTabUsed ? null : initialReplaceableTab;
+
+          const decision = resolveOpenAction({
+            filePath: path,
+            workspaceRoot: rootPath,
+            isWorkspaceMode,
+            existingTabId,
+            replaceableTab,
+          });
+
+          switch (decision.action) {
+            case "activate_tab":
+              useTabStore.getState().setActiveTab(windowLabel, decision.tabId);
+              break;
+            case "create_tab":
+              await openFileInNewTab(windowLabel, path);
+              break;
+            case "replace_tab":
+              // Replace the clean untitled tab with the file content (only once)
+              try {
+                const content = await readTextFile(path);
+                useTabStore.getState().updateTabPath(decision.tabId, decision.filePath);
+                useDocumentStore.getState().loadContent(
+                  decision.tabId,
+                  content,
+                  decision.filePath,
+                  detectLinebreaks(content)
+                );
+                await openWorkspaceWithConfig(decision.workspaceRoot);
+                useRecentFilesStore.getState().addFile(path);
+                replaceableTabUsed = true;
+              } catch (error) {
+                console.error("[DragDrop] Failed to replace tab with file:", path, error);
+              }
+              break;
+            case "open_workspace_in_new_window":
+              try {
+                await invoke("open_workspace_in_new_window", {
+                  workspaceRoot: decision.workspaceRoot,
+                  filePath: decision.filePath,
+                });
+              } catch (error) {
+                console.error("[DragDrop] Failed to open workspace in new window:", path, error);
+              }
+              break;
+            case "no_op":
+              break;
+          }
+        }
       });
 
       if (cancelled) {
