@@ -102,15 +102,27 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   );
 }
 
-export function installImagePopupKeyboardNavigation(container: HTMLElement): () => void {
+export function installImagePopupKeyboardNavigation(
+  container: HTMLElement,
+  onClose?: () => void
+): () => void {
   const keydownHandler = (e: KeyboardEvent) => {
     if (isImeKeyEvent(e)) return;
-    if (e.key !== "Tab") return;
 
     const focusable = getFocusableElements(container);
+    const activeEl = document.activeElement as HTMLElement;
+    const isInsidePopup = container.contains(activeEl);
+
+    // Handle ESC anywhere in the popup
+    if (e.key === "Escape" && isInsidePopup) {
+      e.preventDefault();
+      onClose?.();
+      return;
+    }
+
+    if (e.key !== "Tab") return;
     if (focusable.length === 0) return;
 
-    const activeEl = document.activeElement as HTMLElement;
     const currentIndex = focusable.indexOf(activeEl);
 
     // Only handle Tab if focus is inside the popup

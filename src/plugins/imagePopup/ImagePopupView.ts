@@ -109,11 +109,14 @@ export class ImagePopupView {
     this.container.style.top = `${top}px`;
     this.container.style.left = `${left}px`;
 
-    // Set up keyboard navigation
+    // Set up keyboard navigation with ESC handler
     if (this.removeKeyboardNavigation) {
       this.removeKeyboardNavigation();
     }
-    this.removeKeyboardNavigation = installImagePopupKeyboardNavigation(this.container);
+    this.removeKeyboardNavigation = installImagePopupKeyboardNavigation(this.container, () => {
+      useImagePopupStore.getState().closePopup();
+      this.editorView.focus();
+    });
 
     // Focus src input
     requestAnimationFrame(() => {
