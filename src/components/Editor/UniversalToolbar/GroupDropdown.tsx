@@ -186,9 +186,29 @@ const GroupDropdown = forwardRef<HTMLDivElement, GroupDropdownProps>(
           break;
 
         case "Enter":
-        case " ":
-          // Let the button's click handler deal with it
+        case " ": {
+          // Explicitly trigger the action and stop propagation to prevent
+          // the toolbar's keydown handler from calling preventDefault()
+          event.preventDefault();
+          event.stopPropagation();
+          if (activeButtonIndex >= 0) {
+            // Find the actual item for this button index
+            let buttonIdx = 0;
+            for (const entry of items) {
+              if (!isSeparator(entry.item)) {
+                if (buttonIdx === activeButtonIndex) {
+                  const actionItem = entry.item as ToolbarActionItem;
+                  if (!entry.state.disabled) {
+                    onSelect(actionItem.action);
+                  }
+                  break;
+                }
+                buttonIdx++;
+              }
+            }
+          }
           break;
+        }
       }
     };
 
