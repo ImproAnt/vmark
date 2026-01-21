@@ -126,6 +126,36 @@ function showImagePopupForExistingImage(view: EditorView): boolean {
 }
 
 /**
+ * Check if cursor is inside a link markdown: [text](url)
+ * Does NOT match images (preceded by !)
+ */
+function isInsideLink(view: EditorView, pos: number): boolean {
+  const doc = view.state.doc;
+  const line = doc.lineAt(pos);
+  const lineText = line.text;
+  const lineStart = line.from;
+
+  const linkRegex = /\[([^\]]*)\]\((?:<([^>]+)>|([^)\s"]+))(?:\s+"[^"]*")?\)/g;
+
+  let match;
+  while ((match = linkRegex.exec(lineText)) !== null) {
+    const matchStart = lineStart + match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    // Skip if this is an image (preceded by !)
+    if (match.index > 0 && lineText[match.index - 1] === "!") {
+      continue;
+    }
+
+    if (pos >= matchStart && pos <= matchEnd) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Insert image markdown with smart clipboard detection and word expansion.
  *
  * Behavior:
@@ -139,8 +169,13 @@ function showImagePopupForExistingImage(view: EditorView): boolean {
 async function insertImageAsync(view: EditorView): Promise<boolean> {
   const { from, to } = view.state.selection.main;
 
-  // Case 0: Cursor inside existing image - show popup for editing
+  // Case 0a: Cursor inside existing image - show popup for editing
   if (from === to && showImagePopupForExistingImage(view)) {
+    return true;
+  }
+
+  // Case 0b: Inside a link - don't insert image inside link
+  if (isInsideLink(view, from)) {
     return true;
   }
 

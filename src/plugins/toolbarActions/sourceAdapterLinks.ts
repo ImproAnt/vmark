@@ -121,6 +121,30 @@ function showLinkPopupForExistingLink(view: EditorView): boolean {
 }
 
 /**
+ * Check if cursor is inside an image markdown: ![alt](src)
+ */
+function isInsideImage(view: EditorView, pos: number): boolean {
+  const doc = view.state.doc;
+  const line = doc.lineAt(pos);
+  const lineText = line.text;
+  const lineStart = line.from;
+
+  const imageRegex = /!\[([^\]]*)\]\((?:<([^>]+)>|([^)\s"]+))(?:\s+"[^"]*")?\)/g;
+
+  let match;
+  while ((match = imageRegex.exec(lineText)) !== null) {
+    const matchStart = lineStart + match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    if (pos >= matchStart && pos <= matchEnd) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Insert a link with a known URL, wrapping the text from `from` to `to`.
  * Places cursor at the end of the link.
  */
@@ -176,8 +200,13 @@ function insertLinkTemplate(
 export async function insertLink(view: EditorView): Promise<boolean> {
   const { from, to } = view.state.selection.main;
 
-  // Case 0: Cursor inside existing link - show popup for editing
+  // Case 0a: Cursor inside existing link - show popup for editing
   if (from === to && showLinkPopupForExistingLink(view)) {
+    return true;
+  }
+
+  // Case 0b: Inside an image - don't insert link inside image
+  if (isInsideImage(view, from)) {
     return true;
   }
 
