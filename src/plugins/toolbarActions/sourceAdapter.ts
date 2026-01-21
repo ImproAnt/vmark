@@ -139,8 +139,9 @@ function showImagePopupForExistingImage(view: EditorView): boolean {
 async function insertImageAsync(view: EditorView): Promise<boolean> {
   const { from, to } = view.state.selection.main;
 
-  // Case 0: Cursor inside existing image - show popup for editing
-  if (from === to && showImagePopupForExistingImage(view)) {
+  // Case 0: Cursor or selection inside existing image - show popup for editing
+  // Check if selection start is inside an image (prevents inserting image inside image)
+  if (showImagePopupForExistingImage(view)) {
     return true;
   }
 
