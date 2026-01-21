@@ -105,7 +105,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 
 ### Claude Code
 
-Edit `~/.claude.json` or project `.claude.json`:
+Edit `~/.claude.json` or project `.mcp.json`:
 
 ```json
 {
