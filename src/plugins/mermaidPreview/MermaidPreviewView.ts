@@ -56,6 +56,12 @@ export class MermaidPreviewView {
   private resizeStartLeft = 0;
   private resizeStartTop = 0;
 
+  // Store bound event handlers for cleanup
+  private boundDragMove: ((e: MouseEvent) => void) | null = null;
+  private boundDragUp: (() => void) | null = null;
+  private boundResizeMove: ((e: MouseEvent) => void) | null = null;
+  private boundResizeUp: (() => void) | null = null;
+
   constructor() {
     this.container = this.buildContainer();
     this.header = this.container.querySelector(".mermaid-preview-header") as HTMLElement;
@@ -146,7 +152,8 @@ export class MermaidPreviewView {
       e.preventDefault();
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    // Store bound handlers for cleanup
+    this.boundDragMove = (e: MouseEvent) => {
       if (!this.isDragging) return;
       const dx = e.clientX - this.dragStartX;
       const dy = e.clientY - this.dragStartY;
@@ -157,7 +164,7 @@ export class MermaidPreviewView {
       }
     };
 
-    const onMouseUp = () => {
+    this.boundDragUp = () => {
       if (this.isDragging) {
         this.isDragging = false;
         this.container.classList.remove("dragging");
@@ -165,8 +172,8 @@ export class MermaidPreviewView {
     };
 
     this.header.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("mousemove", this.boundDragMove);
+    document.addEventListener("mouseup", this.boundDragUp);
   }
 
   private setupResizeHandlers() {
@@ -187,7 +194,8 @@ export class MermaidPreviewView {
       e.stopPropagation();
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    // Store bound handlers for cleanup
+    this.boundResizeMove = (e: MouseEvent) => {
       if (!this.isResizing || !this.resizeCorner) return;
 
       const dx = e.clientX - this.resizeStartX;
@@ -222,7 +230,7 @@ export class MermaidPreviewView {
       this.container.style.top = `${newTop}px`;
     };
 
-    const onMouseUp = () => {
+    this.boundResizeUp = () => {
       if (this.isResizing) {
         this.isResizing = false;
         this.resizeCorner = null;
@@ -233,8 +241,8 @@ export class MermaidPreviewView {
     this.container.querySelectorAll(".mermaid-preview-resize").forEach((handle) => {
       handle.addEventListener("mousedown", onMouseDown as EventListener);
     });
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("mousemove", this.boundResizeMove);
+    document.addEventListener("mouseup", this.boundResizeUp);
   }
 
   private setupZoomHandlers() {
@@ -405,6 +413,25 @@ export class MermaidPreviewView {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
+
+    // Clean up document-level event listeners
+    if (this.boundDragMove) {
+      document.removeEventListener("mousemove", this.boundDragMove);
+      this.boundDragMove = null;
+    }
+    if (this.boundDragUp) {
+      document.removeEventListener("mouseup", this.boundDragUp);
+      this.boundDragUp = null;
+    }
+    if (this.boundResizeMove) {
+      document.removeEventListener("mousemove", this.boundResizeMove);
+      this.boundResizeMove = null;
+    }
+    if (this.boundResizeUp) {
+      document.removeEventListener("mouseup", this.boundResizeUp);
+      this.boundResizeUp = null;
+    }
+
     this.container.remove();
   }
 }

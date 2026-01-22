@@ -9,15 +9,9 @@ import { handleBlockquoteNest, handleBlockquoteUnnest, handleRemoveList } from "
 import { toggleTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
 import { getEditorView } from "@/types/tiptap";
 import { registerMenuListener } from "@/utils/menuListenerHelper";
+import { DEFAULT_MERMAID_DIAGRAM } from "@/plugins/mermaid/constants";
 
 const DEFAULT_MATH_BLOCK = "c = \\pm\\sqrt{a^2 + b^2}";
-
-const DEFAULT_DIAGRAM_BLOCK = `graph TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Do something]
-    B -->|No| D[Do another thing]
-    C --> E[End]
-    D --> E`;
 
 function getCurrentHeadingLevel(editor: TiptapEditor): number | null {
   const { $from } = editor.state.selection;
@@ -170,7 +164,7 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
           .insertContent({
             type: "codeBlock",
             attrs: { language: "mermaid" },
-            content: [{ type: "text", text: DEFAULT_DIAGRAM_BLOCK }],
+            content: [{ type: "text", text: DEFAULT_MERMAID_DIAGRAM }],
           })
           .run();
       }))) return;

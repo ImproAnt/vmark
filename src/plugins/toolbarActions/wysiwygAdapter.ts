@@ -20,15 +20,9 @@ import { canRunActionInMultiSelection } from "./multiSelectionPolicy";
 import type { WysiwygToolbarContext } from "./types";
 import { applyMultiSelectionBlockquoteAction, applyMultiSelectionHeading, applyMultiSelectionListAction } from "./wysiwygMultiSelection";
 import { insertWikiLink, insertBookmarkLink } from "./wysiwygAdapterLinks";
+import { DEFAULT_MERMAID_DIAGRAM } from "@/plugins/mermaid/constants";
 
 const DEFAULT_MATH_BLOCK = "c = \\pm\\sqrt{a^2 + b^2}";
-
-const DEFAULT_DIAGRAM_BLOCK = `graph TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Do something]
-    B -->|No| D[Do another thing]
-    C --> E[End]
-    D --> E`;
 
 /**
  * Check if an editor view is still connected and valid.
@@ -359,7 +353,7 @@ function insertDiagramBlock(context: WysiwygToolbarContext): boolean {
     .insertContent({
       type: "codeBlock",
       attrs: { language: "mermaid" },
-      content: [{ type: "text", text: DEFAULT_DIAGRAM_BLOCK }],
+      content: [{ type: "text", text: DEFAULT_MERMAID_DIAGRAM }],
     })
     .run();
   return true;

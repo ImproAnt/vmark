@@ -4,6 +4,8 @@
  * Provides block insertion helpers for details, alerts, and math blocks.
  */
 
+import { DEFAULT_MERMAID_DIAGRAM } from "@/plugins/mermaid/constants";
+
 export type AlertType = "NOTE" | "TIP" | "IMPORTANT" | "WARNING" | "CAUTION";
 
 export interface InsertionResult {
@@ -57,20 +59,13 @@ export function buildMathBlock(selection: string): InsertionResult {
   return { text, cursorOffset };
 }
 
-const DEFAULT_DIAGRAM = `graph TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Do something]
-    B -->|No| D[Do another thing]
-    C --> E[End]
-    D --> E`;
-
 /**
  * Build a mermaid diagram code block.
  * @param selection - Selected text to wrap (empty for default diagram)
  * @returns Block text and cursor offset
  */
 export function buildDiagramBlock(selection: string): InsertionResult {
-  const content = selection || DEFAULT_DIAGRAM;
+  const content = selection || DEFAULT_MERMAID_DIAGRAM;
   const text = `\`\`\`mermaid\n${content}\n\`\`\``;
   const cursorOffset = "```mermaid\n".length;
   return { text, cursorOffset };
