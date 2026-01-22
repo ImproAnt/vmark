@@ -7,7 +7,7 @@
 
 import { Heading } from "@tiptap/extension-heading";
 import { Paragraph } from "@tiptap/extension-paragraph";
-import { CodeBlock } from "@tiptap/extension-code-block";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { Blockquote } from "@tiptap/extension-blockquote";
 import { BulletList } from "@tiptap/extension-bullet-list";
 import { OrderedList } from "@tiptap/extension-ordered-list";
@@ -16,10 +16,16 @@ import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { withSourceLine } from "./sourceLineAttr";
 import { withHeadingId } from "./headingIdAttr";
+import { common, createLowlight } from "lowlight";
+
+// Create lowlight instance with common languages
+const lowlight = createLowlight(common);
 
 export const HeadingWithSourceLine = withHeadingId(withSourceLine(Heading));
 export const ParagraphWithSourceLine = withSourceLine(Paragraph);
-export const CodeBlockWithSourceLine = withSourceLine(CodeBlock);
+export const CodeBlockWithSourceLine = withSourceLine(
+  CodeBlockLowlight.configure({ lowlight })
+);
 export const BlockquoteWithSourceLine = withSourceLine(Blockquote);
 export const BulletListWithSourceLine = withSourceLine(BulletList);
 export const OrderedListWithSourceLine = withSourceLine(OrderedList);

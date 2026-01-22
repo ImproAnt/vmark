@@ -883,136 +883,146 @@
 }
 
 /* ===========================================
- * Prism Syntax Highlighting for WYSIWYG Mode
+ * Lowlight Syntax Highlighting for WYSIWYG Mode
  * (WYSIWYG code blocks) - GitHub style
  * =========================================== */
 
 /* Light theme */
-.tiptap-editor pre code .token.keyword,
-.tiptap-editor pre code .token.important,
-.tiptap-editor pre code .token.atrule {
+.tiptap-editor pre code .hljs-keyword,
+.tiptap-editor pre code .hljs-selector-tag,
+.tiptap-editor pre code .hljs-literal {
   color: #d73a49;
 }
 
-.tiptap-editor pre code .token.function,
-.tiptap-editor pre code .token.class-name,
-.tiptap-editor pre code .token.attr-name {
+.tiptap-editor pre code .hljs-title,
+.tiptap-editor pre code .hljs-title.function_,
+.tiptap-editor pre code .hljs-title.class_ {
   color: #6f42c1;
 }
 
-.tiptap-editor pre code .token.property,
-.tiptap-editor pre code .token.number,
-.tiptap-editor pre code .token.constant,
-.tiptap-editor pre code .token.symbol,
-.tiptap-editor pre code .token.boolean {
+.tiptap-editor pre code .hljs-attr,
+.tiptap-editor pre code .hljs-attribute {
+  color: #6f42c1;
+}
+
+.tiptap-editor pre code .hljs-number,
+.tiptap-editor pre code .hljs-symbol,
+.tiptap-editor pre code .hljs-type {
   color: #005cc5;
 }
 
-.tiptap-editor pre code .token.string,
-.tiptap-editor pre code .token.char,
-.tiptap-editor pre code .token.attr-value,
-.tiptap-editor pre code .token.regex {
+.tiptap-editor pre code .hljs-string,
+.tiptap-editor pre code .hljs-regexp {
   color: #032f62;
 }
 
-.tiptap-editor pre code .token.comment,
-.tiptap-editor pre code .token.prolog,
-.tiptap-editor pre code .token.doctype,
-.tiptap-editor pre code .token.cdata {
+.tiptap-editor pre code .hljs-comment,
+.tiptap-editor pre code .hljs-quote {
   color: #6a737d;
   font-style: italic;
 }
 
-.tiptap-editor pre code .token.operator,
-.tiptap-editor pre code .token.entity,
-.tiptap-editor pre code .token.url {
-  color: #d73a49;
-}
-
-.tiptap-editor pre code .token.punctuation {
+.tiptap-editor pre code .hljs-operator,
+.tiptap-editor pre code .hljs-punctuation {
   color: #24292e;
 }
 
-.tiptap-editor pre code .token.tag,
-.tiptap-editor pre code .token.selector {
+.tiptap-editor pre code .hljs-name,
+.tiptap-editor pre code .hljs-tag {
   color: #22863a;
 }
 
-.tiptap-editor pre code .token.builtin,
-.tiptap-editor pre code .token.inserted {
-  color: #22863a;
+.tiptap-editor pre code .hljs-built_in,
+.tiptap-editor pre code .hljs-builtin-name {
+  color: #005cc5;
 }
 
-.tiptap-editor pre code .token.deleted {
-  color: #cb2431;
-}
-
-.tiptap-editor pre code .token.variable {
+.tiptap-editor pre code .hljs-variable,
+.tiptap-editor pre code .hljs-template-variable {
   color: #e36209;
 }
 
+.tiptap-editor pre code .hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+
+.tiptap-editor pre code .hljs-deletion {
+  color: #cb2431;
+  background-color: #ffeef0;
+}
+
+.tiptap-editor pre code .hljs-meta {
+  color: #6a737d;
+}
+
 /* Dark theme */
-.dark-theme .tiptap-editor pre code .token.keyword,
-.dark-theme .tiptap-editor pre code .token.important,
-.dark-theme .tiptap-editor pre code .token.atrule {
+.dark-theme .tiptap-editor pre code .hljs-keyword,
+.dark-theme .tiptap-editor pre code .hljs-selector-tag,
+.dark-theme .tiptap-editor pre code .hljs-literal {
   color: #ff7b72;
 }
 
-.dark-theme .tiptap-editor pre code .token.function,
-.dark-theme .tiptap-editor pre code .token.class-name,
-.dark-theme .tiptap-editor pre code .token.attr-name {
+.dark-theme .tiptap-editor pre code .hljs-title,
+.dark-theme .tiptap-editor pre code .hljs-title.function_,
+.dark-theme .tiptap-editor pre code .hljs-title.class_ {
   color: #d2a8ff;
 }
 
-.dark-theme .tiptap-editor pre code .token.property,
-.dark-theme .tiptap-editor pre code .token.number,
-.dark-theme .tiptap-editor pre code .token.constant,
-.dark-theme .tiptap-editor pre code .token.symbol,
-.dark-theme .tiptap-editor pre code .token.boolean {
+.dark-theme .tiptap-editor pre code .hljs-attr,
+.dark-theme .tiptap-editor pre code .hljs-attribute {
+  color: #d2a8ff;
+}
+
+.dark-theme .tiptap-editor pre code .hljs-number,
+.dark-theme .tiptap-editor pre code .hljs-symbol,
+.dark-theme .tiptap-editor pre code .hljs-type {
   color: #79c0ff;
 }
 
-.dark-theme .tiptap-editor pre code .token.string,
-.dark-theme .tiptap-editor pre code .token.char,
-.dark-theme .tiptap-editor pre code .token.attr-value,
-.dark-theme .tiptap-editor pre code .token.regex {
+.dark-theme .tiptap-editor pre code .hljs-string,
+.dark-theme .tiptap-editor pre code .hljs-regexp {
   color: #a5d6ff;
 }
 
-.dark-theme .tiptap-editor pre code .token.comment,
-.dark-theme .tiptap-editor pre code .token.prolog,
-.dark-theme .tiptap-editor pre code .token.doctype,
-.dark-theme .tiptap-editor pre code .token.cdata {
+.dark-theme .tiptap-editor pre code .hljs-comment,
+.dark-theme .tiptap-editor pre code .hljs-quote {
   color: #8b949e;
   font-style: italic;
 }
 
-.dark-theme .tiptap-editor pre code .token.operator,
-.dark-theme .tiptap-editor pre code .token.entity,
-.dark-theme .tiptap-editor pre code .token.url {
-  color: #ff7b72;
-}
-
-.dark-theme .tiptap-editor pre code .token.punctuation {
+.dark-theme .tiptap-editor pre code .hljs-operator,
+.dark-theme .tiptap-editor pre code .hljs-punctuation {
   color: #c9d1d9;
 }
 
-.dark-theme .tiptap-editor pre code .token.tag,
-.dark-theme .tiptap-editor pre code .token.selector {
+.dark-theme .tiptap-editor pre code .hljs-name,
+.dark-theme .tiptap-editor pre code .hljs-tag {
   color: #7ee787;
 }
 
-.dark-theme .tiptap-editor pre code .token.builtin,
-.dark-theme .tiptap-editor pre code .token.inserted {
-  color: #7ee787;
+.dark-theme .tiptap-editor pre code .hljs-built_in,
+.dark-theme .tiptap-editor pre code .hljs-builtin-name {
+  color: #79c0ff;
 }
 
-.dark-theme .tiptap-editor pre code .token.deleted {
-  color: #f85149;
-}
-
-.dark-theme .tiptap-editor pre code .token.variable {
+.dark-theme .tiptap-editor pre code .hljs-variable,
+.dark-theme .tiptap-editor pre code .hljs-template-variable {
   color: #ffa657;
+}
+
+.dark-theme .tiptap-editor pre code .hljs-addition {
+  color: #7ee787;
+  background-color: rgba(46, 160, 67, 0.15);
+}
+
+.dark-theme .tiptap-editor pre code .hljs-deletion {
+  color: #f85149;
+  background-color: rgba(248, 81, 73, 0.15);
+}
+
+.dark-theme .tiptap-editor pre code .hljs-meta {
+  color: #8b949e;
 }
 
 /* Print styles */
