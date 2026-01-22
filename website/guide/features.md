@@ -91,13 +91,12 @@ KaTeX-powered LaTeX rendering:
 
 ### Diagrams
 
-Mermaid diagram support:
+Mermaid diagram support with live preview:
 
-- Flowcharts
-- Sequence diagrams
-- Gantt charts
-- Class diagrams
-- And more...
+- Flowcharts, sequence diagrams, Gantt charts
+- Class diagrams, state diagrams, ER diagrams
+- Live preview panel in Source mode (drag, resize, zoom)
+- [Learn more →](/guide/mermaid)
 
 ## Search & Replace
 
