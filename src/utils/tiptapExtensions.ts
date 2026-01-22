@@ -41,7 +41,6 @@ import { mathInlineExtension } from "@/plugins/latex/tiptapInlineMath";
 import { mathPopupExtension } from "@/plugins/mathPopup";
 import { footnotePopupExtension } from "@/plugins/footnotePopup/tiptap";
 import { footnoteDefinitionExtension, footnoteReferenceExtension } from "@/plugins/footnotePopup/tiptapNodes";
-import { slashMenuExtension } from "@/plugins/triggerMenu/tiptapSlashMenu";
 import { tabIndentExtension } from "@/plugins/tabIndent/tiptap";
 import { multiCursorExtension } from "@/plugins/multiCursor/tiptap";
 import { AlignedTableCell, AlignedTableHeader } from "@/components/Editor/alignedTableNodes";
@@ -92,7 +91,6 @@ export function createTiptapExtensions(): Extensions {
     BulletListWithSourceLine,
     OrderedListWithSourceLine,
     HorizontalRuleWithSourceLine,
-    slashMenuExtension,
     taskListItemExtension,
     highlightExtension,
     subscriptExtension,

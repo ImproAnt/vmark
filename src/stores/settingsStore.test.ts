@@ -30,11 +30,4 @@ describe("settingsStore line break defaults", () => {
     state.updateMarkdownSetting("pasteMarkdownInWysiwyg", "off");
     expect(useSettingsStore.getState().markdown.pasteMarkdownInWysiwyg).toBe("off");
   });
-
-  it("defaults command menu to disabled and allows enabling", () => {
-    const state = useSettingsStore.getState();
-    expect(state.advanced.enableCommandMenu).toBe(false);
-    state.updateAdvancedSetting("enableCommandMenu", true);
-    expect(useSettingsStore.getState().advanced.enableCommandMenu).toBe(true);
-  });
 });

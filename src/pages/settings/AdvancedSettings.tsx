@@ -11,7 +11,6 @@ import { useSettingsStore } from "@/stores/settingsStore";
 export function AdvancedSettings() {
   const [devTools, setDevTools] = useState(false);
   const [hardwareAccel, setHardwareAccel] = useState(true);
-  const enableCommandMenu = useSettingsStore((state) => state.advanced.enableCommandMenu);
   const terminalEnabled = useSettingsStore((state) => state.advanced.terminalEnabled);
   const customLinkProtocols = useSettingsStore((state) => state.advanced.customLinkProtocols);
   const updateAdvancedSetting = useSettingsStore((state) => state.updateAdvancedSetting);
@@ -29,15 +28,6 @@ export function AdvancedSettings() {
           <Toggle
             checked={terminalEnabled}
             onChange={(v) => updateAdvancedSetting("terminalEnabled", v)}
-          />
-        </SettingRow>
-        <SettingRow
-          label="Enable command menu"
-          description="Show AI command menu and related settings"
-        >
-          <Toggle
-            checked={enableCommandMenu}
-            onChange={(v) => updateAdvancedSetting("enableCommandMenu", v)}
           />
         </SettingRow>
         <SettingRow label="Developer tools" description="Enable developer mode">

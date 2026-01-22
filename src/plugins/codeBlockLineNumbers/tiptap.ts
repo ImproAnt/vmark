@@ -291,7 +291,7 @@ class CodeBlockNodeView implements NodeView {
     if (items.length === 0) return;
 
     switch (e.key) {
-      case "Tab":
+      case "Tab": {
         // Tab moves focus to the highlighted item in the list
         e.preventDefault();
         const highlighted = list.querySelector(".code-lang-item.highlighted") as HTMLElement;
@@ -302,6 +302,7 @@ class CodeBlockNodeView implements NodeView {
           items[0].focus();
         }
         break;
+      }
       case "ArrowDown":
         e.preventDefault();
         this.moveHighlight(items, 1);
@@ -310,7 +311,7 @@ class CodeBlockNodeView implements NodeView {
         e.preventDefault();
         this.moveHighlight(items, -1);
         break;
-      case "Enter":
+      case "Enter": {
         e.preventDefault();
         const current = list.querySelector(".code-lang-item.highlighted") as HTMLElement;
         if (current) {
@@ -318,6 +319,7 @@ class CodeBlockNodeView implements NodeView {
           this.selectLanguage(langId);
         }
         break;
+      }
       case "Escape":
         e.preventDefault();
         this.closeDropdown();
@@ -343,7 +345,7 @@ class CodeBlockNodeView implements NodeView {
         e.preventDefault();
         this.moveHighlight(items, -1);
         break;
-      case "Tab":
+      case "Tab": {
         // Shift+Tab goes back to search input
         if (e.shiftKey) {
           e.preventDefault();
@@ -357,7 +359,8 @@ class CodeBlockNodeView implements NodeView {
           this.moveHighlight(items, 1);
         }
         break;
-      case "Enter":
+      }
+      case "Enter": {
         e.preventDefault();
         const target = e.target as HTMLElement;
         if (target.classList.contains("code-lang-item")) {
@@ -365,6 +368,7 @@ class CodeBlockNodeView implements NodeView {
           this.selectLanguage(langId);
         }
         break;
+      }
       case "Escape":
         e.preventDefault();
         this.closeDropdown();
@@ -374,7 +378,7 @@ class CodeBlockNodeView implements NodeView {
 
   private moveHighlight(items: HTMLElement[], direction: number): void {
     const currentHighlighted = items.find((item) => item.classList.contains("highlighted"));
-    let currentIndex = currentHighlighted ? items.indexOf(currentHighlighted) : -1;
+    const currentIndex = currentHighlighted ? items.indexOf(currentHighlighted) : -1;
 
     // Remove current highlight
     currentHighlighted?.classList.remove("highlighted");

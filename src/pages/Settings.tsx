@@ -14,7 +14,6 @@ import {
   FileText,
   FlaskConical,
   Keyboard,
-  Sparkles,
   Plug,
   Terminal,
 } from "lucide-react";
@@ -28,7 +27,6 @@ import { isImeKeyEvent } from "@/utils/imeGuard";
 import { AppearanceSettings } from "./settings/AppearanceSettings";
 import { CJKFormattingSettings } from "./settings/CJKFormattingSettings";
 import { MarkdownSettings } from "./settings/MarkdownSettings";
-import { AiSettings } from "./settings/AiSettings";
 import { ShortcutsSettings } from "./settings/ShortcutsSettings";
 import { GeneralSettings } from "./settings/GeneralSettings";
 import { FilesSettings } from "./settings/FilesSettings";
@@ -76,7 +74,6 @@ type Section =
   | "appearance"
   | "formatting"
   | "markdown"
-  | "ai"
   | "shortcuts"
   | "general"
   | "files"
@@ -116,7 +113,6 @@ const navConfig = [
   { id: "appearance" as const, icon: Palette, label: "Appearance" },
   { id: "formatting" as const, icon: Languages, label: "CJK Formatting" },
   { id: "markdown" as const, icon: FileText, label: "Markdown" },
-  { id: "ai" as const, icon: Sparkles, label: "AI" },
   { id: "shortcuts" as const, icon: Keyboard, label: "Shortcuts" },
   { id: "general" as const, icon: Settings, label: "General" },
   { id: "files" as const, icon: FolderOpen, label: "Files" },
@@ -128,7 +124,6 @@ const navConfig = [
 export function SettingsPage() {
   const [section, setSection] = useState<Section>("appearance");
   const showDevSection = useSettingsStore((state) => state.showDevSection);
-  const commandMenuEnabled = useSettingsStore((state) => state.advanced.enableCommandMenu);
   const terminalEnabled = useSettingsStore((state) => state.advanced.terminalEnabled);
 
   // Apply theme to this window
@@ -152,12 +147,6 @@ export function SettingsPage() {
     }
   }, [section]);
 
-  useEffect(() => {
-    if (!commandMenuEnabled && section === "ai") {
-      setSection("advanced");
-    }
-  }, [commandMenuEnabled, section]);
-
   // Switch away from terminal when feature is disabled
   useEffect(() => {
     if (!terminalEnabled && section === "terminal") {
@@ -167,7 +156,6 @@ export function SettingsPage() {
 
   const navItems = [
     ...navConfig
-      .filter((item) => item.id !== "ai" || commandMenuEnabled)
       .filter((item) => item.id !== "terminal" || terminalEnabled)
       .map((item) => ({
         id: item.id,
@@ -219,7 +207,6 @@ export function SettingsPage() {
           {section === "appearance" && <AppearanceSettings />}
           {section === "formatting" && <CJKFormattingSettings />}
           {section === "markdown" && <MarkdownSettings />}
-          {section === "ai" && commandMenuEnabled && <AiSettings />}
           {section === "shortcuts" && <ShortcutsSettings />}
           {section === "general" && <GeneralSettings />}
           {section === "files" && <FilesSettings />}

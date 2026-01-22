@@ -12,7 +12,7 @@ const allowedBgTokens = [/var\(--accent-bg\)/];
 const allowedColorTokens = [/var\(--accent-primary\)/, /inherit\b/i, /currentColor\b/i];
 
 const selectionSelectorRe = /\.(selected|active)\b/;
-const enforceSelectorRe = /\.(trigger-menu|menu|popup|picker|dropdown)\b/;
+const enforceSelectorRe = /\.(menu|popup|picker|dropdown)\b/;
 
 const violations = [];
 

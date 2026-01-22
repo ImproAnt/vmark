@@ -157,8 +157,6 @@ export type HtmlRenderingMode = "hidden" | "sanitized" | "sanitizedWithStyles";
 
 export type MarkdownPasteMode = "auto" | "off";
 
-export type AiCommandTrigger = ";; " | ",, " | "// ";
-
 export interface McpServerSettings {
   port: number;        // Default: 9223 (must match MCP bridge plugin port)
   autoStart: boolean;  // Start on app launch
@@ -184,7 +182,6 @@ export interface TerminalSettings {
 }
 
 export interface AdvancedSettingsState {
-  enableCommandMenu: boolean;
   mcpServer: McpServerSettings;
   terminalEnabled: boolean; // Show/hide terminal feature entirely
   customLinkProtocols: string[]; // Custom URL protocols to recognize (e.g., "obsidian", "vscode")
@@ -205,10 +202,6 @@ export interface MarkdownSettings {
   // Spell check
   spellCheckEnabled: boolean;
   spellCheckLanguages: SpellCheckLanguage[];
-}
-
-export interface AiSettings {
-  commandTrigger: AiCommandTrigger;
 }
 
 // Image auto-resize options (0 = off, positive = max dimension in pixels)
@@ -246,7 +239,6 @@ interface SettingsState {
   appearance: AppearanceSettings;
   cjkFormatting: CJKFormattingSettings;
   markdown: MarkdownSettings;
-  ai: AiSettings;
   image: ImageSettings;
   terminal: TerminalSettings;
   advanced: AdvancedSettingsState;
@@ -270,10 +262,6 @@ interface SettingsActions {
   updateMarkdownSetting: <K extends keyof MarkdownSettings>(
     key: K,
     value: MarkdownSettings[K]
-  ) => void;
-  updateAiSetting: <K extends keyof AiSettings>(
-    key: K,
-    value: AiSettings[K]
   ) => void;
   updateImageSetting: <K extends keyof ImageSettings>(
     key: K,
@@ -353,9 +341,6 @@ const initialState: SettingsState = {
     spellCheckEnabled: false,
     spellCheckLanguages: ["en"],
   },
-  ai: {
-    commandTrigger: "// ",
-  },
   image: {
     autoResizeMax: 0, // Off by default
     autoResizeCustom: 1600,
@@ -375,7 +360,6 @@ const initialState: SettingsState = {
     position: "bottom",
   },
   advanced: {
-    enableCommandMenu: false,
     mcpServer: {
       port: 9223,
       autoStart: true,
@@ -387,7 +371,7 @@ const initialState: SettingsState = {
 };
 
 // Object sections that can be updated with createSectionUpdater
-type ObjectSections = "general" | "appearance" | "cjkFormatting" | "markdown" | "ai" | "image" | "terminal" | "advanced";
+type ObjectSections = "general" | "appearance" | "cjkFormatting" | "markdown" | "image" | "terminal" | "advanced";
 
 // Helper to create section updaters - reduces duplication
 const createSectionUpdater = <T extends ObjectSections>(
@@ -407,7 +391,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
       updateAppearanceSetting: createSectionUpdater(set, "appearance"),
       updateCJKFormattingSetting: createSectionUpdater(set, "cjkFormatting"),
       updateMarkdownSetting: createSectionUpdater(set, "markdown"),
-      updateAiSetting: createSectionUpdater(set, "ai"),
       updateImageSetting: createSectionUpdater(set, "image"),
       updateTerminalSetting: createSectionUpdater(set, "terminal"),
       updateAdvancedSetting: createSectionUpdater(set, "advanced"),
