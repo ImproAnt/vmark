@@ -10,6 +10,12 @@ const TERMINAL_MAX_WIDTH = 800;
 const TERMINAL_DEFAULT_WIDTH = 400;
 const MAX_SESSIONS = 2; // Max 2 panes (1 main + 1 split)
 
+// Terminal column (character width) constraints
+const TERMINAL_MIN_COLS = 40;
+const TERMINAL_MAX_COLS = 120;
+const TERMINAL_DEFAULT_COLS = 80;
+const TERMINAL_COLS_STEP = 10;
+
 export type SplitDirection = "horizontal" | "vertical";
 
 /** Terminal session metadata */
@@ -30,6 +36,7 @@ interface TerminalState {
   visible: boolean;
   height: number;
   width: number;
+  cols: number; // Terminal width in characters
   sessions: TerminalSession[];
   activeSessionId: string | null;
 }
@@ -39,6 +46,7 @@ interface TerminalActions {
   setVisible: (visible: boolean) => void;
   setHeight: (height: number) => void;
   setWidth: (width: number) => void;
+  setCols: (cols: number) => void;
   // Session management
   addSession: (session: TerminalSession) => void;
   removeSession: (sessionId: string) => void;
@@ -60,6 +68,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>()(
       visible: false,
       height: TERMINAL_DEFAULT_HEIGHT,
       width: TERMINAL_DEFAULT_WIDTH,
+      cols: TERMINAL_DEFAULT_COLS,
       sessions: [],
       activeSessionId: null,
 
@@ -72,6 +81,10 @@ export const useTerminalStore = create<TerminalState & TerminalActions>()(
       setWidth: (width) =>
         set({
           width: Math.min(TERMINAL_MAX_WIDTH, Math.max(TERMINAL_MIN_WIDTH, width)),
+        }),
+      setCols: (cols) =>
+        set({
+          cols: Math.min(TERMINAL_MAX_COLS, Math.max(TERMINAL_MIN_COLS, cols)),
         }),
 
       addSession: (session) => {
@@ -229,6 +242,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>()(
         visible: state.visible,
         height: state.height,
         width: state.width,
+        cols: state.cols,
       }),
       // Explicitly ignore old session data from localStorage
       merge: (persisted, current) => {
@@ -239,6 +253,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>()(
           visible: persistedState.visible ?? current.visible,
           height: persistedState.height ?? current.height,
           width: persistedState.width ?? current.width,
+          cols: persistedState.cols ?? current.cols,
           // Explicitly keep sessions empty - don't restore from old localStorage
         };
       },
@@ -246,11 +261,14 @@ export const useTerminalStore = create<TerminalState & TerminalActions>()(
   )
 );
 
-// Export constants for use in resize hook
+// Export constants for use in resize hook and UI
 export {
   TERMINAL_MIN_HEIGHT,
   TERMINAL_MAX_HEIGHT,
   TERMINAL_MIN_WIDTH,
   TERMINAL_MAX_WIDTH,
+  TERMINAL_MIN_COLS,
+  TERMINAL_MAX_COLS,
+  TERMINAL_COLS_STEP,
   MAX_SESSIONS,
 };

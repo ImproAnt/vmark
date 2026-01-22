@@ -87,17 +87,34 @@ interface MountedTerminal {
   sessionToRestore?: TerminalSession;
 }
 
+/** Calculate panel width from cols and font size */
+function calculateWidthFromCols(cols: number, fontSize: number): number {
+  // Approximate cell width for monospace fonts (roughly 60% of font size)
+  const cellWidth = fontSize * 0.6;
+  // Add padding: 16px (8px left + 8px right) + 8px scrollbar buffer
+  const padding = 24;
+  return Math.round(cols * cellWidth + padding);
+}
+
 export function TerminalPanel() {
   const visible = useTerminalStore((state) => state.visible);
   const height = useTerminalStore((state) => state.height);
-  const width = useTerminalStore((state) => state.width);
+  const cols = useTerminalStore((state) => state.cols);
   const sessions = useTerminalStore((state) => state.sessions);
   const removeSession = useTerminalStore((state) => state.removeSession);
   const getSessionsToRestore = useTerminalStore((state) => state.getSessionsToRestore);
   const splitSession = useTerminalStore((state) => state.splitSession);
   const position = useSettingsStore((state) => state.terminal.position);
+  const fontSize = useSettingsStore((state) => state.terminal.fontSize);
   const handleResizeStart = useTerminalResize();
   const chromeColors = useTerminalChromeColors();
+
+  // When position is "right", calculate width from cols; disable manual resize
+  const isRightPosition = position === "right";
+  const calculatedWidth = useMemo(
+    () => calculateWidthFromCols(cols, fontSize),
+    [cols, fontSize]
+  );
 
   const [mountedTerminals, setMountedTerminals] = useState<MountedTerminal[]>([]);
 
@@ -177,15 +194,15 @@ export function TerminalPanel() {
   }, [sessions.length, mountedTerminals.length]);
 
 
-  const isRightPosition = position === "right";
   // Base isSplit on mounted terminals count (actual visible panes)
   const isSplit = mountedTerminals.length >= 2;
 
   // Split direction: bottom=horizontal (side by side), right=vertical (top/bottom)
   const splitDirection = position === "bottom" ? "horizontal" : "vertical";
 
+  // When right: use calculated width from cols; when bottom: use height from store
   const panelStyle: React.CSSProperties & Record<`--${string}`, string> = {
-    ...(isRightPosition ? { width, height: "100%" } : { height, width: "100%" }),
+    ...(isRightPosition ? { width: calculatedWidth, height: "100%" } : { height, width: "100%" }),
     "--terminal-chrome-bg": chromeColors.bg,
     "--terminal-chrome-border": chromeColors.border,
     "--terminal-chrome-text": chromeColors.text,
@@ -202,11 +219,13 @@ export function TerminalPanel() {
 
   return (
     <div className={panelClassName} style={panelStyle}>
-      {/* Resize handle */}
-      <div
-        className={`terminal-resize-handle terminal-resize-handle--${position}`}
-        onMouseDown={handleResizeStart}
-      />
+      {/* Resize handle - only for bottom position; right position uses cols control */}
+      {!isRightPosition && (
+        <div
+          className={`terminal-resize-handle terminal-resize-handle--${position}`}
+          onMouseDown={handleResizeStart}
+        />
+      )}
 
       {/* Terminal content */}
       <div className="terminal-content">

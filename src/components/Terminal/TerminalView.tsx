@@ -3,7 +3,7 @@ import { Terminal, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { useTerminalPty, useTerminalSessions } from "@/hooks/useTerminalPty";
 import { useSettingsStore, type ThemeId } from "@/stores/settingsStore";
-import { type TerminalSession } from "@/stores/terminalStore";
+import { useTerminalStore, type TerminalSession } from "@/stores/terminalStore";
 import { useShortcutsStore, DEFAULT_SHORTCUTS } from "@/stores/shortcutsStore";
 import { createMarkdownAddon, type MarkdownAddon } from "@/plugins/terminalMarkdown";
 import { matchesShortcutEvent } from "@/utils/shortcutMatch";
@@ -189,6 +189,7 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
   // Read terminal settings and appearance mono font
   const terminalSettings = useSettingsStore((state) => state.terminal);
   const monoFont = useSettingsStore((state) => state.appearance.monoFont);
+  const cols = useTerminalStore((state) => state.cols);
   const terminalTheme = useTerminalTheme();
   const initialOptionsRef = useRef({
     fontFamily: monoFontStacks[monoFont] ?? monoFontStacks.system,
@@ -196,6 +197,7 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
     cursorBlink: terminalSettings.cursorBlink,
     cursorStyle: terminalSettings.cursorStyle,
     scrollback: terminalSettings.scrollback,
+    cols: cols,
     theme: terminalTheme,
   });
 
@@ -244,11 +246,23 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
       cursorBlink: initial.cursorBlink,
       cursorStyle: initial.cursorStyle,
       scrollback: initial.scrollback,
+      cols: initial.cols,
       theme: initial.theme,
     });
 
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
+
+    // Custom fit that respects max cols from store
+    const fitWithMaxCols = () => {
+      const maxCols = useTerminalStore.getState().cols;
+      // First do a normal fit to get the available dimensions
+      fitAddon.fit();
+      // Then constrain cols if needed
+      if (terminal.cols > maxCols) {
+        terminal.resize(maxCols, terminal.rows);
+      }
+    };
 
     // Initialize markdown addon
     const markdownAddon = createMarkdownAddon();
@@ -274,7 +288,7 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
     });
 
     terminal.open(containerRef.current);
-    fitAddon.fit();
+    fitWithMaxCols();
 
     // Notify PTY of initial dimensions after fit
     resizePty(terminal.cols, terminal.rows);
@@ -290,7 +304,7 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
     // Fit terminal on resize and notify PTY of new dimensions
     const resizeObserver = new ResizeObserver(() => {
       if (fitAddonRef.current && terminalRef.current) {
-        fitAddonRef.current.fit();
+        fitWithMaxCols();
         // Notify PTY of new terminal dimensions
         resizePty(terminalRef.current.cols, terminalRef.current.rows);
       }
@@ -316,7 +330,8 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
   // Update terminal options when settings change
   useEffect(() => {
     const terminal = terminalRef.current;
-    if (!terminal) return;
+    const fitAddon = fitAddonRef.current;
+    if (!terminal || !fitAddon) return;
 
     // Get font family from appearance mono font setting
     const fontFamily = monoFontStacks[monoFont] ?? monoFontStacks.system;
@@ -327,11 +342,15 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
     terminal.options.cursorStyle = terminalSettings.cursorStyle;
     terminal.options.scrollback = terminalSettings.scrollback;
 
-    // Re-fit and refresh to re-render with new font
-    fitAddonRef.current?.fit();
+    // Re-fit with max cols constraint and refresh
+    fitAddon.fit();
+    if (terminal.cols > cols) {
+      terminal.resize(cols, terminal.rows);
+    }
     terminal.refresh(0, terminal.rows - 1);
   }, [
     monoFont,
+    cols,
     terminalSettings.fontSize,
     terminalSettings.cursorBlink,
     terminalSettings.cursorStyle,
@@ -348,13 +367,21 @@ export function TerminalView({ sessionToRestore }: TerminalViewProps) {
 
   // Re-fit when session changes (terminal reconnects)
   useEffect(() => {
-    if (sessionId && fitAddonRef.current) {
+    if (sessionId && fitAddonRef.current && terminalRef.current) {
       // Small delay to let terminal settle
       setTimeout(() => {
-        fitAddonRef.current?.fit();
+        const fitAddon = fitAddonRef.current;
+        const terminal = terminalRef.current;
+        if (!fitAddon || !terminal) return;
+
+        const maxCols = useTerminalStore.getState().cols;
+        fitAddon.fit();
+        if (terminal.cols > maxCols) {
+          terminal.resize(maxCols, terminal.rows);
+        }
         // Update addon width after fit
-        if (markdownAddonRef.current && terminalRef.current) {
-          markdownAddonRef.current.updateWidth(terminalRef.current.cols);
+        if (markdownAddonRef.current) {
+          markdownAddonRef.current.updateWidth(terminal.cols);
         }
       }, 50);
     }
