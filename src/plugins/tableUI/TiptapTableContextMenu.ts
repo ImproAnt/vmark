@@ -102,12 +102,21 @@ export class TiptapTableContextMenu {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
+      // Find editor container for bottom boundary
+      const editorContainer = this.editorView.dom.closest(".editor-container");
+      const editorRect = editorContainer?.getBoundingClientRect();
+      // Use editor bottom with 1em margin, or fallback to viewport
+      const bottomMargin = 16; // ~1em
+      const maxBottom = editorRect
+        ? editorRect.bottom - bottomMargin
+        : viewportHeight - 10;
+
       if (rect.right > viewportWidth - 10) {
         this.container.style.left = `${viewportWidth - rect.width - 10}px`;
       }
 
-      if (rect.bottom > viewportHeight - 10) {
-        this.container.style.top = `${viewportHeight - rect.height - 10}px`;
+      if (rect.bottom > maxBottom) {
+        this.container.style.top = `${maxBottom - rect.height}px`;
       }
     });
 
