@@ -2,6 +2,7 @@
  * MCP Configuration Installer Component
  *
  * UI for installing MCP configuration to AI providers.
+ * Shows diagnostics including path validation status.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -9,12 +10,19 @@ import { invoke } from "@tauri-apps/api/core";
 import { SettingsGroup } from "./components";
 import { McpConfigPreviewDialog } from "./McpConfigPreviewDialog";
 
-interface ProviderStatus {
+type DiagnosticStatus = "Valid" | "PathMismatch" | "BinaryMissing" | "NotConfigured";
+
+interface ProviderDiagnostic {
   provider: string;
   name: string;
-  path: string;
-  exists: boolean;
+  configPath: string;
+  configExists: boolean;
   hasVmark: boolean;
+  expectedBinaryPath: string | null;
+  configuredBinaryPath: string | null;
+  binaryExists: boolean;
+  status: DiagnosticStatus;
+  message: string;
 }
 
 interface ConfigPreview {
@@ -38,23 +46,46 @@ interface UninstallResult {
   message: string;
 }
 
-function StatusIcon({ installed }: { installed: boolean }) {
-  if (installed) {
-    return (
-      <span className="w-4 h-4 text-green-600 dark:text-green-400">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </span>
-    );
+function DiagnosticIcon({ status }: { status: DiagnosticStatus }) {
+  switch (status) {
+    case "Valid":
+      return (
+        <span className="w-4 h-4 text-green-600 dark:text-green-400">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </span>
+      );
+    case "PathMismatch":
+      return (
+        <span className="w-4 h-4 text-amber-500 dark:text-amber-400">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </span>
+      );
+    case "BinaryMissing":
+      return (
+        <span className="w-4 h-4 text-red-500 dark:text-red-400">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </span>
+      );
+    case "NotConfigured":
+    default:
+      return (
+        <span className="w-4 h-4 text-[var(--text-tertiary)]">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+          </svg>
+        </span>
+      );
   }
-  return (
-    <span className="w-4 h-4 text-[var(--text-tertiary)]">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10" />
-      </svg>
-    </span>
-  );
 }
 
 function CopyButton({ text, size = "sm" }: { text: string; size?: "sm" | "xs" }) {
@@ -102,69 +133,116 @@ function formatPath(path: string): string {
 }
 
 interface ProviderRowProps {
-  provider: ProviderStatus;
+  diagnostic: ProviderDiagnostic;
   onPreview: () => void;
+  onRepair: () => void;
   onUninstall: () => void;
   loading: boolean;
 }
 
-function ProviderRow({ provider, onPreview, onUninstall, loading }: ProviderRowProps) {
+function ProviderRow({ diagnostic, onPreview, onRepair, onUninstall, loading }: ProviderRowProps) {
+  const showRepairButton = diagnostic.status === "PathMismatch";
+  const showUpdateRemove = diagnostic.hasVmark && diagnostic.status !== "PathMismatch";
+  const showInstall = !diagnostic.hasVmark;
+
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
-      <div className="flex items-center gap-2.5 flex-1 min-w-0">
-        <StatusIcon installed={provider.hasVmark} />
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-[var(--text-primary)] truncate">
-            {provider.name}
-          </div>
-          <div className="flex items-center gap-1">
-            <span
-              className="text-xs text-[var(--text-tertiary)] font-mono truncate"
-              title={formatPath(provider.path)}
-            >
-              {shortenPath(provider.path)}
-            </span>
-            <CopyButton text={provider.path} size="xs" />
+    <div className="flex flex-col py-2.5 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <DiagnosticIcon status={diagnostic.status} />
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-[var(--text-primary)] truncate">
+              {diagnostic.name}
+            </div>
+            <div className="flex items-center gap-1">
+              <span
+                className="text-xs text-[var(--text-tertiary)] font-mono truncate"
+                title={formatPath(diagnostic.configPath)}
+              >
+                {shortenPath(diagnostic.configPath)}
+              </span>
+              <CopyButton text={diagnostic.configPath} size="xs" />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex items-center gap-2 ml-3">
-        {provider.hasVmark ? (
-          <>
+        <div className="flex items-center gap-2 ml-3">
+          {showRepairButton && (
+            <>
+              <button
+                onClick={onRepair}
+                disabled={loading}
+                className="px-2.5 py-1 text-xs font-medium rounded
+                          bg-amber-500 text-white
+                          hover:bg-amber-600
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Repair
+              </button>
+              <button
+                onClick={onPreview}
+                disabled={loading}
+                className="px-2.5 py-1 text-xs font-medium rounded border
+                          border-gray-200 dark:border-gray-700 bg-transparent
+                          text-[var(--text-primary)] hover:bg-[var(--hover-bg)]
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Update
+              </button>
+              <button
+                onClick={onUninstall}
+                disabled={loading}
+                className="px-2.5 py-1 text-xs font-medium rounded border
+                          border-gray-200 dark:border-gray-700 bg-transparent
+                          text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Remove
+              </button>
+            </>
+          )}
+          {showUpdateRemove && (
+            <>
+              <button
+                onClick={onPreview}
+                disabled={loading}
+                className="px-2.5 py-1 text-xs font-medium rounded border
+                          border-gray-200 dark:border-gray-700 bg-transparent
+                          text-[var(--text-primary)] hover:bg-[var(--hover-bg)]
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Update
+              </button>
+              <button
+                onClick={onUninstall}
+                disabled={loading}
+                className="px-2.5 py-1 text-xs font-medium rounded border
+                          border-gray-200 dark:border-gray-700 bg-transparent
+                          text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Remove
+              </button>
+            </>
+          )}
+          {showInstall && (
             <button
               onClick={onPreview}
               disabled={loading}
-              className="px-2.5 py-1 text-xs font-medium rounded border
-                        border-gray-200 dark:border-gray-700 bg-transparent
-                        text-[var(--text-primary)] hover:bg-[var(--hover-bg)]
+              className="px-2.5 py-1 text-xs font-medium rounded
+                        bg-[var(--accent-primary)] text-white
+                        hover:opacity-90
                         disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Update
+              Install
             </button>
-            <button
-              onClick={onUninstall}
-              disabled={loading}
-              className="px-2.5 py-1 text-xs font-medium rounded border
-                        border-gray-200 dark:border-gray-700 bg-transparent
-                        text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20
-                        disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Remove
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={onPreview}
-            disabled={loading}
-            className="px-2.5 py-1 text-xs font-medium rounded
-                      bg-[var(--accent-primary)] text-white
-                      hover:opacity-90
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Install
-          </button>
-        )}
+          )}
+        </div>
       </div>
+      {diagnostic.message && (
+        <div className="mt-1 ml-6.5 text-xs text-amber-600 dark:text-amber-400">
+          {diagnostic.message}
+        </div>
+      )}
     </div>
   );
 }
@@ -175,16 +253,16 @@ interface McpConfigInstallerProps {
 }
 
 export function McpConfigInstaller({ onInstallSuccess }: McpConfigInstallerProps) {
-  const [providers, setProviders] = useState<ProviderStatus[]>([]);
+  const [diagnostics, setDiagnostics] = useState<ProviderDiagnostic[]>([]);
   const [preview, setPreview] = useState<ConfigPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const loadStatus = useCallback(async () => {
+  const loadDiagnostics = useCallback(async () => {
     try {
-      const statuses = await invoke<ProviderStatus[]>("mcp_config_get_status");
-      setProviders(statuses);
+      const results = await invoke<ProviderDiagnostic[]>("mcp_config_diagnose");
+      setDiagnostics(results);
       setError(null);
     } catch (err) {
       setError(String(err));
@@ -192,8 +270,8 @@ export function McpConfigInstaller({ onInstallSuccess }: McpConfigInstallerProps
   }, []);
 
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
+    loadDiagnostics();
+  }, [loadDiagnostics]);
 
   const handlePreview = async (providerId: string) => {
     setLoading(true);
@@ -222,9 +300,30 @@ export function McpConfigInstaller({ onInstallSuccess }: McpConfigInstallerProps
       if (result.success) {
         setSuccessMessage(result.message);
         setPreview(null);
-        await loadStatus();
+        await loadDiagnostics();
         // Enable autoStart and start bridge after successful install
         onInstallSuccess?.();
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRepair = async (providerId: string) => {
+    setLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const result = await invoke<InstallResult>("mcp_config_install", {
+        provider: providerId,
+      });
+      if (result.success) {
+        setSuccessMessage("Configuration repaired successfully");
+        await loadDiagnostics();
       } else {
         setError(result.message);
       }
@@ -245,7 +344,7 @@ export function McpConfigInstaller({ onInstallSuccess }: McpConfigInstallerProps
       });
       if (result.success) {
         setSuccessMessage(result.message);
-        await loadStatus();
+        await loadDiagnostics();
       } else {
         setError(result.message);
       }
@@ -263,16 +362,17 @@ export function McpConfigInstaller({ onInstallSuccess }: McpConfigInstallerProps
       </div>
 
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        {providers.map((provider) => (
+        {diagnostics.map((diagnostic) => (
           <ProviderRow
-            key={provider.provider}
-            provider={provider}
-            onPreview={() => handlePreview(provider.provider)}
-            onUninstall={() => handleUninstall(provider.provider)}
+            key={diagnostic.provider}
+            diagnostic={diagnostic}
+            onPreview={() => handlePreview(diagnostic.provider)}
+            onRepair={() => handleRepair(diagnostic.provider)}
+            onUninstall={() => handleUninstall(diagnostic.provider)}
             loading={loading}
           />
         ))}
-        {providers.length === 0 && (
+        {diagnostics.length === 0 && (
           <div className="py-4 text-center text-sm text-[var(--text-tertiary)]">
             Loading providers...
           </div>

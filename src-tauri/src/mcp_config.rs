@@ -55,6 +55,40 @@ pub struct UninstallResult {
     pub message: String,
 }
 
+/// Diagnostic status for MCP configuration
+#[derive(Clone, Serialize, Deserialize)]
+pub enum DiagnosticStatus {
+    /// Config exists, path matches, binary exists
+    Valid,
+    /// Binary path in config doesn't match expected
+    PathMismatch,
+    /// Binary file doesn't exist on disk
+    BinaryMissing,
+    /// No vmark entry in config
+    NotConfigured,
+}
+
+/// Detailed diagnostic information for a provider
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ProviderDiagnostic {
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "configPath")]
+    pub config_path: String,
+    #[serde(rename = "configExists")]
+    pub config_exists: bool,
+    #[serde(rename = "hasVmark")]
+    pub has_vmark: bool,
+    #[serde(rename = "expectedBinaryPath")]
+    pub expected_binary_path: Option<String>,
+    #[serde(rename = "configuredBinaryPath")]
+    pub configured_binary_path: Option<String>,
+    #[serde(rename = "binaryExists")]
+    pub binary_exists: bool,
+    pub status: DiagnosticStatus,
+    pub message: String,
+}
+
 /// Provider configuration details
 struct ProviderConfig {
     name: &'static str,
@@ -212,6 +246,37 @@ fn read_existing_config(path: &PathBuf, provider_id: &str) -> (Option<String>, b
     (content, has_vmark)
 }
 
+/// Extract the vmark binary path from config content
+fn extract_vmark_binary_path(content: &str, provider_id: &str) -> Option<String> {
+    match provider_id {
+        "claude-desktop" | "claude" | "gemini" => {
+            // JSON format: mcpServers.vmark.command
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(content) {
+                json.get("mcpServers")
+                    .and_then(|s| s.get("vmark"))
+                    .and_then(|v| v.get("command"))
+                    .and_then(|c| c.as_str())
+                    .map(|s| s.to_string())
+            } else {
+                None
+            }
+        }
+        "codex" => {
+            // TOML format: mcp_servers.vmark.command
+            if let Ok(toml) = content.parse::<toml::Table>() {
+                toml.get("mcp_servers")
+                    .and_then(|s| s.get("vmark"))
+                    .and_then(|v| v.get("command"))
+                    .and_then(|c| c.as_str())
+                    .map(|s| s.to_string())
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
 /// Generate proposed config content for a provider.
 /// Note: No --port argument needed - sidecar auto-discovers port from ~/.vmark/mcp-port
 fn generate_config_content(
@@ -326,6 +391,90 @@ pub fn mcp_config_get_status() -> Result<Vec<ProviderStatus>, String> {
     }
 
     Ok(statuses)
+}
+
+/// Diagnose MCP configuration for all AI providers
+/// Returns detailed diagnostics including path validation
+#[tauri::command]
+pub fn mcp_config_diagnose() -> Result<Vec<ProviderDiagnostic>, String> {
+    let mut diagnostics = Vec::new();
+
+    // Get the expected binary path once (may fail if binary not found)
+    let expected_binary_path = get_mcp_binary_path().ok();
+
+    for provider in PROVIDERS {
+        let path = get_config_path(provider)?;
+        let config_exists = path.exists();
+        let (content, has_vmark) = if config_exists {
+            read_existing_config(&path, provider.id)
+        } else {
+            (None, false)
+        };
+
+        // Extract the configured binary path from the config file
+        let configured_binary_path = content
+            .as_ref()
+            .and_then(|c| extract_vmark_binary_path(c, provider.id));
+
+        // Check if the configured binary exists on disk
+        let binary_exists = configured_binary_path
+            .as_ref()
+            .map(|p| std::path::Path::new(p).exists())
+            .unwrap_or(false);
+
+        // Determine diagnostic status and message
+        let (status, message) = if !has_vmark {
+            (DiagnosticStatus::NotConfigured, String::new())
+        } else if !binary_exists {
+            (
+                DiagnosticStatus::BinaryMissing,
+                "Binary not found - reinstall VMark".to_string(),
+            )
+        } else if let (Some(ref expected), Some(ref configured)) =
+            (&expected_binary_path, &configured_binary_path)
+        {
+            // Compare paths - normalize for comparison
+            let expected_canonical = std::path::Path::new(expected)
+                .canonicalize()
+                .unwrap_or_else(|_| std::path::PathBuf::from(expected));
+            let configured_canonical = std::path::Path::new(configured)
+                .canonicalize()
+                .unwrap_or_else(|_| std::path::PathBuf::from(configured));
+
+            if expected_canonical == configured_canonical {
+                (DiagnosticStatus::Valid, String::new())
+            } else {
+                (
+                    DiagnosticStatus::PathMismatch,
+                    "Binary path outdated - click Repair".to_string(),
+                )
+            }
+        } else if expected_binary_path.is_none() && binary_exists {
+            // Expected path couldn't be determined, but configured binary exists
+            // This could happen during development, treat as valid
+            (DiagnosticStatus::Valid, String::new())
+        } else {
+            (
+                DiagnosticStatus::PathMismatch,
+                "Binary path outdated - click Repair".to_string(),
+            )
+        };
+
+        diagnostics.push(ProviderDiagnostic {
+            provider: provider.id.to_string(),
+            name: provider.name.to_string(),
+            config_path: path.to_string_lossy().to_string(),
+            config_exists,
+            has_vmark,
+            expected_binary_path: expected_binary_path.clone(),
+            configured_binary_path,
+            binary_exists,
+            status,
+            message,
+        });
+    }
+
+    Ok(diagnostics)
 }
 
 /// Preview config changes before installation
