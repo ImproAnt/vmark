@@ -2,6 +2,7 @@
  * Code Block Preview Styles
  *
  * Styles for LaTeX and Mermaid previews rendered below code blocks.
+ * Supports view mode (rendered only) and edit mode (header + code + live preview).
  */
 
 .code-block-preview {
@@ -68,37 +69,184 @@
 }
 
 /* Hide source for preview-only code blocks */
-.tiptap-editor pre.code-block-preview-only {
-  margin: 0;
+/* Note: The decoration is applied to code-block-wrapper, not pre directly */
+.code-block-wrapper.code-block-preview-only {
+  /* Make wrapper invisible but keep it in DOM for ProseMirror */
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
   border: 0;
-  background: transparent;
-}
-
-.tiptap-editor pre.code-block-preview-only code {
-  display: none;
 }
 
 /* Highlight preview when the hidden code block is selected */
-.tiptap-editor pre.code-block-preview-only.ProseMirror-selectednode + .code-block-preview {
+.code-block-wrapper.code-block-preview-only.ProseMirror-selectednode + .code-block-preview {
   outline: 2px solid var(--primary-color, #0a84ff);
   outline-offset: 2px;
 }
 
+/* ============================================
+   Edit Mode Styles
+   ============================================ */
+
+/* Edit header with title and cancel/save buttons */
+.code-block-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  margin: 1rem 0 0 0;
+  background-color: var(--bg-secondary, #e5e4e4);
+  border: 1px solid var(--border-color, #d5d4d4);
+  border-bottom: none;
+  border-radius: var(--radius-md, 6px) var(--radius-md, 6px) 0 0;
+}
+
+.code-block-edit-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #666666);
+}
+
+.code-block-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.code-block-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: var(--text-secondary, #666666);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.code-block-edit-btn:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+.code-block-edit-btn:focus-visible {
+  outline: none;
+  position: relative;
+}
+
+.code-block-edit-btn:focus-visible::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--primary-color, #0066cc);
+  border-radius: 1px;
+}
+
+.code-block-edit-cancel:hover {
+  color: var(--error-color, #cf222e);
+}
+
+.code-block-edit-save:hover {
+  color: var(--success-color, #1a7f37);
+}
+
 /* Editing state: show source code */
-.tiptap-editor pre.code-block-editing {
-  margin: 1rem 0;
-  padding: 1rem;
-  border-radius: 6px;
+/* Note: The decoration is applied to code-block-wrapper, not pre directly */
+.code-block-wrapper.code-block-editing {
+  margin: 0;
+}
+
+.code-block-wrapper.code-block-editing pre {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border-color, #d5d4d4);
+  border-top: none;
+  border-bottom: none;
+  border-radius: 0;
   background-color: var(--block-bg-subtle, rgba(0, 0, 0, 0.02));
   text-align: left;
 }
 
-.tiptap-editor pre.code-block-editing code {
+.code-block-wrapper.code-block-editing pre code {
   display: block;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.9em;
   white-space: pre-wrap;
   word-break: break-word;
   text-align: left;
+}
+
+/* Live preview during editing */
+.code-block-live-preview {
+  padding: 12px;
+  margin: 0 0 1rem 0;
+  background-color: var(--bg-color, #eeeded);
+  border: 1px solid var(--border-color, #d5d4d4);
+  border-top: 1px dashed var(--border-color, #d5d4d4);
+  border-radius: 0 0 var(--radius-md, 6px) var(--radius-md, 6px);
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.code-block-live-preview.mermaid-live-preview {
+  min-height: 80px;
+  overflow: auto;
+}
+
+.code-block-live-preview.mermaid-live-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.code-block-live-preview.latex-live-preview .katex-display {
+  margin: 0;
+}
+
+.code-block-live-preview-loading,
+.code-block-live-preview-empty {
+  color: var(--text-tertiary, #999999);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.code-block-live-preview-error {
+  color: var(--error-color, #cf222e);
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Hide language selector for preview-only blocks (mermaid, latex) */
+/* These blocks have special rendering and shouldn't allow language change */
+.code-block-wrapper[data-language="mermaid"] .code-lang-selector,
+.code-block-wrapper[data-language="latex"] .code-lang-selector,
+.code-block-wrapper[data-language="$$math$$"] .code-lang-selector {
+  display: none;
+}
+
+/* Dark theme adjustments */
+.dark-theme .code-block-edit-header {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.dark-theme .code-block-edit-btn:hover {
+  background: var(--hover-bg, rgba(255, 255, 255, 0.06));
+}
+
+.dark-theme .code-block-live-preview {
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
 }

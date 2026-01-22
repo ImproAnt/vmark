@@ -4,7 +4,7 @@
  * Handles keyboard shortcuts and click-outside for block math editing:
  * - ESC: Revert changes and exit editing
  * - Cmd+Enter: Commit changes and exit editing
- * - Click outside: Commit changes and exit editing
+ * - Click outside: Revert changes and exit editing (user must click ✓ to save)
  */
 
 import { Extension } from "@tiptap/core";
@@ -71,8 +71,9 @@ function exitEditing(view: EditorView, revert: boolean): boolean {
   tr = tr.setSelection(TextSelection.near($pos));
   tr.setMeta(EDITING_STATE_CHANGED, true);
 
-  dispatch(tr);
+  // Exit editing FIRST (before dispatch, so decorations see the new state)
   store.exitEditing();
+  dispatch(tr);
 
   return true;
 }
@@ -90,14 +91,14 @@ export const blockMathKeymapExtension = Extension.create({
             const { editingPos } = useBlockMathEditingStore.getState();
             if (editingPos === null) return false;
 
-            // Check if cursor is in the editing code block
-            if (!isCursorInCodeBlock(view, editingPos)) return false;
-
-            // ESC: Revert and exit
+            // ESC: Revert and exit (works from anywhere when editing)
             if (event.key === "Escape") {
               event.preventDefault();
               return exitEditing(view, true);
             }
+
+            // Check if cursor is in the editing code block for other shortcuts
+            if (!isCursorInCodeBlock(view, editingPos)) return false;
 
             // Cmd+Enter (Mac) or Ctrl+Enter (Win/Linux): Commit and exit
             if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -130,8 +131,8 @@ export const blockMathKeymapExtension = Extension.create({
             const clickedInside = clickPos.pos >= editingPos && clickPos.pos <= nodeEnd;
 
             if (!clickedInside) {
-              // Click outside: commit and exit
-              exitEditing(view, false);
+              // Click outside: revert and exit (user must click ✓ to save)
+              exitEditing(view, true);
               // Don't prevent default - let the click set cursor position
               return false;
             }
