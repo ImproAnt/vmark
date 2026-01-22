@@ -86,12 +86,12 @@ export const codeHighlightStyle = HighlightStyle.define([
  */
 export const sourceEditorTheme = EditorView.theme({
   "&": {
-    fontSize: "18px",
+    fontSize: "var(--editor-font-size)",
     height: "100%",
   },
   ".cm-content": {
-    fontFamily: "var(--font-sans)",
-    lineHeight: "1.8",
+    fontFamily: "var(--font-mono)",
+    lineHeight: "var(--editor-line-height)",
     caretColor: "var(--text-color)",
     padding: "0",
   },
