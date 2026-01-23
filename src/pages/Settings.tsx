@@ -106,8 +106,9 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
   );
 }
 
-// Advanced section only visible in dev mode
+// Advanced and Terminal sections only visible in dev mode
 const showAdvancedSection = import.meta.env.DEV;
+const showTerminalSection = import.meta.env.DEV;
 
 const navConfig = [
   { id: "appearance" as const, icon: Palette, label: "Appearance" },
@@ -147,16 +148,19 @@ export function SettingsPage() {
     }
   }, [section]);
 
-  // Switch away from terminal when feature is disabled
+  // Terminal visible only in dev mode AND when enabled in settings
+  const showTerminal = showTerminalSection && terminalEnabled;
+
+  // Switch away from terminal when feature is disabled or in production
   useEffect(() => {
-    if (!terminalEnabled && section === "terminal") {
-      setSection("advanced");
+    if (!showTerminal && section === "terminal") {
+      setSection("integrations");
     }
-  }, [terminalEnabled, section]);
+  }, [showTerminal, section]);
 
   const navItems = [
     ...navConfig
-      .filter((item) => item.id !== "terminal" || terminalEnabled)
+      .filter((item) => item.id !== "terminal" || showTerminal)
       .map((item) => ({
         id: item.id,
         icon: <item.icon className="w-4 h-4" />,
@@ -211,7 +215,7 @@ export function SettingsPage() {
           {section === "general" && <GeneralSettings />}
           {section === "files" && <FilesSettings />}
           {section === "integrations" && <IntegrationsSettings />}
-          {section === "terminal" && terminalEnabled && <TerminalSettings />}
+          {section === "terminal" && showTerminal && <TerminalSettings />}
           {section === "advanced" && <AdvancedSettings />}
           {section === "developing" && <DevelopingSettings />}
         </div>
