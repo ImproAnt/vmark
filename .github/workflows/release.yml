@@ -87,33 +87,22 @@ jobs:
           rustup target add aarch64-apple-darwin
           rustup target add x86_64-apple-darwin
 
-      # macOS: Import code signing certificate
-      - name: Import Apple certificate
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
-
-          # Create and configure keychain
-          security create-keychain -p actions build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p actions build.keychain
-
-          # Keep keychain unlocked for 1 hour (prevents codesign hanging)
-          security set-keychain-settings -t 3600 -u build.keychain
-
-          # Import certificate
-          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-
-          # Allow codesign to access keychain without prompting
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
-
-          # Add to keychain search list
-          security list-keychains -d user -s build.keychain $(security list-keychains -d user | tr -d '"')
-
-          rm certificate.p12
+      # macOS: Import code signing certificate (temporarily disabled)
+      # - name: Import Apple certificate
+      #   if: matrix.platform == 'macos-latest'
+      #   env:
+      #     APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      #     APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      #   run: |
+      #     echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
+      #     security create-keychain -p actions build.keychain
+      #     security default-keychain -s build.keychain
+      #     security unlock-keychain -p actions build.keychain
+      #     security set-keychain-settings -t 3600 -u build.keychain
+      #     security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
+      #     security list-keychains -d user -s build.keychain $(security list-keychains -d user | tr -d '"')
+      #     rm certificate.p12
 
       # Linux: Install system dependencies
       - name: Install Linux dependencies
@@ -155,12 +144,11 @@ jobs:
         timeout-minutes: 45
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS code signing and notarization
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # CI environment flag for notarization
+          # macOS code signing and notarization (temporarily disabled)
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CI: true
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
