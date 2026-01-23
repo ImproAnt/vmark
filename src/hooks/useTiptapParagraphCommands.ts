@@ -83,7 +83,13 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
       }))) return;
 
       if (!(await register("menu:quote", (editor) => {
-        editor.chain().focus().toggleBlockquote().run();
+        // TipTap's toggleBlockquote only works for lifting, not wrapping
+        // Use manual check like MCP handler does
+        if (editor.isActive("blockquote")) {
+          editor.chain().focus().lift("blockquote").run();
+        } else {
+          editor.chain().focus().setBlockquote().run();
+        }
       }))) return;
 
       if (!(await register("menu:code-fences", (editor) => {

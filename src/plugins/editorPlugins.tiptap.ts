@@ -1,4 +1,4 @@
-import { Extension } from "@tiptap/core";
+import { Extension, type Editor as TiptapEditor } from "@tiptap/core";
 import { keydownHandler } from "@tiptap/pm/keymap";
 import { Plugin, PluginKey, Selection, NodeSelection, type Command, type EditorState } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
@@ -509,6 +509,20 @@ export function buildEditorKeymapBindings(): Record<string, Command> {
   // Insert image - emit menu event to trigger the same flow as menu item
   bindIfKey(bindings, shortcuts.getShortcut("insertImage"), () => {
     void getCurrentWebviewWindow().emit("menu:image", getCurrentWebviewWindow().label);
+    return true;
+  });
+
+  // Blockquote toggle - handle directly to avoid relying on Tauri menu accelerator
+  bindIfKey(bindings, shortcuts.getShortcut("blockquote"), (_state, _dispatch, view) => {
+    if (!view) return false;
+    const editor = (view.dom as HTMLElement & { editor?: TiptapEditor }).editor;
+    if (!editor) return false;
+    // Use manual toggle check since TipTap's toggleBlockquote only works for lifting
+    if (editor.isActive("blockquote")) {
+      editor.chain().focus().lift("blockquote").run();
+    } else {
+      editor.chain().focus().setBlockquote().run();
+    }
     return true;
   });
 

@@ -17,7 +17,7 @@ import { resolveHardBreakStyle } from "@/utils/linebreaks";
 import { getWindowLabel } from "@/hooks/useWindowFocus";
 import { getHeadingInfo, setHeadingLevel, convertToHeading } from "@/plugins/sourceContextDetection/headingDetection";
 import { getListItemInfo, toBulletList, toOrderedList, toTaskList, removeList } from "@/plugins/sourceContextDetection/listDetection";
-import { getBlockquoteInfo, removeBlockquote } from "@/plugins/sourceContextDetection/blockquoteDetection";
+import { toggleBlockquote as toggleBlockquoteAction } from "@/plugins/sourceContextDetection/blockquoteActions";
 
 function buildSourceContext(view: EditorView) {
   const cursorContext = useSourceCursorContextStore.getState().context;
@@ -85,19 +85,7 @@ function decreaseHeadingLevel(view: EditorView): boolean {
 }
 
 function toggleBlockquote(view: EditorView): boolean {
-  const info = getBlockquoteInfo(view);
-  if (info) {
-    // Already in blockquote - remove it
-    removeBlockquote(view, info);
-  } else {
-    // Not in blockquote - add it
-    const { from } = view.state.selection.main;
-    const line = view.state.doc.lineAt(from);
-    view.dispatch({
-      changes: { from: line.from, to: line.from, insert: "> " },
-    });
-    view.focus();
-  }
+  toggleBlockquoteAction(view);
   return true;
 }
 
