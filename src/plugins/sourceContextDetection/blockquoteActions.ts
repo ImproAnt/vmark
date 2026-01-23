@@ -44,24 +44,41 @@ export function toggleBlockquote(view: EditorView): void {
   // Build changes
   const changes: { from: number; to: number; insert: string }[] = [];
 
-  for (const line of lines) {
-    if (allAreBlockquotes) {
-      // Remove blockquote prefix
+  if (allAreBlockquotes) {
+    // Remove blockquote prefix from all lines
+    for (const line of lines) {
       const match = line.text.match(BLOCKQUOTE_PATTERN);
       if (match) {
         const newText = match[1] + match[2];
         changes.push({ from: line.from, to: line.to, insert: newText });
       }
-    } else {
-      // Add blockquote prefix
-      if (!isBlockquoteLine(line.text)) {
+    }
+  } else {
+    // Add blockquote prefix - filter out empty lines for compact output
+    const nonEmptyLines = lines.filter((l) => l.text.trim() !== "");
+
+    if (nonEmptyLines.length > 0) {
+      // Calculate the range to replace (from first non-empty to last non-empty)
+      const firstLine = nonEmptyLines[0];
+      const lastLine = nonEmptyLines[nonEmptyLines.length - 1];
+
+      // Build compact blockquote content
+      const quotedLines = nonEmptyLines.map((line) => {
+        if (isBlockquoteLine(line.text)) {
+          return line.text; // Already quoted
+        }
         // Preserve leading whitespace
         const leadingMatch = line.text.match(/^(\s*)/);
         const indent = leadingMatch ? leadingMatch[1] : "";
         const content = line.text.slice(indent.length);
-        const newText = `${indent}> ${content}`;
-        changes.push({ from: line.from, to: line.to, insert: newText });
-      }
+        return `${indent}> ${content}`;
+      });
+
+      changes.push({
+        from: firstLine.from,
+        to: lastLine.to,
+        insert: quotedLines.join("\n"),
+      });
     }
   }
 
