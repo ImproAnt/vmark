@@ -10,6 +10,8 @@
   border-radius: 6px;
   margin: 16px 0;
   overflow: hidden;
+  font-size: var(--editor-font-size-sm);
+  line-height: var(--editor-line-height-px);
 }
 
 /* Summary (clickable header) */

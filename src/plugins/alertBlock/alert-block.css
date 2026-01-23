@@ -16,7 +16,8 @@
 /* Alert title (non-editable) */
 .alert-block .alert-title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--editor-font-size-sm);
+  line-height: var(--editor-line-height-px);
   color: var(--alert-title);
   margin-bottom: 8px;
   display: flex;
@@ -40,6 +41,8 @@
 /* Alert content area */
 .alert-block .alert-content {
   color: inherit;
+  font-size: var(--editor-font-size-sm);
+  line-height: var(--editor-line-height-px);
 }
 
 .alert-block .alert-content > *:first-child {
