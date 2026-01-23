@@ -73,6 +73,7 @@ const numericOptions = {
     { value: "1.6", label: "1.6 (Normal)" },
     { value: "1.8", label: "1.8 (Relaxed)" },
     { value: "2.0", label: "2.0 (Spacious)" },
+    { value: "2.2", label: "2.2 (Extra)" },
   ],
   paragraphSpacing: [
     { value: "0.5", label: "0.5em (Tight)" },

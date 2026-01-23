@@ -295,7 +295,7 @@ const initialState: SettingsState = {
     cjkFont: "system",
     monoFont: "system",
     fontSize: 18,
-    lineHeight: 1.6,
+    lineHeight: 1.8,
     paragraphSpacing: 1,
     editorWidth: 50, // em units, 0 = unlimited (50em ≈ 900px at 18px font)
     showFilenameInTitlebar: false,
