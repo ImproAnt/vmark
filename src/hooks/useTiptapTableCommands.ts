@@ -8,6 +8,7 @@ import { CellSelection } from "@tiptap/pm/tables";
 import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn, deleteCurrentColumn, deleteCurrentRow, deleteCurrentTable, formatTable } from "@/plugins/tableUI/tableActions.tiptap";
 import { getEditorView } from "@/types/tiptap";
 import { registerMenuListener } from "@/utils/menuListenerHelper";
+import { FEATURE_FLAGS } from "@/stores/featureFlagsStore";
 
 function clearSelectedCells(view: EditorView): boolean {
   const selection = view.state.selection;
@@ -45,6 +46,11 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    // Skip legacy listeners when unified dispatcher is enabled
+    if (FEATURE_FLAGS.UNIFIED_MENU_DISPATCHER) {
+      return;
+    }
+
     let cancelled = false;
 
     const setupListeners = async () => {

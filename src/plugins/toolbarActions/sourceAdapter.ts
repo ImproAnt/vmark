@@ -9,6 +9,7 @@ import type { EditorView } from "@codemirror/view";
 import { clearAllFormatting } from "@/plugins/sourceContextDetection/clearFormatting";
 import { buildAlertBlock, buildDetailsBlock, buildDiagramBlock, buildMathBlock, type AlertType } from "@/plugins/sourceContextDetection/sourceInsertions";
 import { getBlockquoteInfo, nestBlockquote, removeBlockquote, unnestBlockquote } from "@/plugins/sourceContextDetection/blockquoteDetection";
+import { toggleBlockquote } from "@/plugins/sourceContextDetection/blockquoteActions";
 import { convertToHeading, getHeadingInfo, setHeadingLevel } from "@/plugins/sourceContextDetection/headingDetection";
 import { getListItemInfo, indentListItem, outdentListItem, removeList, toBulletList, toOrderedList, toTaskList } from "@/plugins/sourceContextDetection/listDetection";
 import { getSourceTableInfo } from "@/plugins/sourceContextDetection/tableDetection";
@@ -283,8 +284,9 @@ function insertCodeBlock(view: EditorView): boolean {
   return true;
 }
 
-function insertBlockquote(view: EditorView): boolean {
-  insertText(view, "> ");
+function insertOrToggleBlockquote(view: EditorView): boolean {
+  // Use toggleBlockquote for proper toggle behavior
+  toggleBlockquote(view);
   return true;
 }
 
@@ -367,7 +369,7 @@ export function performSourceToolbarAction(action: string, context: SourceToolba
     case "insertCodeBlock":
       return insertCodeBlock(view);
     case "insertBlockquote":
-      return insertBlockquote(view);
+      return insertOrToggleBlockquote(view);
     case "insertDivider":
       return insertDivider(view);
     case "insertTable":
@@ -483,27 +485,46 @@ function handleInsertDiagram(view: EditorView): boolean {
 function handleListAction(view: EditorView, action: string): boolean {
   if (applyMultiSelectionListAction(view, action)) return true;
   const info = getListItemInfo(view);
-  if (!info) return false;
 
+  // If already in a list, convert or modify
+  if (info) {
+    switch (action) {
+      case "bulletList":
+        toBulletList(view, info);
+        return true;
+      case "orderedList":
+        toOrderedList(view, info);
+        return true;
+      case "taskList":
+        toTaskList(view, info);
+        return true;
+      case "indent":
+        indentListItem(view, info);
+        return true;
+      case "outdent":
+        outdentListItem(view, info);
+        return true;
+      case "removeList":
+        removeList(view, info);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // Not in a list - create new list for list type actions
   switch (action) {
     case "bulletList":
-      toBulletList(view, info);
-      return true;
+      return insertListMarker(view, "- ");
     case "orderedList":
-      toOrderedList(view, info);
-      return true;
+      return insertListMarker(view, "1. ");
     case "taskList":
-      toTaskList(view, info);
-      return true;
+      return insertListMarker(view, "- [ ] ");
     case "indent":
-      indentListItem(view, info);
-      return true;
     case "outdent":
-      outdentListItem(view, info);
-      return true;
     case "removeList":
-      removeList(view, info);
-      return true;
+      // These only make sense when already in a list
+      return false;
     default:
       return false;
   }

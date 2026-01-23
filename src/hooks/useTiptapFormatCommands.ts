@@ -20,6 +20,7 @@ import { MultiSelection } from "@/plugins/multiCursor";
 import { isTerminalFocused } from "@/utils/focus";
 import { readClipboardImagePath } from "@/utils/clipboardImagePath";
 import { encodeMarkdownUrl } from "@/utils/markdownUrl";
+import { FEATURE_FLAGS } from "@/stores/featureFlagsStore";
 
 const INSERT_IMAGE_GUARD = "menu-insert-image";
 
@@ -88,6 +89,11 @@ export function useTiptapFormatCommands(editor: TiptapEditor | null) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    // Skip legacy listeners when unified dispatcher is enabled
+    if (FEATURE_FLAGS.UNIFIED_MENU_DISPATCHER) {
+      return;
+    }
+
     let cancelled = false;
 
     const setupListeners = async () => {

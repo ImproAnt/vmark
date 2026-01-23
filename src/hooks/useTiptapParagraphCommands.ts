@@ -10,6 +10,7 @@ import { toggleTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
 import { getEditorView } from "@/types/tiptap";
 import { registerMenuListener } from "@/utils/menuListenerHelper";
 import { DEFAULT_MERMAID_DIAGRAM } from "@/plugins/mermaid/constants";
+import { FEATURE_FLAGS } from "@/stores/featureFlagsStore";
 
 const DEFAULT_MATH_BLOCK = "c = \\pm\\sqrt{a^2 + b^2}";
 
@@ -29,6 +30,11 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    // Skip legacy listeners when unified dispatcher is enabled
+    if (FEATURE_FLAGS.UNIFIED_MENU_DISPATCHER) {
+      return;
+    }
+
     let cancelled = false;
 
     const setupListeners = async () => {

@@ -5,6 +5,7 @@ import type { Editor as TiptapEditor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 import { isTerminalFocused } from "@/utils/focus";
+import { FEATURE_FLAGS } from "@/stores/featureFlagsStore";
 
 const MAX_LINE_SEARCH_ITERATIONS = 500;
 
@@ -57,6 +58,11 @@ export function useTiptapSelectionCommands(editor: TiptapEditor | null) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    // Skip legacy listeners when unified dispatcher is enabled
+    if (FEATURE_FLAGS.UNIFIED_MENU_DISPATCHER) {
+      return;
+    }
+
     let cancelled = false;
 
     const setupListeners = async () => {

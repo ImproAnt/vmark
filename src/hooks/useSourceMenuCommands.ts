@@ -19,6 +19,7 @@ import {
 } from "@/utils/sourceSelection";
 import { convertToHeading, getHeadingInfo, setHeadingLevel } from "@/plugins/sourceContextDetection/headingDetection";
 import { isTerminalFocused } from "@/utils/focus";
+import { FEATURE_FLAGS } from "@/stores/featureFlagsStore";
 
 const ALERT_ACTIONS = [
   { event: "menu:info-note", action: "insertAlertNote" },
@@ -134,6 +135,11 @@ export function useSourceMenuCommands(viewRef: MutableRefObject<EditorView | nul
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    // Skip legacy listeners when unified dispatcher is enabled
+    if (FEATURE_FLAGS.UNIFIED_MENU_DISPATCHER) {
+      return;
+    }
+
     let cancelled = false;
 
     const setupListeners = async () => {
