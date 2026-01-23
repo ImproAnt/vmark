@@ -169,10 +169,12 @@ pub async fn pty_spawn(
         );
     }
 
-    // Spawn reader task
+    // Spawn reader task using Tokio's blocking thread pool
+    // This prevents blocking I/O from starving the async runtime
+    // (which is critical for MCP bridge connections when Claude Code runs inside the terminal)
     let app_clone = app.clone();
     let session_id_clone = session_id.clone();
-    std::thread::spawn(move || {
+    tauri::async_runtime::spawn_blocking(move || {
         let mut buf = [0u8; 4096];
         loop {
             // Check for kill signal (non-blocking)
