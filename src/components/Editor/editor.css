@@ -202,7 +202,7 @@
 .tiptap-editor ul,
 .tiptap-editor ol {
   margin: 0 0 0.8em 0;
-  padding-left: 1em;
+  padding-left: 1.5em;
   font-size: var(--editor-font-size-sm);
   line-height: var(--editor-line-height-px);
 }
@@ -220,6 +220,7 @@
 .tiptap-editor li > ul,
 .tiptap-editor li > ol {
   margin: 0;
+  padding-left: 1em; /* Nested bullet aligns with parent text */
 }
 
 .tiptap-editor li {
@@ -233,6 +234,14 @@
 
 .tiptap-editor ul {
   list-style-type: disc;
+}
+
+.tiptap-editor ul ul {
+  list-style-type: circle;
+}
+
+.tiptap-editor ul ul ul {
+  list-style-type: square;
 }
 
 .tiptap-editor ol {
