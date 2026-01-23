@@ -8,8 +8,8 @@
 .alert-block {
   border-left: 4px solid var(--alert-border);
   background-color: var(--alert-bg);
-  padding: 12px 16px;
-  margin: 16px 0;
+  padding: 0.75em 1em;
+  margin: 1em 0;
   border-radius: 6px;
 }
 
@@ -19,10 +19,10 @@
   font-size: var(--editor-font-size-sm);
   line-height: var(--editor-line-height-px);
   color: var(--alert-title);
-  margin-bottom: 8px;
+  margin-bottom: 0.5em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5em;
   user-select: none;
 }
 
