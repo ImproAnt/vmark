@@ -22,18 +22,36 @@ A local-first Markdown editor built with Tauri v2 and React, featuring dual edit
 - **Styling**: Tailwind CSS v4
 - **Build Tool**: Vite v7
 
-## Prerequisites
+## Installation
+
+### macOS (Homebrew)
+
+```bash
+brew install xiaolai/tap/vmark
+```
+
+### Other Platforms
+
+Download the latest release from the [Releases page](https://github.com/xiaolai/vmark/releases):
+
+- **macOS**: `.dmg` (Apple Silicon & Intel)
+- **Windows**: `.msi` installer
+- **Linux**: `.AppImage`, `.deb`, or `.rpm`
+
+## Development
+
+### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
 - [pnpm](https://pnpm.io/) 8+
 - [Rust](https://www.rust-lang.org/tools/install) (latest stable)
 - Platform-specific Tauri dependencies: [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/)
 
-## Getting Started
+### Getting Started
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/xiaolai/vmark.git
 cd vmark
 
 # Install dependencies
@@ -49,7 +67,7 @@ pnpm test
 pnpm tauri build
 ```
 
-## Development Commands
+### Development Commands
 
 | Command | Description |
 |---------|-------------|

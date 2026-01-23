@@ -33,6 +33,16 @@ import DownloadButton from './.vitepress/components/DownloadButton.vue'
 
 ### macOS
 
+**Homebrew (Recommended)**
+
+```bash
+brew install xiaolai/tap/vmark
+```
+
+This installs VMark and automatically selects the right version for your Mac (Apple Silicon or Intel).
+
+**Manual Installation**
+
 1. Download the `.dmg` file
 2. Open the downloaded file
 3. Drag VMark to your Applications folder
