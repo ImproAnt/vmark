@@ -16,7 +16,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden; /* Prevent horizontal overflow */
-  padding: 0 2em 28px; /* top: 0, left/right: 2em, bottom: statusbar height */
+  padding: 0 2em 40px; /* top: 0, left/right: 2em, bottom: statusbar/findbar height */
   transition: padding-bottom 0.15s ease-out;
   /* Flexbox centering for narrow editor width settings */
   display: flex;
