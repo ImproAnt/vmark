@@ -174,19 +174,4 @@ The following multi-cursor features are planned for future releases:
 | Jump by word | `Alt + Arrow` |
 | Jump by line | `Mod + Arrow` |
 
-<style>
-.feature-box {
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  margin: 1rem 0;
-}
-.feature-box ol, .feature-box ul {
-  margin: 0.5rem 0 0 0;
-  padding-left: 1.25rem;
-}
-.feature-box p {
-  margin: 0.5rem 0 0 0;
-}
-</style>
+<!-- Styles in style.css -->

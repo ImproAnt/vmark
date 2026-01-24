@@ -351,18 +351,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
   background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-2);
   text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  transition: background 0.2s, color 0.2s;
 }
 
 .credit-link:hover {
-  background: var(--vp-c-brand-soft);
-  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-1);
+  color: var(--badge-hover-text);
 }
 
 .credit-link svg {
@@ -420,4 +420,89 @@ a[class*="badge"]:hover,
 a[class*="pill"]:hover,
 a[class*="tag"]:hover {
   color: var(--badge-hover-text) !important;
+}
+
+/* ============================================
+   SCREENSHOT COMPONENTS (Shared)
+   ============================================ */
+
+/* Screenshot container - inline in docs */
+.screenshot-container {
+  margin: 1.5rem 0;
+}
+
+.screenshot-container img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Screenshot card - grid layout with hover effect */
+.screenshot-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.screenshot-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.screenshot-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Unified caption styling */
+.screenshot-caption,
+.screenshot-card .caption {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--vp-c-text-2);
+  text-align: center;
+}
+
+/* Screenshot grid layout */
+.screenshots-section {
+  margin-bottom: 3rem;
+}
+
+.screenshots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* Feature box - info containers in docs */
+.feature-box {
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+.feature-box ol,
+.feature-box ul {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.25rem;
+}
+
+.feature-box p {
+  margin: 0.5rem 0 0 0;
+}
+
+/* ============================================
+   TABLE STYLING
+   ============================================ */
+
+/* Full-width tables in docs */
+.vp-doc table {
+  width: 100%;
 }

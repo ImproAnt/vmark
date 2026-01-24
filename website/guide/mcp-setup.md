@@ -81,23 +81,7 @@ Ask Claude a question and have it write the answer directly to your VMark docume
   <p class="screenshot-caption">The content appears instantly in VMark, fully formatted</p>
 </div>
 
-<style>
-.screenshot-container {
-  margin: 1.5rem 0;
-}
-.screenshot-container img {
-  max-width: 100%;
-  border-radius: 8px;
-  border: 1px solid var(--vp-c-divider);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.screenshot-caption {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--vp-c-text-2);
-  text-align: center;
-}
-</style>
+<!-- Styles in style.css -->
 
 ## Manual Configuration
 

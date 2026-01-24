@@ -119,9 +119,10 @@ Quick table editing actions.
 | Insert Column Left/Right | Add column at cursor |
 | Delete Row | Remove current row |
 | Delete Column | Remove current column |
-| Set Column Alignment | Left, center, or right |
-| Format Table | Auto-align table columns |
 | Delete Table | Remove entire table |
+| Align Column Left/Center/Right | Set alignment for current column |
+| Align All Left/Center/Right | Set alignment for all columns |
+| Format Table | Auto-align table columns (prettify markdown) |
 
 ## Spell Check Popup
 
@@ -164,8 +165,4 @@ Fix spelling errors with suggestions.
 - Hover popups (link, footnote, wiki) have 300ms delay before showing
 - Moving mouse back to popup keeps it open
 
-<style>
-.vp-doc table {
-  width: 100%;
-}
-</style>
+<!-- Styles in style.css -->

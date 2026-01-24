@@ -69,48 +69,11 @@ features:
 ---
 
 <style>
+/* Page-specific styles (shared styles in style.css) */
 .home-content {
   max-width: 1152px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
-}
-
-.screenshots-section {
-  margin-bottom: 3rem;
-}
-
-.screenshots-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.screenshot-card {
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.screenshot-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-}
-
-.screenshot-card img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.screenshot-card .caption {
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  color: var(--vp-c-text-2);
-  text-align: center;
-  font-weight: 500;
 }
 
 .tech-stack {
@@ -133,12 +96,7 @@ features:
 
 .tech-badge:hover {
   background: var(--vp-c-brand-1);
-  color: #fff !important;
-}
-
-/* Dark mode: brand is bright blue, needs dark text for contrast */
-.dark .tech-badge:hover {
-  color: #1a1a1a !important;
+  color: var(--badge-hover-text);
 }
 </style>
 
