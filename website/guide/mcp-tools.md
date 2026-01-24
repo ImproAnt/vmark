@@ -18,15 +18,10 @@ Get the full document content as markdown text.
 
 ### document_set_content
 
-Replace the entire document content.
+::: danger Blocked
+This tool is **disabled** for AI safety. AI assistants cannot replace the entire document content.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `content` | string | Yes | New document content in markdown. |
-| `windowId` | string | No | Window identifier. |
-
-::: warning
-This overwrites all existing content. Use `document_insert_at_cursor` or `selection_replace` for partial edits.
+Use `document_insert_at_cursor` or `selection_replace` for content modifications instead. These tools create suggestions that require user approval.
 :::
 
 ### document_insert_at_cursor
@@ -37,6 +32,10 @@ Insert text at the current cursor position.
 |-----------|------|----------|-------------|
 | `text` | string | Yes | Text to insert. |
 | `windowId` | string | No | Window identifier. |
+
+::: tip Suggestion System
+This tool creates a **suggestion** that requires user approval. The text appears as ghost text preview. Users can accept (Enter) or reject (Escape) the suggestion. This preserves undo/redo integrity.
+:::
 
 ### document_insert_at_position
 
@@ -112,6 +111,10 @@ Replace selected text with new text.
 | `text` | string | Yes | Replacement text. |
 | `windowId` | string | No | Window identifier. |
 
+::: tip Suggestion System
+This tool creates a **suggestion** that requires user approval. The original text appears with strikethrough, and the new text appears as ghost text. Users can accept (Enter) or reject (Escape) the suggestion.
+:::
+
 ### selection_delete
 
 Delete the selected text.
@@ -119,6 +122,10 @@ Delete the selected text.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `windowId` | string | No | Window identifier. |
+
+::: tip Suggestion System
+This tool creates a **suggestion** that requires user approval. The text to be deleted appears with strikethrough. Users can accept (Enter) or reject (Escape) the deletion.
+:::
 
 ### cursor_get_context
 
@@ -556,6 +563,53 @@ Get detailed tab information.
 | `windowId` | string | No | Window identifier. |
 
 **Returns:** `{ id, title, filePath, isDirty, isActive }`
+
+---
+
+## AI Suggestion Tools
+
+Tools for managing AI-generated content suggestions. When AI uses `document_insert_at_cursor`, `selection_replace`, or `selection_delete`, the changes are staged as suggestions that require user approval.
+
+::: info Undo/Redo Safety
+Suggestions don't modify the document until accepted. This preserves full undo/redo functionality - users can undo after accepting, and rejecting leaves no trace in history.
+:::
+
+### suggestion_list
+
+List all pending suggestions.
+
+**Returns:** `{ suggestions: [...], count, focusedId }`
+
+Each suggestion includes:
+- `id` - Unique identifier
+- `type` - `insert`, `replace`, or `delete`
+- `from`, `to` - Document positions
+- `newContent` - Content to be inserted (for insert/replace)
+- `originalContent` - Content being modified (for replace/delete)
+
+### suggestion_accept
+
+Accept a specific suggestion, applying its changes to the document.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `suggestionId` | string | Yes | ID of the suggestion to accept. |
+
+### suggestion_reject
+
+Reject a specific suggestion, discarding it without changes.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `suggestionId` | string | Yes | ID of the suggestion to reject. |
+
+### suggestion_accept_all
+
+Accept all pending suggestions in document order.
+
+### suggestion_reject_all
+
+Reject all pending suggestions.
 
 ---
 
