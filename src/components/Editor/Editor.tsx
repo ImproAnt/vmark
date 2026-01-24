@@ -1,6 +1,6 @@
 import { useEditorStore } from "@/stores/editorStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { useDocumentId } from "@/hooks/useDocumentState";
+import { useActiveTabId, useDocumentId } from "@/hooks/useDocumentState";
 import { useUnifiedMenuCommands } from "@/hooks/useUnifiedMenuCommands";
 import { SourceEditor } from "./SourceEditor";
 import { TiptapEditorInner } from "./TiptapEditor";
@@ -38,6 +38,7 @@ import "katex/dist/katex.min.css";
 
 export function Editor() {
   const sourceMode = useEditorStore((state) => state.sourceMode);
+  const tabId = useActiveTabId();
   const documentId = useDocumentId();
   const mediaBorderStyle = useSettingsStore((s) => s.markdown.mediaBorderStyle);
   const htmlRenderingMode = useSettingsStore((s) => s.markdown.htmlRenderingMode);
@@ -45,7 +46,9 @@ export function Editor() {
   // Mount unified menu dispatcher (handles routing based on mode)
   useUnifiedMenuCommands();
 
-  const editorKey = `doc-${documentId}`;
+  // Include tabId in key to ensure editor remounts when switching tabs
+  // documentId handles content reloads within the same tab
+  const editorKey = `${tabId}-doc-${documentId}`;
   const containerClass = `editor-container media-border-${mediaBorderStyle}`;
 
   return (
