@@ -91,8 +91,6 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &PredefinedMenuItem::separator(app)?,
             &export_submenu,
             &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
-            &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "close", "Close", true, Some("CmdOrCtrl+W"))?,
         ],
     )?;
@@ -216,7 +214,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
-    // Edit menu
+    // Edit menu (simplified - Lines moved to Block, Transform to Format, Cleanup to Tools)
     let edit_menu = Submenu::with_items(
         app,
         "Edit",
@@ -231,16 +229,13 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &PredefinedMenuItem::select_all(app, Some("Select All"))?,
             &PredefinedMenuItem::separator(app)?,
             &selection_submenu,
-            &lines_submenu,
-            &transform_submenu,
             &find_submenu,
-            &cleanup_submenu,
             &PredefinedMenuItem::separator(app)?,
             &history_submenu,
         ],
     )?;
 
-    // Block menu (block-level formatting only)
+    // Block menu (block-level formatting + line operations)
     let block_menu = Submenu::with_items(
         app,
         "Block",
@@ -294,6 +289,8 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &MenuItem::with_id(app, "indent", "Indent", true, Some("CmdOrCtrl+]"))?,
             &MenuItem::with_id(app, "outdent", "Outdent", true, Some("CmdOrCtrl+["))?,
             &MenuItem::with_id(app, "remove-list", "Remove List", true, None::<&str>)?,
+            &PredefinedMenuItem::separator(app)?,
+            &lines_submenu,
         ],
     )?;
 
@@ -320,7 +317,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
-    // Format menu (inline formatting only)
+    // Format menu (inline formatting + text transformations)
     let format_menu = Submenu::with_items(
         app,
         "Format",
@@ -350,7 +347,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
                 Some("CmdOrCtrl+\\"),
             )?,
             &PredefinedMenuItem::separator(app)?,
-            &cjk_submenu,
+            &transform_submenu,
         ],
     )?;
 
@@ -460,7 +457,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
-    // View menu
+    // View menu (Terminal moved to Tools)
     let view_menu = Submenu::with_items(
         app,
         "View",
@@ -513,6 +510,17 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
                 true,
                 Some("Alt+CmdOrCtrl+1"),
             )?,
+        ],
+    )?;
+
+    // Tools menu (utilities and cleanup operations)
+    // Terminal menu item only in debug builds (matches frontend DEV mode check)
+    #[cfg(debug_assertions)]
+    let tools_menu = Submenu::with_items(
+        app,
+        "Tools",
+        true,
+        &[
             &MenuItem::with_id(
                 app,
                 "terminal",
@@ -520,6 +528,24 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
                 true,
                 Some("Ctrl+`"),
             )?,
+            &PredefinedMenuItem::separator(app)?,
+            &cleanup_submenu,
+            &cjk_submenu,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
+        ],
+    )?;
+
+    #[cfg(not(debug_assertions))]
+    let tools_menu = Submenu::with_items(
+        app,
+        "Tools",
+        true,
+        &[
+            &cleanup_submenu,
+            &cjk_submenu,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
         ],
     )?;
 
@@ -550,6 +576,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &format_menu,
             &insert_menu,
             &view_menu,
+            &tools_menu,
             &help_menu,
         ],
     );
@@ -564,6 +591,7 @@ pub fn create_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &format_menu,
             &insert_menu,
             &view_menu,
+            &tools_menu,
             &help_menu,
         ],
     )
@@ -729,8 +757,6 @@ fn create_menu_with_shortcuts(
             &PredefinedMenuItem::separator(app)?,
             &export_submenu,
             &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
-            &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "close", "Close", true, get_accel("close", "CmdOrCtrl+W"))?,
         ],
     )?;
@@ -829,7 +855,7 @@ fn create_menu_with_shortcuts(
         ],
     )?;
 
-    // Edit menu
+    // Edit menu (simplified - Lines moved to Block, Transform to Format, Cleanup to Tools)
     let edit_menu = Submenu::with_items(
         app,
         "Edit",
@@ -844,17 +870,14 @@ fn create_menu_with_shortcuts(
             &PredefinedMenuItem::select_all(app, Some("Select All"))?,
             &PredefinedMenuItem::separator(app)?,
             &selection_submenu,
-            &lines_submenu,
-            &transform_submenu,
             &find_submenu,
             &line_endings_submenu,
-            &cleanup_submenu,
             &PredefinedMenuItem::separator(app)?,
             &history_submenu,
         ],
     )?;
 
-    // Block menu
+    // Block menu (block-level formatting + line operations)
     let block_menu = Submenu::with_items(
         app,
         "Block",
@@ -884,6 +907,8 @@ fn create_menu_with_shortcuts(
             &MenuItem::with_id(app, "indent", "Indent", true, get_accel("indent", "CmdOrCtrl+]"))?,
             &MenuItem::with_id(app, "outdent", "Outdent", true, get_accel("outdent", "CmdOrCtrl+["))?,
             &MenuItem::with_id(app, "remove-list", "Remove List", true, None::<&str>)?,
+            &PredefinedMenuItem::separator(app)?,
+            &lines_submenu,
         ],
     )?;
 
@@ -898,7 +923,7 @@ fn create_menu_with_shortcuts(
         ],
     )?;
 
-    // Format menu
+    // Format menu (inline formatting + text transformations)
     let format_menu = Submenu::with_items(
         app,
         "Format",
@@ -916,7 +941,7 @@ fn create_menu_with_shortcuts(
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "clear-format", "Clear Format", true, get_accel("clear-format", "CmdOrCtrl+\\"))?,
             &PredefinedMenuItem::separator(app)?,
-            &cjk_submenu,
+            &transform_submenu,
         ],
     )?;
 
@@ -996,7 +1021,7 @@ fn create_menu_with_shortcuts(
         ],
     )?;
 
-    // View menu
+    // View menu (Terminal moved to Tools)
     let view_menu = Submenu::with_items(
         app,
         "View",
@@ -1013,7 +1038,36 @@ fn create_menu_with_shortcuts(
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "sidebar", "Toggle Sidebar", true, get_accel("sidebar", "CmdOrCtrl+Shift+B"))?,
             &MenuItem::with_id(app, "outline", "Toggle Outline", true, get_accel("outline", "Alt+CmdOrCtrl+1"))?,
+        ],
+    )?;
+
+    // Tools menu (utilities and cleanup operations)
+    // Terminal menu item only in debug builds (matches frontend DEV mode check)
+    #[cfg(debug_assertions)]
+    let tools_menu = Submenu::with_items(
+        app,
+        "Tools",
+        true,
+        &[
             &MenuItem::with_id(app, "terminal", "Toggle Terminal", true, get_accel("terminal", "Ctrl+`"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &cleanup_submenu,
+            &cjk_submenu,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
+        ],
+    )?;
+
+    #[cfg(not(debug_assertions))]
+    let tools_menu = Submenu::with_items(
+        app,
+        "Tools",
+        true,
+        &[
+            &cleanup_submenu,
+            &cjk_submenu,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "cleanup-images", "Clean Up Unused Images...", true, None::<&str>)?,
         ],
     )?;
 
@@ -1044,6 +1098,7 @@ fn create_menu_with_shortcuts(
             &format_menu,
             &insert_menu,
             &view_menu,
+            &tools_menu,
             &help_menu,
         ],
     );
@@ -1058,6 +1113,7 @@ fn create_menu_with_shortcuts(
             &format_menu,
             &insert_menu,
             &view_menu,
+            &tools_menu,
             &help_menu,
         ],
     )
