@@ -21,6 +21,7 @@ import { extractHeadingsWithIds } from "@/utils/headingSlug";
 import { getBoundaryRects, getViewportBounds } from "@/utils/popupPosition";
 import { resolveHardBreakStyle } from "@/utils/linebreaks";
 import { triggerPastePlainText } from "@/plugins/markdownPaste/tiptap";
+import { handleRemoveBlockquote } from "@/plugins/formatToolbar/nodeActions.tiptap";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { readClipboardUrl } from "@/utils/clipboardUrl";
 
@@ -519,8 +520,9 @@ export function buildEditorKeymapBindings(): Record<string, Command> {
     if (!editor) return false;
 
     if (editor.isActive("blockquote")) {
-      // Remove blockquote - lift works for any content
-      editor.chain().focus().lift("blockquote").run();
+      // Remove blockquote - use handleRemoveBlockquote to unwrap the entire blockquote,
+      // not just the current selection's block range (important for lists in blockquotes)
+      handleRemoveBlockquote(view);
     } else {
       // Add blockquote - use ProseMirror wrap
       const { state, dispatch } = view;

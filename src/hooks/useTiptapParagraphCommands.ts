@@ -5,7 +5,7 @@ import type { Editor as TiptapEditor } from "@tiptap/core";
 import { liftListItem, sinkListItem } from "@tiptap/pm/schema-list";
 import { ALERT_TYPES, type AlertType } from "@/plugins/alertBlock/tiptap";
 import { insertFootnoteAndOpenPopup } from "@/plugins/footnotePopup/tiptapInsertFootnote";
-import { handleBlockquoteNest, handleBlockquoteUnnest, handleRemoveList } from "@/plugins/formatToolbar/nodeActions.tiptap";
+import { handleBlockquoteNest, handleBlockquoteUnnest, handleRemoveBlockquote, handleRemoveList } from "@/plugins/formatToolbar/nodeActions.tiptap";
 import { toggleTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
 import { getEditorView } from "@/types/tiptap";
 import { registerMenuListener } from "@/utils/menuListenerHelper";
@@ -85,8 +85,8 @@ export function useTiptapParagraphCommands(editor: TiptapEditor | null) {
 
       if (!(await register("menu:quote", (editor) => {
         if (editor.isActive("blockquote")) {
-          // Remove blockquote - lift works for any content
-          editor.chain().focus().lift("blockquote").run();
+          // Remove blockquote - use handleRemoveBlockquote to unwrap the entire blockquote
+          handleRemoveBlockquote(editor.view);
         } else {
           // Add blockquote - use ProseMirror wrap
           const { state, dispatch } = editor.view;

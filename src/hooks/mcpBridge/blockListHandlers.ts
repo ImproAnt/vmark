@@ -3,6 +3,7 @@
  */
 
 import { convertSelectionToTaskList } from "@/plugins/taskToggle/tiptapTaskListUtils";
+import { handleRemoveBlockquote } from "@/plugins/formatToolbar/nodeActions.tiptap";
 import { respond, getEditor } from "./utils";
 
 /**
@@ -80,9 +81,10 @@ export async function handleBlockToggle(
         editor.commands.toggleCodeBlock();
         break;
       case "blockquote":
-        // TipTap doesn't have toggleBlockquote by default, use lift/wrap
+        // TipTap doesn't have toggleBlockquote by default
         if (editor.isActive("blockquote")) {
-          editor.commands.lift("blockquote");
+          // Use handleRemoveBlockquote to unwrap the entire blockquote
+          handleRemoveBlockquote(editor.view);
         } else {
           editor.commands.setBlockquote();
         }

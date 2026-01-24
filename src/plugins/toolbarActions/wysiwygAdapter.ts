@@ -384,7 +384,9 @@ function decreaseHeadingLevel(editor: TiptapEditor): boolean {
 
 function toggleBlockquote(editor: TiptapEditor): boolean {
   if (editor.isActive("blockquote")) {
-    editor.chain().focus().lift("blockquote").run();
+    // Use handleRemoveBlockquote to properly unwrap the entire blockquote,
+    // not just the current selection's block range
+    handleRemoveBlockquote(editor.view);
     return true;
   }
 
