@@ -12,6 +12,7 @@ import { scheduleTiptapFocusAndRestore } from "@/utils/tiptapFocus";
 import { createTiptapExtensions } from "@/utils/tiptapExtensions";
 import type { CursorInfo } from "@/stores/documentStore";
 import { useTiptapEditorStore } from "@/stores/tiptapEditorStore";
+import { useActiveEditorStore } from "@/stores/activeEditorStore";
 import { useEditorStore } from "@/stores/editorStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabStore } from "@/stores/tabStore";
@@ -225,8 +226,16 @@ export function TiptapEditorInner() {
 
   useEffect(() => {
     useTiptapEditorStore.getState().setEditor(editor ?? null);
+    // Register with activeEditorStore for unified menu dispatcher
+    if (editor) {
+      useActiveEditorStore.getState().setActiveWysiwygEditor(editor);
+    }
     return () => {
       useTiptapEditorStore.getState().clear();
+      // Use conditional clear to avoid clearing a newly active editor
+      if (editor) {
+        useActiveEditorStore.getState().clearWysiwygEditorIfMatch(editor);
+      }
     };
   }, [editor]);
 

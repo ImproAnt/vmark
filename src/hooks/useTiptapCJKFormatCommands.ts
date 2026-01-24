@@ -8,6 +8,7 @@ import { useTabStore } from "@/stores/tabStore";
 import { collapseNewlines, formatMarkdown, formatSelection, removeTrailingSpaces } from "@/lib/cjkFormatter";
 import { resolveHardBreakStyle } from "@/utils/linebreaks";
 import { isTerminalFocused } from "@/utils/focus";
+import { FEATURE_FLAGS } from "@/stores/featureFlagsStore";
 
 function getActiveTabIdForWindow(windowLabel: string): string | null {
   try {
@@ -43,6 +44,11 @@ export function useTiptapCJKFormatCommands(editor: TiptapEditor | null) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
+    // Skip legacy listeners when unified dispatcher is enabled
+    if (FEATURE_FLAGS.UNIFIED_MENU_DISPATCHER) {
+      return;
+    }
+
     let cancelled = false;
 
     const setupListeners = async () => {

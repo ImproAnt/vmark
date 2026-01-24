@@ -18,6 +18,7 @@ import {
   restoreCursorInCodeMirror,
 } from "@/utils/cursorSync/codemirror";
 import { useSourceCursorContextStore } from "@/stores/sourceCursorContextStore";
+import { useActiveEditorStore } from "@/stores/activeEditorStore";
 import "@/plugins/codemirror/source-table.css";
 import "@/plugins/codemirror/source-blocks.css";
 import "@/plugins/mermaidPreview/mermaid-preview.css";
@@ -123,6 +124,9 @@ export function SourceEditor() {
     });
 
     viewRef.current = view;
+    // Register with activeEditorStore for unified menu dispatcher
+    useActiveEditorStore.getState().setActiveSourceView(view);
+
     const updateShortcutKeymap = () => {
       runOrQueueCodeMirrorAction(view, () => {
         view.dispatch({
@@ -155,6 +159,8 @@ export function SourceEditor() {
     return () => {
       clearTimeout(focusTimeoutId);
       unsubscribeShortcuts();
+      // Use conditional clear to avoid clearing a newly active view
+      useActiveEditorStore.getState().clearSourceViewIfMatch(view);
       view.destroy();
       viewRef.current = null;
     };

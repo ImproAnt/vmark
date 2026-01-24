@@ -127,6 +127,13 @@ features:
   background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-2);
   font-size: 0.875rem;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.tech-badge:hover {
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
 }
 </style>
 
@@ -173,12 +180,12 @@ Let Claude write directly to your documents via MCP integration:
 ## Built With Modern Technology
 
 <div class="tech-stack">
-  <span class="tech-badge">Tauri v2</span>
-  <span class="tech-badge">React 19</span>
-  <span class="tech-badge">TypeScript</span>
-  <span class="tech-badge">Tiptap</span>
-  <span class="tech-badge">CodeMirror 6</span>
-  <span class="tech-badge">Rust</span>
+  <a href="https://tauri.app" target="_blank" class="tech-badge">Tauri v2</a>
+  <a href="https://react.dev" target="_blank" class="tech-badge">React 19</a>
+  <a href="https://www.typescriptlang.org" target="_blank" class="tech-badge">TypeScript</a>
+  <a href="https://tiptap.dev" target="_blank" class="tech-badge">Tiptap</a>
+  <a href="https://codemirror.net" target="_blank" class="tech-badge">CodeMirror 6</a>
+  <a href="https://www.rust-lang.org" target="_blank" class="tech-badge">Rust</a>
 </div>
 
 ## Cross-Platform

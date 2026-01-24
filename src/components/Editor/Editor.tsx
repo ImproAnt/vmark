@@ -1,6 +1,7 @@
 import { useEditorStore } from "@/stores/editorStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useDocumentId } from "@/hooks/useDocumentState";
+import { useUnifiedMenuCommands } from "@/hooks/useUnifiedMenuCommands";
 import { SourceEditor } from "./SourceEditor";
 import { TiptapEditorInner } from "./TiptapEditor";
 import { HeadingPicker } from "./HeadingPicker";
@@ -40,6 +41,9 @@ export function Editor() {
   const documentId = useDocumentId();
   const mediaBorderStyle = useSettingsStore((s) => s.markdown.mediaBorderStyle);
   const htmlRenderingMode = useSettingsStore((s) => s.markdown.htmlRenderingMode);
+
+  // Mount unified menu dispatcher (handles routing based on mode)
+  useUnifiedMenuCommands();
 
   const editorKey = `doc-${documentId}`;
   const containerClass = `editor-container media-border-${mediaBorderStyle}`;

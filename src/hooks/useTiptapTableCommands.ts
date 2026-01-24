@@ -8,6 +8,7 @@ import { CellSelection } from "@tiptap/pm/tables";
 import { addColLeft, addColRight, addRowAbove, addRowBelow, alignColumn, deleteCurrentColumn, deleteCurrentRow, deleteCurrentTable, formatTable } from "@/plugins/tableUI/tableActions.tiptap";
 import { getEditorView } from "@/types/tiptap";
 import { registerMenuListener } from "@/utils/menuListenerHelper";
+import { FEATURE_FLAGS } from "@/stores/featureFlagsStore";
 
 function clearSelectedCells(view: EditorView): boolean {
   const selection = view.state.selection;
@@ -45,22 +46,22 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
   const unlistenRefs = useRef<UnlistenFn[]>([]);
 
   useEffect(() => {
-    let cancelled = false;
+    // Skip legacy listeners when unified dispatcher is enabled
+    if (FEATURE_FLAGS.UNIFIED_MENU_DISPATCHER) {
+      return;
+    }
+
+    const cancelledRef = { current: false };
 
     const setupListeners = async () => {
       unlistenRefs.current.forEach((fn) => fn());
       unlistenRefs.current = [];
 
-      if (cancelled) return;
+      if (cancelledRef.current) return;
 
       // Get current window for filtering - menu events include target window label
       const currentWindow = getCurrentWebviewWindow();
       const windowLabel = currentWindow.label;
-      const cancelledRef = { current: false };
-
-      // Update cancelledRef when cancelled changes
-      const checkCancelled = () => { cancelledRef.current = cancelled; };
-      checkCancelled();
 
       const ctx = { currentWindow, windowLabel, editorRef, unlistenRefs, cancelledRef };
       const register = (eventName: string, handler: (editor: TiptapEditor) => void) =>
@@ -139,7 +140,7 @@ export function useTiptapTableCommands(editor: TiptapEditor | null) {
     setupListeners();
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       const fns = unlistenRefs.current;
       unlistenRefs.current = [];
       fns.forEach((fn) => fn());

@@ -9,11 +9,13 @@ import type { EditorView } from "@codemirror/view";
 import { clearAllFormatting } from "@/plugins/sourceContextDetection/clearFormatting";
 import { buildAlertBlock, buildDetailsBlock, buildDiagramBlock, buildMathBlock, type AlertType } from "@/plugins/sourceContextDetection/sourceInsertions";
 import { getBlockquoteInfo, nestBlockquote, removeBlockquote, unnestBlockquote } from "@/plugins/sourceContextDetection/blockquoteDetection";
+import { toggleBlockquote } from "@/plugins/sourceContextDetection/blockquoteActions";
 import { convertToHeading, getHeadingInfo, setHeadingLevel } from "@/plugins/sourceContextDetection/headingDetection";
 import { getListItemInfo, indentListItem, outdentListItem, removeList, toBulletList, toOrderedList, toTaskList } from "@/plugins/sourceContextDetection/listDetection";
 import { getSourceTableInfo } from "@/plugins/sourceContextDetection/tableDetection";
 import { deleteColumn, deleteRow, deleteTable, formatTable, insertColumnLeft, insertColumnRight, insertRowAbove, insertRowBelow, setAllColumnsAlignment, setColumnAlignment } from "@/plugins/sourceContextDetection/tableActions";
 import { getAnchorRectFromRange } from "@/plugins/sourcePopup/sourcePopupUtils";
+import { expandSelectionInSource, selectBlockInSource, selectLineInSource, selectWordInSource } from "@/plugins/toolbarActions/sourceSelectionActions";
 import { canRunActionInMultiSelection } from "./multiSelectionPolicy";
 import type { SourceToolbarContext } from "./types";
 import { applyMultiSelectionBlockquoteAction, applyMultiSelectionHeading, applyMultiSelectionListAction } from "./sourceMultiSelection";
@@ -24,8 +26,11 @@ import { copyImageToAssets } from "@/hooks/useImageOperations";
 import { encodeMarkdownUrl } from "@/utils/markdownUrl";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useImagePopupStore } from "@/stores/imagePopupStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabStore } from "@/stores/tabStore";
 import { getWindowLabel } from "@/hooks/useWindowFocus";
+import { collapseNewlines, formatMarkdown, formatSelection, removeTrailingSpaces } from "@/lib/cjkFormatter";
+import { normalizeLineEndings, resolveHardBreakStyle } from "@/utils/linebreaks";
 
 const TABLE_TEMPLATE = "| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n";
 
@@ -79,7 +84,8 @@ function findImageAtCursor(view: EditorView, pos: number): ImageRange | null {
     const matchEnd = matchStart + match[0].length;
 
     // Check if cursor is inside this image markdown
-    if (pos >= matchStart && pos <= matchEnd) {
+    // Use pos < matchEnd since CodeMirror ranges are [from, to)
+    if (pos >= matchStart && pos < matchEnd) {
       const alt = match[1];
       const src = match[2] || match[3];
 
@@ -147,7 +153,8 @@ function isInsideLink(view: EditorView, pos: number): boolean {
       continue;
     }
 
-    if (pos >= matchStart && pos <= matchEnd) {
+    // Use pos < matchEnd since CodeMirror ranges are [from, to)
+    if (pos >= matchStart && pos < matchEnd) {
       return true;
     }
   }
@@ -270,7 +277,9 @@ function insertImageTemplate(
  * Fires the async operation and returns immediately.
  */
 function insertImage(view: EditorView): boolean {
-  void insertImageAsync(view);
+  insertImageAsync(view).catch((error) => {
+    console.error("[SourceAdapter] insertImage failed:", error);
+  });
   return true;
 }
 
@@ -283,8 +292,9 @@ function insertCodeBlock(view: EditorView): boolean {
   return true;
 }
 
-function insertBlockquote(view: EditorView): boolean {
-  insertText(view, "> ");
+function insertOrToggleBlockquote(view: EditorView): boolean {
+  // Use toggleBlockquote for proper toggle behavior
+  toggleBlockquote(view);
   return true;
 }
 
@@ -323,6 +333,32 @@ export function setSourceHeadingLevel(context: SourceToolbarContext, level: numb
   return true;
 }
 
+function increaseHeadingLevel(view: EditorView): boolean {
+  const info = getHeadingInfo(view);
+  if (info && info.level < 6) {
+    setHeadingLevel(view, info, info.level + 1);
+    return true;
+  }
+  if (!info) {
+    convertToHeading(view, 1);
+    return true;
+  }
+  return false;
+}
+
+function decreaseHeadingLevel(view: EditorView): boolean {
+  const info = getHeadingInfo(view);
+  if (info && info.level > 1) {
+    setHeadingLevel(view, info, info.level - 1);
+    return true;
+  }
+  if (info && info.level === 1) {
+    setHeadingLevel(view, info, 0);
+    return true;
+  }
+  return false;
+}
+
 export function performSourceToolbarAction(action: string, context: SourceToolbarContext): boolean {
   const view = context.view;
   if (!view) return false;
@@ -358,6 +394,10 @@ export function performSourceToolbarAction(action: string, context: SourceToolba
     // Clear formatting
     case "clearFormatting":
       return handleClearFormatting(view);
+    case "increaseHeading":
+      return increaseHeadingLevel(view);
+    case "decreaseHeading":
+      return decreaseHeadingLevel(view);
 
     // Simple insertions
     case "insertImage":
@@ -367,7 +407,7 @@ export function performSourceToolbarAction(action: string, context: SourceToolba
     case "insertCodeBlock":
       return insertCodeBlock(view);
     case "insertBlockquote":
-      return insertBlockquote(view);
+      return insertOrToggleBlockquote(view);
     case "insertDivider":
       return insertDivider(view);
     case "insertTable":
@@ -428,6 +468,30 @@ export function performSourceToolbarAction(action: string, context: SourceToolba
     case "removeQuote":
       return handleBlockquoteAction(view, action);
 
+    // Selection
+    case "selectWord":
+      return selectWordInSource(view);
+    case "selectLine":
+      return selectLineInSource(view);
+    case "selectBlock":
+      return selectBlockInSource(view);
+    case "expandSelection":
+      return expandSelectionInSource(view);
+
+    // CJK formatting
+    case "formatCJK":
+      return handleFormatCJK(view);
+    case "formatCJKFile":
+      return handleFormatCJKFile(view);
+    case "removeTrailingSpaces":
+      return handleRemoveTrailingSpaces();
+    case "collapseBlankLines":
+      return handleCollapseBlankLines();
+    case "lineEndingsLF":
+      return handleLineEndings("lf");
+    case "lineEndingsCRLF":
+      return handleLineEndings("crlf");
+
     default:
       return false;
   }
@@ -483,27 +547,46 @@ function handleInsertDiagram(view: EditorView): boolean {
 function handleListAction(view: EditorView, action: string): boolean {
   if (applyMultiSelectionListAction(view, action)) return true;
   const info = getListItemInfo(view);
-  if (!info) return false;
 
+  // If already in a list, convert or modify
+  if (info) {
+    switch (action) {
+      case "bulletList":
+        toBulletList(view, info);
+        return true;
+      case "orderedList":
+        toOrderedList(view, info);
+        return true;
+      case "taskList":
+        toTaskList(view, info);
+        return true;
+      case "indent":
+        indentListItem(view, info);
+        return true;
+      case "outdent":
+        outdentListItem(view, info);
+        return true;
+      case "removeList":
+        removeList(view, info);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // Not in a list - create new list for list type actions
   switch (action) {
     case "bulletList":
-      toBulletList(view, info);
-      return true;
+      return insertListMarker(view, "- ");
     case "orderedList":
-      toOrderedList(view, info);
-      return true;
+      return insertListMarker(view, "1. ");
     case "taskList":
-      toTaskList(view, info);
-      return true;
+      return insertListMarker(view, "- [ ] ");
     case "indent":
-      indentListItem(view, info);
-      return true;
     case "outdent":
-      outdentListItem(view, info);
-      return true;
     case "removeList":
-      removeList(view, info);
-      return true;
+      // These only make sense when already in a list
+      return false;
     default:
       return false;
   }
@@ -579,4 +662,99 @@ function handleBlockquoteAction(view: EditorView, action: string): boolean {
     default:
       return false;
   }
+}
+
+// --- CJK formatting helpers ---
+
+function shouldPreserveTwoSpaceBreaks(): boolean {
+  try {
+    const windowLabel = getWindowLabel();
+    const tabId = useTabStore.getState().activeTabId[windowLabel] ?? null;
+    const doc = tabId ? useDocumentStore.getState().getDocument(tabId) : null;
+    const hardBreakStyleOnSave = useSettingsStore.getState().markdown.hardBreakStyleOnSave;
+    return resolveHardBreakStyle(doc?.hardBreakStyle ?? "unknown", hardBreakStyleOnSave) === "twoSpaces";
+  } catch {
+    return false;
+  }
+}
+
+function handleFormatCJK(view: EditorView): boolean {
+  const config = useSettingsStore.getState().cjkFormatting;
+  const preserveTwoSpaceHardBreaks = shouldPreserveTwoSpaceBreaks();
+  const { from, to } = view.state.selection.main;
+
+  if (from !== to) {
+    // Format selection
+    const selectedText = view.state.doc.sliceString(from, to);
+    const formatted = formatSelection(selectedText, config, { preserveTwoSpaceHardBreaks });
+    if (formatted !== selectedText) {
+      view.dispatch({
+        changes: { from, to, insert: formatted },
+        selection: { anchor: from, head: from + formatted.length },
+      });
+    }
+    return true;
+  }
+
+  // No selection - format entire file
+  return handleFormatCJKFile(view);
+}
+
+function handleFormatCJKFile(view: EditorView): boolean {
+  const config = useSettingsStore.getState().cjkFormatting;
+  const preserveTwoSpaceHardBreaks = shouldPreserveTwoSpaceBreaks();
+  const content = view.state.doc.toString();
+  const formatted = formatMarkdown(content, config, { preserveTwoSpaceHardBreaks });
+
+  if (formatted !== content) {
+    // Preserve cursor position as best as possible
+    const cursorPos = view.state.selection.main.head;
+    const newCursorPos = Math.min(cursorPos, formatted.length);
+    view.dispatch({
+      changes: { from: 0, to: content.length, insert: formatted },
+      selection: { anchor: newCursorPos },
+    });
+  }
+  return true;
+}
+
+// --- Text cleanup helpers ---
+
+function getActiveDocument() {
+  const windowLabel = getWindowLabel();
+  const tabId = useTabStore.getState().activeTabId[windowLabel] ?? null;
+  if (!tabId) return null;
+  return { tabId, doc: useDocumentStore.getState().getDocument(tabId) };
+}
+
+function handleRemoveTrailingSpaces(): boolean {
+  const active = getActiveDocument();
+  if (!active?.doc) return false;
+  const preserveTwoSpaceHardBreaks = shouldPreserveTwoSpaceBreaks();
+  const formatted = removeTrailingSpaces(active.doc.content, { preserveTwoSpaceHardBreaks });
+  if (formatted !== active.doc.content) {
+    useDocumentStore.getState().setContent(active.tabId, formatted);
+  }
+  return true;
+}
+
+function handleCollapseBlankLines(): boolean {
+  const active = getActiveDocument();
+  if (!active?.doc) return false;
+  const formatted = collapseNewlines(active.doc.content);
+  if (formatted !== active.doc.content) {
+    useDocumentStore.getState().setContent(active.tabId, formatted);
+  }
+  return true;
+}
+
+function handleLineEndings(target: "lf" | "crlf"): boolean {
+  const active = getActiveDocument();
+  if (!active?.doc) return false;
+  const normalized = normalizeLineEndings(active.doc.content, target);
+  if (normalized !== active.doc.content) {
+    useDocumentStore.getState().setContent(active.tabId, normalized);
+  }
+  useDocumentStore.getState().setLineMetadata(active.tabId, { lineEnding: target });
+  return true;
 }
