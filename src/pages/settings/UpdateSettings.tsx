@@ -34,7 +34,7 @@ function StatusIndicator() {
 
   if (status === "up-to-date") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+      <span className="inline-flex items-center gap-1.5 text-xs text-[var(--success-color)]">
         <CheckCircle2 className="w-3 h-3" />
         Up to date
       </span>

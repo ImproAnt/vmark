@@ -27,8 +27,7 @@ export function useUpdateOperations() {
    * Check for updates and store result
    */
   const checkForUpdates = useCallback(async () => {
-    setStatus("checking");
-    setError(null);
+    setStatus("checking"); // Also clears any previous error
 
     try {
       const update = await check();
@@ -51,14 +50,13 @@ export function useUpdateOperations() {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to check for updates";
-      setError(message);
-      setStatus("error");
+      setError(message); // Also sets status to "error"
       return false;
     } finally {
       // Update last check timestamp
       updateUpdateSetting("lastCheckTimestamp", Date.now());
     }
-  }, [setStatus, setError, setUpdateInfo, updateUpdateSetting]);
+  }, [setStatus, setUpdateInfo, setError, updateUpdateSetting]);
 
   /**
    * Download and install the pending update
@@ -96,8 +94,7 @@ export function useUpdateOperations() {
       setStatus("ready");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to download update";
-      setError(message);
-      setStatus("error");
+      setError(message); // Also sets status to "error"
     }
   }, [setStatus, setDownloadProgress, setError]);
 

@@ -57,14 +57,26 @@ const initialState: UpdateState = {
 export const useUpdateStore = create<UpdateState & UpdateActions>()((set) => ({
   ...initialState,
 
-  setStatus: (status) => set({ status, error: status === "error" ? undefined : null }),
+  // setStatus clears error when transitioning away from error state
+  // but preserves error when status is "error" (let setError handle error messages)
+  setStatus: (status) =>
+    set((state) => ({
+      status,
+      // Clear error when moving to non-error status, preserve when staying in error
+      error: status === "error" ? state.error : null,
+    })),
   setUpdateInfo: (updateInfo) => set({ updateInfo }),
   setDownloadProgress: (progress) =>
     set((state) => ({
       downloadProgress:
         typeof progress === "function" ? progress(state.downloadProgress) : progress,
     })),
-  setError: (error) => set({ error, status: "error" }),
+  // setError: null clears error without changing status, non-null sets error status
+  setError: (error) =>
+    set((state) => ({
+      error,
+      status: error !== null ? "error" : state.status,
+    })),
   dismiss: () => set({ dismissed: true }),
   reset: () => set(initialState),
 }));

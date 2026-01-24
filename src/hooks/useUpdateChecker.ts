@@ -18,6 +18,7 @@ import { useUpdateOperations } from "./useUpdateOperations";
 // Time constants in milliseconds
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
+const STARTUP_CHECK_DELAY_MS = 2000; // Delay to let app initialize before checking
 
 /**
  * Determine if we should check for updates based on settings and last check time.
@@ -70,10 +71,9 @@ export function useUpdateChecker() {
     if (shouldCheckNow(autoCheckEnabled, checkFrequency, lastCheckTimestamp)) {
       hasChecked.current = true;
 
-      // Delay slightly to let the app initialize
       const timer = setTimeout(async () => {
         await checkForUpdates();
-      }, 2000);
+      }, STARTUP_CHECK_DELAY_MS);
 
       return () => clearTimeout(timer);
     }
