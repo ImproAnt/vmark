@@ -138,6 +138,8 @@ export interface CJKFormattingSettings {
   // Group 4: Dash & Quote
   dashConversion: boolean;
   emdashSpacing: boolean;
+  smartQuoteConversion: boolean; // Convert straight quotes to smart quotes
+  quoteStyle: QuoteStyle; // Target quote style for conversion
   quoteSpacing: boolean;
   singleQuoteSpacing: boolean;
   cjkCornerQuotes: boolean;
@@ -148,6 +150,12 @@ export interface CJKFormattingSettings {
 }
 
 export type MediaBorderStyle = "none" | "always" | "hover";
+
+// Quote style options for smart quote conversion
+// - curly: "" '' (Simplified Chinese, Western)
+// - corner: 「」『』 (Traditional Chinese, Japanese)
+// - guillemets: «» ‹› (French, Russian)
+export type QuoteStyle = "curly" | "corner" | "guillemets";
 
 export type SpellCheckLanguage = "en" | "de" | "es" | "fr" | "ko";
 
@@ -319,9 +327,11 @@ const initialState: SettingsState = {
     // Group 4: Dash & Quote
     dashConversion: true,
     emdashSpacing: true,
+    smartQuoteConversion: true, // ON by default - convert " to ""
+    quoteStyle: "curly", // curly quotes for Simplified Chinese
     quoteSpacing: true,
     singleQuoteSpacing: true,
-    cjkCornerQuotes: false, // OFF by default
+    cjkCornerQuotes: false, // OFF by default (Traditional Chinese/Japanese only)
     cjkNestedQuotes: false, // OFF by default
     // Group 5: Cleanup
     consecutivePunctuationLimit: 0, // 0=off

@@ -4,7 +4,7 @@
  * Spell check and CJK formatting configuration.
  */
 
-import { useSettingsStore, type SpellCheckLanguage } from "@/stores/settingsStore";
+import { useSettingsStore, type SpellCheckLanguage, type QuoteStyle } from "@/stores/settingsStore";
 import { SettingRow, Toggle, SettingsGroup, Select, CollapsibleGroup } from "./components";
 
 const spellCheckLanguageOptions: { value: SpellCheckLanguage; label: string }[] = [
@@ -148,7 +148,7 @@ export function LanguageSettings() {
 
         {/* Dash & Quotes */}
         <SettingsGroup title="Dash & Quotes">
-          <SettingRow label="Convert dashes" description="-- -> —— between CJK">
+          <SettingRow label="Convert dashes" description="-- → —— between CJK">
             <Toggle
               checked={cjkFormatting.dashConversion}
               onChange={(v) => updateCJKSetting("dashConversion", v)}
@@ -161,6 +161,31 @@ export function LanguageSettings() {
             <Toggle
               checked={cjkFormatting.emdashSpacing}
               onChange={(v) => updateCJKSetting("emdashSpacing", v)}
+            />
+          </SettingRow>
+          <SettingRow
+            label="Convert straight quotes"
+            description={'Convert " and \' to smart quotes'}
+          >
+            <Toggle
+              checked={cjkFormatting.smartQuoteConversion}
+              onChange={(v) => updateCJKSetting("smartQuoteConversion", v)}
+            />
+          </SettingRow>
+          <SettingRow
+            label="Quote style"
+            description="Target style for quote conversion"
+            disabled={!cjkFormatting.smartQuoteConversion}
+          >
+            <Select<QuoteStyle>
+              value={cjkFormatting.quoteStyle}
+              options={[
+                { value: "curly", label: 'Curly "" \u2018\u2019' },
+                { value: "corner", label: "Corner 「」『』" },
+                { value: "guillemets", label: "Guillemets «» ‹›" },
+              ]}
+              onChange={(v) => updateCJKSetting("quoteStyle", v)}
+              disabled={!cjkFormatting.smartQuoteConversion}
             />
           </SettingRow>
           <SettingRow
@@ -182,17 +207,19 @@ export function LanguageSettings() {
             />
           </SettingRow>
           <SettingRow
-            label="Use CJK corner quotes"
-            description={'"Chinese" -> 「Chinese」'}
+            label="CJK corner quotes"
+            description={'"Chinese" → 「Chinese」 (Traditional Chinese/Japanese)'}
+            disabled={cjkFormatting.quoteStyle !== "curly"}
           >
             <Toggle
               checked={cjkFormatting.cjkCornerQuotes}
               onChange={(v) => updateCJKSetting("cjkCornerQuotes", v)}
+              disabled={cjkFormatting.quoteStyle !== "curly"}
             />
           </SettingRow>
           <SettingRow
-            label="Use nested corner quotes"
-            description={"Nested '' -> 『』 inside 「」"}
+            label="Nested corner quotes"
+            description={"Nested '' → 『』 inside 「」"}
           >
             <Toggle
               checked={cjkFormatting.cjkNestedQuotes}

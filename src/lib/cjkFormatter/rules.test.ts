@@ -15,6 +15,7 @@ import {
   convertDashes,
   fixEmdashSpacing,
   fixDoubleQuoteSpacing,
+  convertStraightToSmartQuotes,
   convertToCJKCornerQuotes,
   limitConsecutivePunctuation,
   containsCJK,
@@ -280,6 +281,60 @@ describe("fixDoubleQuoteSpacing", () => {
     expect(fixDoubleQuoteSpacing("测试\u201chello\u201d内容")).toBe(
       "测试 \u201chello\u201d 内容"
     );
+  });
+});
+
+describe("convertStraightToSmartQuotes", () => {
+  describe("curly style", () => {
+    it("converts double quotes to curly quotes", () => {
+      expect(convertStraightToSmartQuotes('"hello"', "curly")).toBe("\u201chello\u201d");
+      expect(convertStraightToSmartQuotes('say "hello" world', "curly")).toBe(
+        "say \u201chello\u201d world"
+      );
+    });
+
+    it("converts single quotes to curly quotes", () => {
+      expect(convertStraightToSmartQuotes("'hello'", "curly")).toBe("\u2018hello\u2019");
+      expect(convertStraightToSmartQuotes("say 'hello' world", "curly")).toBe(
+        "say \u2018hello\u2019 world"
+      );
+    });
+
+    it("preserves apostrophes in contractions", () => {
+      // Apostrophes within words should remain as straight quotes
+      expect(convertStraightToSmartQuotes("don't", "curly")).toBe("don't");
+      expect(convertStraightToSmartQuotes("it's", "curly")).toBe("it's");
+    });
+
+    it("handles quotes at start of text", () => {
+      expect(convertStraightToSmartQuotes('"start"', "curly")).toBe("\u201cstart\u201d");
+    });
+
+    it("handles nested quotes", () => {
+      expect(convertStraightToSmartQuotes('"say \'hello\' now"', "curly")).toBe(
+        "\u201csay \u2018hello\u2019 now\u201d"
+      );
+    });
+  });
+
+  describe("corner style", () => {
+    it("converts double quotes to corner brackets", () => {
+      expect(convertStraightToSmartQuotes('"hello"', "corner")).toBe("「hello」");
+    });
+
+    it("converts single quotes to double corner brackets", () => {
+      expect(convertStraightToSmartQuotes("'hello'", "corner")).toBe("『hello』");
+    });
+  });
+
+  describe("guillemets style", () => {
+    it("converts double quotes to guillemets", () => {
+      expect(convertStraightToSmartQuotes('"hello"', "guillemets")).toBe("«hello»");
+    });
+
+    it("converts single quotes to single guillemets", () => {
+      expect(convertStraightToSmartQuotes("'hello'", "guillemets")).toBe("‹hello›");
+    });
   });
 });
 

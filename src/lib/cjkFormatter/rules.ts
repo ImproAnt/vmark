@@ -3,7 +3,7 @@
  * Ported from Python cjk-text-formatter project
  */
 
-import type { CJKFormattingSettings } from "@/stores/settingsStore";
+import type { CJKFormattingSettings, QuoteStyle } from "@/stores/settingsStore";
 
 // Character ranges - Extended CJK coverage
 const HAN_BASIC = "\u4e00-\u9fff"; // CJK Unified Ideographs (basic block)
@@ -348,6 +348,60 @@ export function fixDoubleCornerQuoteSpacing(text: string): string {
   return fixQuoteSpacing(text, "『", "』");
 }
 
+// Quote style definitions
+const QUOTE_STYLES: Record<QuoteStyle, {
+  doubleOpen: string;
+  doubleClose: string;
+  singleOpen: string;
+  singleClose: string;
+}> = {
+  curly: { doubleOpen: "\u201c", doubleClose: "\u201d", singleOpen: "\u2018", singleClose: "\u2019" }, // "" ''
+  corner: { doubleOpen: "「", doubleClose: "」", singleOpen: "『", singleClose: "』" }, // 「」『』
+  guillemets: { doubleOpen: "«", doubleClose: "»", singleOpen: "‹", singleClose: "›" }, // «» ‹›
+};
+
+/**
+ * Convert straight quotes to smart quotes based on chosen style.
+ * Uses context to determine opening vs closing quotes.
+ *
+ * Handles:
+ * - "text" → "text" (or 「text」 or «text»)
+ * - 'text' → 'text' (or 『text』 or ‹text›)
+ * - Preserves apostrophes in contractions (don't, it's)
+ */
+export function convertStraightToSmartQuotes(text: string, style: QuoteStyle): string {
+  const quotes = QUOTE_STYLES[style];
+
+  // Convert double quotes "
+  // Opening: after whitespace, start of line/string, or opening brackets
+  // Closing: after word characters, punctuation, or before whitespace/end
+  text = text.replace(/"/g, (_, offset) => {
+    const before = offset > 0 ? text[offset - 1] : "";
+    // Opening quote: at start, after whitespace, or after opening brackets
+    if (offset === 0 || /[\s([{「『《【〈]/.test(before)) {
+      return quotes.doubleOpen;
+    }
+    // Closing quote: everything else
+    return quotes.doubleClose;
+  });
+
+  // Convert single quotes ' (but preserve apostrophes)
+  // Strategy: use paired matching first, then handle remaining
+  // This is tricky because ' is used for both quotes AND apostrophes
+
+  // First, find paired single quotes: 'text'
+  // A pair is: whitespace/start + ' + non-quote content + ' + whitespace/punctuation/end
+  text = text.replace(
+    /(^|[\s([{「『《【〈])'([^']*?)'/g,
+    (_, before, content) => `${before}${quotes.singleOpen}${content}${quotes.singleClose}`
+  );
+
+  // Remaining single quotes are likely apostrophes - leave them as-is
+  // (e.g., don't, it's, '90s)
+
+  return text;
+}
+
 /**
  * Convert curly double quotes to CJK corner quotes when quoting CJK text
  * "中文内容" → 「中文内容」
@@ -475,8 +529,15 @@ export function applyRules(
       text = fixEmdashSpacing(text);
     }
 
-    // Corner quotes (before quote spacing)
-    if (config.cjkCornerQuotes) {
+    // Smart quote conversion (straight → curly/corner/guillemets)
+    // Must run BEFORE corner quote conversion (which works on curly quotes)
+    if (config.smartQuoteConversion) {
+      text = convertStraightToSmartQuotes(text, config.quoteStyle);
+    }
+
+    // Corner quotes: convert curly → corner when CJK content
+    // Only applies if quoteStyle is "curly" (otherwise already corner)
+    if (config.cjkCornerQuotes && config.quoteStyle === "curly") {
       text = convertToCJKCornerQuotes(text);
     }
     if (config.cjkNestedQuotes) {
