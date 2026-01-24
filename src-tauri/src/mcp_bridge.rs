@@ -529,12 +529,15 @@ async fn handle_message(text: &str, client_id: u64, app: &AppHandle) -> Result<(
     // Create a oneshot channel for the response
     let (response_tx, response_rx) = oneshot::channel();
 
+    let request_id = msg.id.clone();
+    let request_type_for_log = request.request_type.clone();
+
     // Store the pending request
     {
         let state = get_bridge_state();
         let mut guard = state.lock().await;
         guard.pending.insert(
-            msg.id.clone(),
+            request_id.clone(),
             PendingRequest {
                 response_tx,
                 client_id,
@@ -544,25 +547,49 @@ async fn handle_message(text: &str, client_id: u64, app: &AppHandle) -> Result<(
 
     // Emit event to frontend
     let event = McpRequestEvent {
-        id: msg.id.clone(),
+        id: request_id.clone(),
         request_type: request.request_type.clone(),
         args: request.args,
     };
 
-    app.emit("mcp-bridge:request", &event)
-        .map_err(|e| format!("Failed to emit event: {}", e))?;
+    if let Err(e) = app.emit("mcp-bridge:request", &event) {
+        // Clean up pending request on emit failure
+        let state = get_bridge_state();
+        let mut guard = state.lock().await;
+        guard.pending.remove(&request_id);
+        return Err(format!("Failed to emit event: {}", e));
+    }
 
-    // Wait for response with timeout
-    let response = tokio::time::timeout(std::time::Duration::from_secs(30), response_rx)
-        .await
-        .map_err(|_| "Request timeout".to_string())?
-        .map_err(|_| "Response channel closed".to_string())?;
+    // Wait for response with timeout (10 seconds - operations should be fast)
+    let response = match tokio::time::timeout(std::time::Duration::from_secs(10), response_rx).await
+    {
+        Ok(Ok(response)) => response,
+        Ok(Err(_)) => {
+            // Channel closed - clean up pending request
+            let state = get_bridge_state();
+            let mut guard = state.lock().await;
+            guard.pending.remove(&request_id);
+            return Err("Response channel closed".to_string());
+        }
+        Err(_) => {
+            // Timeout - clean up pending request
+            let state = get_bridge_state();
+            let mut guard = state.lock().await;
+            guard.pending.remove(&request_id);
+            #[cfg(debug_assertions)]
+            eprintln!(
+                "[MCP Bridge] Client {} request {} timed out after 10s",
+                client_id, request_type_for_log
+            );
+            return Err("Request timeout".to_string());
+        }
+    };
 
     #[cfg(debug_assertions)]
     if !is_read {
         eprintln!(
-            "[MCP Bridge] Client {} releasing write lock for {}",
-            client_id, request.request_type
+            "[MCP Bridge] Client {} completed {} - releasing write lock",
+            client_id, request_type_for_log
         );
     }
 

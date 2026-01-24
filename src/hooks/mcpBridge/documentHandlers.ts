@@ -40,7 +40,7 @@ export async function handleSetContent(
     }
 
     const parsedDoc = parseMarkdown(editor.state.schema, content);
-    // Use emitUpdate: false to prevent polluting undo history with bulk operations
+    // emitUpdate: false prevents onUpdate callback, but change is still undoable
     editor.commands.setContent(parsedDoc.toJSON(), { emitUpdate: false });
 
     await respond({ id, success: true, data: null });
@@ -213,7 +213,7 @@ export async function handleDocumentReplace(
 
     if (count > 0) {
       const parsedDoc = parseMarkdown(editor.state.schema, newContent);
-      // Use emitUpdate: false to prevent polluting undo history with bulk operations
+      // emitUpdate: false prevents onUpdate callback, but change is still undoable
       editor.commands.setContent(parsedDoc.toJSON(), { emitUpdate: false });
     }
 
