@@ -40,7 +40,8 @@ export async function handleSetContent(
     }
 
     const parsedDoc = parseMarkdown(editor.state.schema, content);
-    editor.commands.setContent(parsedDoc.toJSON());
+    // Use emitUpdate: false to prevent polluting undo history with bulk operations
+    editor.commands.setContent(parsedDoc.toJSON(), { emitUpdate: false });
 
     await respond({ id, success: true, data: null });
   } catch (error) {
@@ -212,7 +213,8 @@ export async function handleDocumentReplace(
 
     if (count > 0) {
       const parsedDoc = parseMarkdown(editor.state.schema, newContent);
-      editor.commands.setContent(parsedDoc.toJSON());
+      // Use emitUpdate: false to prevent polluting undo history with bulk operations
+      editor.commands.setContent(parsedDoc.toJSON(), { emitUpdate: false });
     }
 
     await respond({ id, success: true, data: { replacements: count } });
