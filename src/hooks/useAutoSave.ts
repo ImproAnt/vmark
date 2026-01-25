@@ -44,8 +44,8 @@ export function useAutoSave() {
       if (now - lastSaveRef.current < DEBOUNCE_MS) return;
 
       try {
-        // Register pending save to prevent false "external modification" dialogs
-        registerPendingSave(doc.filePath);
+        // Register pending save with content for content-based verification
+        registerPendingSave(doc.filePath, doc.content);
 
         await writeTextFile(doc.filePath, doc.content);
         useDocumentStore.getState().markAutoSaved(tabId);

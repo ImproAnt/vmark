@@ -19,7 +19,7 @@ import { resolveExternalChangeAction } from "@/utils/openPolicy";
 import { normalizePath } from "@/utils/paths";
 import { saveToPath } from "@/utils/saveToPath";
 import { detectLinebreaks } from "@/utils/linebreakDetection";
-import { isPendingSave } from "@/utils/pendingSaves";
+import { matchesPendingSave } from "@/utils/pendingSaves";
 import { getFileName } from "@/utils/paths";
 
 interface FsChangeEvent {
@@ -197,11 +197,29 @@ export function useExternalFileChanges(): void {
 
           // Handle file modification (create could be a recreation after delete)
           if (kind === "modify" || kind === "create") {
-            // Skip if this is our own save (prevents race condition on Windows)
-            if (isPendingSave(changedPath)) {
+            // Content-based verification: read file and compare
+            // This eliminates false positives from file touches, sync services, etc.
+            let diskContent: string;
+            try {
+              diskContent = await readTextFile(changedPath);
+            } catch {
+              // File unreadable (might be deleted or locked) - skip
               continue;
             }
 
+            // Check 1: Is this our own pending save?
+            // If disk content matches what we're writing, it's our save
+            if (matchesPendingSave(changedPath, diskContent)) {
+              continue;
+            }
+
+            // Check 2: Does disk match our last saved content?
+            // If so, no actual external change occurred (file was touched but not modified)
+            if (diskContent === doc.savedContent) {
+              continue;
+            }
+
+            // Real external change detected - disk content differs from savedContent
             const action = resolveExternalChangeAction({
               isDirty: doc.isDirty,
               hasFilePath: Boolean(doc.filePath),
@@ -209,7 +227,9 @@ export function useExternalFileChanges(): void {
 
             switch (action) {
               case "auto_reload":
-                await handleReload(tabId, changedPath);
+                // Clean document - reload silently using already-read content
+                useDocumentStore.getState().loadContent(tabId, diskContent, changedPath, detectLinebreaks(diskContent));
+                useDocumentStore.getState().clearMissing(tabId);
                 break;
               case "prompt_user":
                 await handleDirtyChange(tabId, changedPath);

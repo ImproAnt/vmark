@@ -1,38 +1,40 @@
 /**
- * Pending Saves Tracker
+ * Pending Saves Tracker (Content-Based)
  *
- * Tracks files that were recently saved by the app to avoid false
- * "external modification" dialogs caused by file watcher race conditions.
+ * Tracks the exact content being written to files to enable reliable
+ * detection of our own saves vs external modifications.
  *
- * On Windows, the file watcher may fire before markSaved() updates isDirty,
- * causing the external change handler to see isDirty=true for our own saves.
+ * This is a content-based approach that eliminates race conditions:
+ * - Stores the exact content we're about to write
+ * - On file watcher event, compare disk content to pending content
+ * - If they match, it's our save (regardless of timing)
  *
  * Usage:
- * 1. Call registerPendingSave(path) BEFORE writeTextFile()
- * 2. Call clearPendingSave(path) AFTER markSaved() (or after a timeout)
- * 3. Check isPendingSave(path) in external change handler before prompting
+ * 1. Call registerPendingSave(path, content) BEFORE writeTextFile()
+ * 2. Call clearPendingSave(path) AFTER markSaved()
+ * 3. Use matchesPendingSave(path, diskContent) to check if disk matches what we wrote
  */
 
 import { normalizePath } from "@/utils/paths";
 
-/** Map of normalized path -> timestamp when save started */
-const pendingSaves = new Map<string, number>();
-
-/** How long to consider a path as "pending save" (ms) */
-const PENDING_SAVE_TTL = 2000;
+/** Map of normalized path -> content we're writing */
+const pendingSaves = new Map<string, string>();
 
 /**
- * Register that we're about to save a file.
+ * Register that we're about to save specific content to a file.
  * Call this BEFORE writeTextFile().
+ *
+ * @param path - File path being saved to
+ * @param content - The exact content being written
  */
-export function registerPendingSave(path: string): void {
+export function registerPendingSave(path: string, content: string): void {
   const normalized = normalizePath(path);
-  pendingSaves.set(normalized, Date.now());
+  pendingSaves.set(normalized, content);
 }
 
 /**
  * Clear a pending save.
- * Call this AFTER markSaved() completes, or let it expire via TTL.
+ * Call this AFTER markSaved() completes.
  */
 export function clearPendingSave(path: string): void {
   const normalized = normalizePath(path);
@@ -40,23 +42,32 @@ export function clearPendingSave(path: string): void {
 }
 
 /**
- * Check if a path was recently saved by us (within TTL).
- * Returns true if we should ignore external change events for this path.
+ * Check if the given disk content matches what we're currently writing.
+ * This is the core of content-based verification - if the disk content
+ * matches our pending save, it's our own save, not an external change.
+ *
+ * @param path - File path to check
+ * @param diskContent - Content read from disk
+ * @returns true if disk content matches our pending save
  */
-export function isPendingSave(path: string): boolean {
+export function matchesPendingSave(path: string, diskContent: string): boolean {
   const normalized = normalizePath(path);
-  const timestamp = pendingSaves.get(normalized);
+  const pendingContent = pendingSaves.get(normalized);
 
-  if (!timestamp) return false;
-
-  const elapsed = Date.now() - timestamp;
-  if (elapsed > PENDING_SAVE_TTL) {
-    // Expired - clean up
-    pendingSaves.delete(normalized);
+  if (pendingContent === undefined) {
     return false;
   }
 
-  return true;
+  return diskContent === pendingContent;
+}
+
+/**
+ * Check if a path has a pending save registered.
+ * Useful for quick checks before reading the file.
+ */
+export function hasPendingSave(path: string): boolean {
+  const normalized = normalizePath(path);
+  return pendingSaves.has(normalized);
 }
 
 /**

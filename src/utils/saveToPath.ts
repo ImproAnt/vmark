@@ -36,8 +36,8 @@ export async function saveToPath(
     const hardBreakNormalized = normalizeHardBreaks(content, targetHardBreakStyle);
     const output = normalizeLineEndings(hardBreakNormalized, targetLineEnding);
 
-    // Register pending save to prevent false "external modification" dialogs
-    registerPendingSave(path);
+    // Register pending save with content for content-based verification
+    registerPendingSave(path, output);
 
     await writeTextFile(path, output);
     useDocumentStore.getState().setFilePath(tabId, path);
