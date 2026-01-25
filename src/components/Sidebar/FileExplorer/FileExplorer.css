@@ -126,11 +126,17 @@
   flex: 1;
   font-size: 13px;
   padding: 1px 4px;
-  border: 1px solid var(--primary-color);
+  border: none;
   border-radius: var(--radius-sm);
   background-color: var(--bg-color);
   color: var(--text-color);
   outline: none;
+}
+
+.file-node-input:focus {
+  outline: none;
+  box-shadow: none;
+  /* Focus indicated by caret only */
 }
 
 /* Drag and drop styles */
