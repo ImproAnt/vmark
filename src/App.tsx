@@ -78,6 +78,7 @@ import { useReloadGuard } from "@/hooks/useReloadGuard";
 import { useDragDropOpen } from "@/hooks/useDragDropOpen";
 import { useExternalFileChanges } from "@/hooks/useExternalFileChanges";
 import { useWindowFileWatcher } from "@/hooks/useWindowFileWatcher";
+import { useTabSwitchFileCheck } from "@/hooks/useTabSwitchFileCheck";
 import { useSidebarResize } from "@/hooks/useSidebarResize";
 import { useUniversalToolbar } from "@/hooks/useUniversalToolbar";
 import { useMcpAutoStart } from "@/hooks/useMcpAutoStart";
@@ -141,6 +142,7 @@ function DocumentWindowHooks() {
   useDragDropOpen(); // Open dropped markdown files
   useWindowFileWatcher(); // Start file watcher for this window
   useExternalFileChanges(); // Handle external file changes (auto-reload or prompt)
+  useTabSwitchFileCheck(); // Check for stale content when switching tabs
   useHotExitCapture(); // Respond to hot exit capture requests
   useHotExitRestore(); // Handle hot exit restore on restart
   return null;

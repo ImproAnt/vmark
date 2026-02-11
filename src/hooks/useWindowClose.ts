@@ -166,7 +166,17 @@ export function useWindowClose() {
           }
 
           const closed = await handleCloseRequest();
-          if (!closed) {
+          if (closed) {
+            // Notify Rust so it can advance to the next window in the queue.
+            // handle_window_destroyed will also call process_next_quit_target,
+            // but the remove_quit_target call is idempotent, and this gives an
+            // explicit signal even if the Destroyed event is delayed.
+            invoke("acknowledge_quit_window", { label: windowLabel }).catch((e) => {
+              if (import.meta.env.DEV) {
+                console.warn("[WindowClose] acknowledge_quit_window failed:", e);
+              }
+            });
+          } else {
             invoke("cancel_quit").catch((e) => {
               if (import.meta.env.DEV) {
                 console.warn("[WindowClose] cancel_quit failed:", e);

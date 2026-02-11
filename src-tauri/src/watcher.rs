@@ -198,6 +198,10 @@ pub fn stop_watching(watch_id: String) -> Result<(), String> {
 pub fn stop_all_watchers() -> Result<(), String> {
     let mut guard = WATCHERS.lock().map_err(|e| format!("Lock error: {e}"))?;
     *guard = None;
+    // Clear debounce state so stale entries don't suppress future events
+    if let Ok(mut guard_debounce) = LAST_EMITTED.lock() {
+        *guard_debounce = None;
+    }
     Ok(())
 }
 

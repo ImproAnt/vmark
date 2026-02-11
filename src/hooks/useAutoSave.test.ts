@@ -59,6 +59,7 @@ describe("useAutoSave", () => {
 
     vi.mocked(useTabStore.getState).mockReturnValue({
       activeTabId: { main: "tab-1" },
+      getTabsByWindow: vi.fn().mockReturnValue([{ id: "tab-1" }]),
     } as unknown as ReturnType<typeof useTabStore.getState>);
 
     vi.mocked(useDocumentStore.getState).mockReturnValue({
@@ -170,9 +171,10 @@ describe("useAutoSave", () => {
     expect(saveToPath).not.toHaveBeenCalled();
   });
 
-  it("skips when no active tab", async () => {
+  it("skips when no tabs exist", async () => {
     vi.mocked(useTabStore.getState).mockReturnValue({
       activeTabId: { main: null },
+      getTabsByWindow: vi.fn().mockReturnValue([]),
     } as unknown as ReturnType<typeof useTabStore.getState>);
 
     renderHook(() => useAutoSave());
@@ -236,6 +238,72 @@ describe("useAutoSave", () => {
       expect.any(String),
       expect.any(String),
       expect.any(String),
+      "auto"
+    );
+  });
+
+  it("saves all dirty tabs, not just the active one", async () => {
+    // Set up 3 tabs: tab-1 active, tab-2 and tab-3 in background
+    vi.mocked(useTabStore.getState).mockReturnValue({
+      activeTabId: { main: "tab-1" },
+      getTabsByWindow: vi.fn().mockReturnValue([
+        { id: "tab-1" },
+        { id: "tab-2" },
+        { id: "tab-3" },
+      ]),
+    } as unknown as ReturnType<typeof useTabStore.getState>);
+
+    // Each tab has a dirty document with a file path
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      getDocument: vi.fn().mockImplementation((tabId: string) => {
+        const docs: Record<string, unknown> = {
+          "tab-1": {
+            isDirty: true,
+            filePath: "/tmp/doc1.md",
+            content: "Content 1",
+            isMissing: false,
+          },
+          "tab-2": {
+            isDirty: true,
+            filePath: "/tmp/doc2.md",
+            content: "Content 2",
+            isMissing: false,
+          },
+          "tab-3": {
+            isDirty: true,
+            filePath: "/tmp/doc3.md",
+            content: "Content 3",
+            isMissing: false,
+          },
+        };
+        return docs[tabId];
+      }),
+    } as unknown as ReturnType<typeof useDocumentStore.getState>);
+
+    renderHook(() => useAutoSave());
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    // All 3 tabs should be saved
+    expect(saveToPath).toHaveBeenCalledTimes(3);
+    expect(saveToPath).toHaveBeenCalledWith(
+      "tab-1",
+      "/tmp/doc1.md",
+      "Content 1",
+      "auto"
+    );
+    expect(saveToPath).toHaveBeenCalledWith(
+      "tab-2",
+      "/tmp/doc2.md",
+      "Content 2",
+      "auto"
+    );
+    expect(saveToPath).toHaveBeenCalledWith(
+      "tab-3",
+      "/tmp/doc3.md",
+      "Content 3",
       "auto"
     );
   });
