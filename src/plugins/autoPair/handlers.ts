@@ -34,7 +34,7 @@ function toPairConfig(config: AutoPairConfig): PairConfig {
  * Check if a closing character is allowed by the current config.
  * Verifies the char has a known opening pair and that pair is enabled.
  */
-function isAllowedClosingChar(char: string, config: AutoPairConfig): boolean {
+export function isAllowedClosingChar(char: string, config: AutoPairConfig): boolean {
   const openingChar = getOpeningChar(char);
   if (!openingChar) return false;
   // Re-use getClosingChar which already centralizes config gating
