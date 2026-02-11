@@ -23,6 +23,7 @@ interface SearchState {
   wholeWord: boolean;
   useRegex: boolean;
   currentIndex: number;
+  _lastFindDirection: 1 | -1;
 }
 
 /**
@@ -149,7 +150,7 @@ export function useSourceEditorSearch(
 
       // Handle find next/previous
       if (state.currentIndex !== prevState.currentIndex && state.currentIndex >= 0) {
-        const direction = state.currentIndex > prevState.currentIndex ? 1 : -1;
+        const direction = state._lastFindDirection;
         if (direction > 0) {
           runOrQueueCodeMirrorAction(view, () => findNext(view));
         } else {
@@ -202,8 +203,25 @@ export function useSourceEditorSearch(
     window.addEventListener("search:replace-current", handleReplaceCurrent);
     window.addEventListener("search:replace-all", handleReplaceAll);
 
+    // Poll for document changes to keep match count fresh while editing
+    let lastDoc: unknown = null;
+    const docChangeInterval = setInterval(() => {
+      const view = viewRef.current;
+      if (!view) return;
+      const searchState = useSearchStore.getState();
+      if (!searchState.isOpen || !searchState.query) {
+        lastDoc = null;
+        return;
+      }
+      if (view.state.doc !== lastDoc) {
+        lastDoc = view.state.doc;
+        recomputeMatches(view, searchState, true);
+      }
+    }, 300);
+
     return () => {
       unsubscribe();
+      clearInterval(docChangeInterval);
       window.removeEventListener("search:replace-current", handleReplaceCurrent);
       window.removeEventListener("search:replace-all", handleReplaceAll);
     };

@@ -29,7 +29,7 @@ import { createUntitledTab } from "@/utils/newFile";
 import { joinPath } from "@/utils/pathUtils";
 import { getSaveFileName } from "@/utils/exportNaming";
 import { detectLinebreaks } from "@/utils/linebreakDetection";
-import { isWithinRoot, getParentDir } from "@/utils/paths";
+import { isWithinRoot, getParentDir, getFileName } from "@/utils/paths";
 import { saveAllDocuments, type CloseSaveContext } from "@/hooks/closeSave";
 import { safeUnlistenAll } from "@/utils/safeUnlisten";
 
@@ -108,6 +108,8 @@ export function useFileOperations() {
         perfMark("openFileInNewTab:complete");
       } catch (error) {
         console.error("[FileOps] Failed to open file:", path, error);
+        useTabStore.getState().closeTab(windowLabel, tabId);
+        toast.error(`Failed to open: ${getFileName(path) ?? path}`);
       }
     },
     [windowLabel]

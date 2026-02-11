@@ -9,6 +9,8 @@ interface SearchState {
   useRegex: boolean;
   matchCount: number;
   currentIndex: number;
+  /** Tracks whether the last navigation was forward (1) or backward (-1). */
+  _lastFindDirection: 1 | -1;
 }
 
 interface SearchActions {
@@ -36,6 +38,7 @@ const initialState: SearchState = {
   useRegex: false,
   matchCount: 0,
   currentIndex: -1,
+  _lastFindDirection: 1,
 };
 
 export const useSearchStore = create<SearchState & SearchActions>((set, get) => ({
@@ -66,14 +69,14 @@ export const useSearchStore = create<SearchState & SearchActions>((set, get) => 
     const { matchCount, currentIndex } = get();
     if (matchCount === 0) return;
     const next = currentIndex + 1 >= matchCount ? 0 : currentIndex + 1;
-    set({ currentIndex: next });
+    set({ currentIndex: next, _lastFindDirection: 1 });
   },
 
   findPrevious: () => {
     const { matchCount, currentIndex } = get();
     if (matchCount === 0) return;
     const prev = currentIndex - 1 < 0 ? matchCount - 1 : currentIndex - 1;
-    set({ currentIndex: prev });
+    set({ currentIndex: prev, _lastFindDirection: -1 });
   },
 
   replaceCurrent: () => {
