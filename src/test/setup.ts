@@ -1,6 +1,24 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
+// Mock localStorage for zustand persist middleware (JSDOM doesn't always initialize it)
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { store = {}; },
+    get length() { return Object.keys(store).length; },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+  };
+})();
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
 // Mock Tauri APIs
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -69,6 +87,18 @@ vi.mock("tauri-pty", () => ({
     write: vi.fn(),
     resize: vi.fn(),
     kill: vi.fn(),
+  })),
+}));
+
+vi.mock("@panzoom/panzoom", () => ({
+  default: vi.fn(() => ({
+    pan: vi.fn(),
+    zoom: vi.fn(),
+    reset: vi.fn(),
+    getScale: vi.fn(() => 1),
+    destroy: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
   })),
 }));
 
