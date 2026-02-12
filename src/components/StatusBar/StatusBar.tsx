@@ -1,17 +1,11 @@
-import { useMemo, useState, useEffect, useCallback, type MouseEvent, type KeyboardEvent } from "react";
-
-// Stable empty array to avoid creating new reference on each render
-const EMPTY_TABS: never[] = [];
-import { Code2, Type, Save, Plus, AlertTriangle, GitFork, Satellite, Sparkles, Terminal } from "lucide-react";
-import { countWords as alfaazCount } from "alfaaz";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { Plus } from "lucide-react";
 import { useEditorStore } from "@/stores/editorStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useWindowLabel, useIsDocumentWindow } from "@/contexts/WindowContext";
 import { useTabStore, type Tab as TabType } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
-import { useImagePasteToastStore } from "@/stores/imagePasteToastStore";
 import { closeTabWithDirtyCheck } from "@/hooks/useTabOperations";
-import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import {
   useDocumentContent,
   useDocumentLastAutoSave,
@@ -20,64 +14,43 @@ import {
 } from "@/hooks/useDocumentState";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useAiInvocationStore } from "@/stores/aiInvocationStore";
-import { formatRelativeTime, formatExactTime } from "@/utils/dateUtils";
+import { formatRelativeTime } from "@/utils/dateUtils";
 import { Tab } from "@/components/Tabs/Tab";
 import { TabContextMenu, type ContextMenuPosition } from "@/components/Tabs/TabContextMenu";
-import { useShortcutsStore, formatKeyForDisplay } from "@/stores/shortcutsStore";
+import { useShortcutsStore } from "@/stores/shortcutsStore";
 import { useMcpServer } from "@/hooks/useMcpServer";
 import { openSettingsWindow } from "@/utils/settingsWindow";
-import { UpdateIndicator } from "./UpdateIndicator";
+import { countCharsFromPlain, countWordsFromPlain, stripMarkdown } from "./statusTextMetrics";
+import { StatusBarRight } from "./StatusBarRight";
+import { useStatusBarTabDrag } from "./useStatusBarTabDrag";
 import "./StatusBar.css";
+
+// Stable empty array to avoid creating new reference on each render.
+const EMPTY_TABS: never[] = [];
+
+const ARIA_LIVE_STYLE = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+} as const;
 
 /**
  * Prevent Cmd+A from selecting all page content when focus is on non-input elements.
  * Only prevents when active element is a button or similar non-text element.
  */
-function preventSelectAllOnButtons(e: KeyboardEvent) {
-  if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-    const target = e.target as HTMLElement;
+function preventSelectAllOnButtons(event: KeyboardEvent) {
+  if ((event.metaKey || event.ctrlKey) && event.key === "a") {
+    const target = event.target as HTMLElement;
     if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
-      e.preventDefault();
+      event.preventDefault();
     }
   }
-}
-
-/**
- * Strip markdown formatting to get plain text for word counting.
- */
-function stripMarkdown(text: string): string {
-  return (
-    text
-      .replace(/```[\s\S]*?```/g, "")
-      .replace(/`[^`]+`/g, "")
-      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-      .replace(/^#{1,6}\s+/gm, "")
-      .replace(/(\*\*|__)(.*?)\1/g, "$2")
-      .replace(/(\*|_)(.*?)\1/g, "$2")
-      .replace(/^>\s+/gm, "")
-      .replace(/^[-*_]{3,}\s*$/gm, "")
-      .replace(/^[\s]*[-*+]\s+/gm, "")
-      .replace(/^[\s]*\d+\.\s+/gm, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim()
-  );
-}
-
-/**
- * Count words using alfaaz library (handles CJK and other languages).
- * Expects pre-stripped plain text.
- */
-function countWordsFromPlain(plainText: string): number {
-  return alfaazCount(plainText);
-}
-
-/**
- * Count non-whitespace characters.
- * Expects pre-stripped plain text.
- */
-function countCharsFromPlain(plainText: string): number {
-  return plainText.replace(/\s/g, "").length;
 }
 
 export function StatusBar() {
@@ -87,43 +60,30 @@ export function StatusBar() {
   const lastAutoSave = useDocumentLastAutoSave();
   const isMissing = useDocumentIsMissing();
   const isDivergent = useDocumentIsDivergent();
-  const autoSaveEnabled = useSettingsStore((s) => s.general.autoSaveEnabled);
+  const autoSaveEnabled = useSettingsStore((state) => state.general.autoSaveEnabled);
   const sourceMode = useEditorStore((state) => state.sourceMode);
   const statusBarVisible = useUIStore((state) => state.statusBarVisible);
   const terminalVisible = useUIStore((state) => state.terminalVisible);
   const sourceModeShortcut = useShortcutsStore((state) => state.getShortcut("sourceMode"));
   const terminalShortcut = useShortcutsStore((state) => state.getShortcut("toggleTerminal"));
-
-  // AI genie running state
-  const aiRunning = useAiInvocationStore((s) => s.isRunning);
-
-  // MCP server status
+  const aiRunning = useAiInvocationStore((state) => state.isRunning);
   const { running: mcpRunning, loading: mcpLoading, port: mcpPort, error: mcpError } = useMcpServer();
 
-  // Open Settings → Integrations for MCP status
   const openMcpSettings = useCallback(() => openSettingsWindow("integrations"), []);
-
-  // Show warning when file is missing and auto-save is enabled
   const showAutoSavePaused = isMissing && autoSaveEnabled;
 
-  // Tab state - only for document windows
-  // Use stable EMPTY_TABS to avoid infinite loop from new array reference
-  const tabs = useTabStore((state) =>
-    isDocumentWindow ? state.tabs[windowLabel] ?? EMPTY_TABS : EMPTY_TABS
-  );
-  const activeTabId = useTabStore((state) =>
-    isDocumentWindow ? state.activeTabId[windowLabel] : null
-  );
+  const tabs = useTabStore((state) => (isDocumentWindow ? state.tabs[windowLabel] ?? EMPTY_TABS : EMPTY_TABS));
+  const activeTabId = useTabStore((state) => (isDocumentWindow ? state.activeTabId[windowLabel] : null));
 
   const [contextMenu, setContextMenu] = useState<{
     position: ContextMenuPosition;
     tab: TabType;
   } | null>(null);
-
   const [showAutoSave, setShowAutoSave] = useState(false);
-  const [autoSaveTime, setAutoSaveTime] = useState<string>("");
+  const [autoSaveTime, setAutoSaveTime] = useState("");
 
-  // Auto-save indicator effect
+  const tabDragScopeRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!lastAutoSave) return;
 
@@ -144,7 +104,6 @@ export function StatusBar() {
     };
   }, [lastAutoSave]);
 
-  // Tab handlers
   const handleActivateTab = useCallback(
     (tabId: string) => {
       useTabStore.getState().setActiveTab(windowLabel, tabId);
@@ -159,16 +118,13 @@ export function StatusBar() {
     [windowLabel]
   );
 
-  const handleContextMenu = useCallback(
-    (e: MouseEvent, tab: TabType) => {
-      e.preventDefault();
-      setContextMenu({
-        position: { x: e.clientX, y: e.clientY },
-        tab,
-      });
-    },
-    []
-  );
+  const handleContextMenu = useCallback((event: MouseEvent, tab: TabType) => {
+    event.preventDefault();
+    setContextMenu({
+      position: { x: event.clientX, y: event.clientY },
+      tab,
+    });
+  }, []);
 
   const handleCloseContextMenu = useCallback(() => {
     setContextMenu(null);
@@ -179,26 +135,47 @@ export function StatusBar() {
     useDocumentStore.getState().initDocument(tabId, "", null);
   }, [windowLabel]);
 
-  // Memoize stripped content once, then derive both counts from it
-  // This avoids running the expensive stripMarkdown regex twice per keystroke
+  const {
+    getTabDragHandlers,
+    isDragging,
+    isReordering,
+    dragMode,
+    dragTabId,
+    dropIndex,
+    dragPoint,
+    snapbackTabId,
+    isDropPreviewTarget,
+    isDropInvalid,
+    isReorderBlocked,
+    dragHint,
+    ariaAnnouncement,
+    handleTabKeyDown,
+  } = useStatusBarTabDrag({
+    tabs,
+    windowLabel,
+    tabBarRef: tabDragScopeRef,
+    onActivateTab: handleActivateTab,
+  });
+
+  const dragTab = dragTabId ? tabs.find((tab) => tab.id === dragTabId) ?? null : null;
+
   const strippedContent = useMemo(() => stripMarkdown(content), [content]);
   const wordCount = useMemo(() => countWordsFromPlain(strippedContent), [strippedContent]);
   const charCount = useMemo(() => countCharsFromPlain(strippedContent), [strippedContent]);
 
-  // Always show tabs when there's at least one tab
   const showTabs = isDocumentWindow && tabs.length >= 1;
   const showNewTabButton = isDocumentWindow;
 
-  // When hidden (Cmd+J toggled), don't render — unless AI is working
   if (!statusBarVisible && !aiRunning) return null;
 
   return (
     <>
-      <div className="status-bar-container visible" onKeyDown={preventSelectAllOnButtons}>
+      <div
+        className={`status-bar-container visible${isDropPreviewTarget ? " status-bar-container--drop-target" : ""}`}
+        onKeyDown={preventSelectAllOnButtons}
+      >
         <div className="status-bar">
-          {/* Left section: tabs */}
-          <div className="status-bar-left">
-            {/* New tab button - always on the left */}
+          <div className="status-bar-left" ref={tabDragScopeRef}>
             {showNewTabButton && (
               <button
                 type="button"
@@ -211,109 +188,75 @@ export function StatusBar() {
               </button>
             )}
 
-            {/* Tabs section (pill style) */}
             {showTabs && (
               <div className="status-tabs" role="tablist">
-                {tabs.map((tab) => (
-                  <Tab
-                    key={tab.id}
-                    tab={tab}
-                    isActive={tab.id === activeTabId}
-                    onActivate={() => handleActivateTab(tab.id)}
-                    onClose={() => handleCloseTab(tab.id)}
-                    onContextMenu={(e) => handleContextMenu(e, tab)}
-                  />
-                ))}
+                {tabs.map((tab, index) => {
+                  const dragHandlers = getTabDragHandlers(tab.id, tab.isPinned);
+                  const isBeingDragged = dragTabId === tab.id;
+                  const showDropBefore = isReordering && dropIndex === index && !isBeingDragged && !isReorderBlocked;
+
+                  return (
+                    <Tab
+                      key={tab.id}
+                      tab={tab}
+                      isActive={tab.id === activeTabId}
+                      isDragTarget={isDragging && isBeingDragged}
+                      isReordering={isReordering && isBeingDragged}
+                      isInvalidDrop={isDropInvalid && isBeingDragged}
+                      isSnapback={snapbackTabId === tab.id}
+                      showDropIndicator={showDropBefore}
+                      onActivate={() => handleActivateTab(tab.id)}
+                      onKeyDown={(event) => handleTabKeyDown(tab.id, event)}
+                      onClose={() => handleCloseTab(tab.id)}
+                      onContextMenu={(event) => handleContextMenu(event, tab)}
+                      onPointerDown={dragHandlers.onPointerDown}
+                    />
+                  );
+                })}
+                {isReordering && dropIndex !== null && dropIndex >= tabs.length && !isReorderBlocked && (
+                  <div className="tab-drop-indicator" />
+                )}
               </div>
             )}
-
           </div>
 
-          {/* Right section: stats + mode */}
-          <div className="status-bar-right">
-            {/* AI genie running indicator */}
-            {aiRunning && (
-              <span className="status-ai-running" title="AI genie is working...">
-                <Sparkles size={12} />
-              </span>
-            )}
-
-            {/* MCP status indicator */}
-            <button
-              className={`status-mcp ${mcpRunning ? "connected" : ""} ${mcpLoading ? "loading" : ""} ${mcpError ? "error" : ""}`}
-              onClick={openMcpSettings}
-              title={
-                mcpError
-                  ? `MCP error: ${mcpError}`
-                  : mcpLoading
-                    ? "MCP starting..."
-                    : mcpRunning
-                      ? `MCP running on port ${mcpPort}`
-                      : "MCP stopped · Click to configure"
-              }
-            >
-              <Satellite size={12} />
-            </button>
-
-            {/* Update status indicator */}
-            <UpdateIndicator />
-
-            {showAutoSavePaused && (
-              <span
-                className="status-autosave-paused"
-                title="Auto-save paused: file was deleted from disk. Save manually with Cmd+S."
-              >
-                <AlertTriangle size={12} />
-                Auto-save paused
-              </span>
-            )}
-            {isDivergent && !showAutoSavePaused && (
-              <span
-                className="status-divergent"
-                title="Local differs from disk. Save (Cmd+S) to sync, or use File > Revert to discard local changes."
-              >
-                <GitFork size={12} />
-                Divergent
-              </span>
-            )}
-            {showAutoSave && lastAutoSave && !showAutoSavePaused && !isDivergent && (
-              <span
-                className="status-autosave"
-                title={`Auto-saved at ${formatExactTime(lastAutoSave)}`}
-              >
-                <Save size={12} />
-                {autoSaveTime}
-              </span>
-            )}
-            <span className="status-item">{wordCount} words</span>
-            <span className="status-item">{charCount} chars</span>
-            <button
-              className={`status-terminal ${terminalVisible ? "active" : ""}`}
-              title={`Toggle Terminal (${formatKeyForDisplay(terminalShortcut)})`}
-              onClick={() => useUIStore.getState().toggleTerminal()}
-            >
-              <Terminal size={12} />
-            </button>
-            <button
-              className="status-mode"
-              title={sourceMode ? `Source Mode (${formatKeyForDisplay(sourceModeShortcut)})` : `Rich Text Mode (${formatKeyForDisplay(sourceModeShortcut)})`}
-              onClick={() => {
-                // Close any open image paste toast (don't paste - user is switching modes)
-                const toastStore = useImagePasteToastStore.getState();
-                if (toastStore.isOpen) {
-                  toastStore.hideToast();
-                }
-                flushActiveWysiwygNow();
-                useEditorStore.getState().toggleSourceMode();
-              }}
-            >
-              {sourceMode ? <Code2 size={14} /> : <Type size={12} />}
-            </button>
-          </div>
+          <StatusBarRight
+            aiRunning={aiRunning}
+            mcpRunning={mcpRunning}
+            mcpLoading={mcpLoading}
+            mcpPort={mcpPort}
+            mcpError={mcpError}
+            openMcpSettings={openMcpSettings}
+            showAutoSavePaused={showAutoSavePaused}
+            isDivergent={isDivergent}
+            showAutoSave={showAutoSave}
+            lastAutoSave={lastAutoSave}
+            autoSaveTime={autoSaveTime}
+            wordCount={wordCount}
+            charCount={charCount}
+            terminalVisible={terminalVisible}
+            terminalShortcut={terminalShortcut}
+            sourceMode={sourceMode}
+            sourceModeShortcut={sourceModeShortcut}
+            onToggleSourceMode={() => useEditorStore.getState().toggleSourceMode()}
+          />
         </div>
       </div>
 
-      {/* Tab context menu */}
+      {dragPoint && dragTab && dragMode !== "idle" && (
+        <div
+          className={`tab-drag-ghost${isDropInvalid ? " invalid" : ""}`}
+          style={{ transform: `translate3d(${dragPoint.clientX + 14}px, ${dragPoint.clientY + 14}px, 0)` }}
+        >
+          <span className="tab-drag-ghost-title">{dragTab.title}</span>
+          <span className="tab-drag-ghost-hint">{dragHint}</span>
+        </div>
+      )}
+
+      <div aria-live="polite" aria-atomic="true" style={ARIA_LIVE_STYLE}>
+        {ariaAnnouncement}
+      </div>
+
       {contextMenu && (
         <TabContextMenu
           tab={contextMenu.tab}

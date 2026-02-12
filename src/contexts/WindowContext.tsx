@@ -16,32 +16,9 @@ import {
 } from "../utils/workspaceStorage";
 import { resolveWorkspaceRootForExternalFile } from "../utils/openPolicy";
 import { isWithinRoot } from "../utils/paths";
+import type { TabTransferPayload } from "@/types/tabTransfer";
 
-/** Transfer data shape returned by claim_tab_transfer. */
-interface TabTransferData {
-  tabId: string;
-  title: string;
-  filePath: string | null;
-  content: string;
-  savedContent: string;
-  isDirty: boolean;
-  workspaceRoot: string | null;
-}
-
-/**
- * Claim transfer data from Rust and create the tab + document.
- * Returns true if a transfer was handled (caller should skip normal init).
- */
-async function handleTabTransfer(label: string): Promise<boolean> {
-  const urlParams = new URLSearchParams(globalThis.location?.search || "");
-  if (!urlParams.has("transfer")) return false;
-
-  const data = await invoke<TabTransferData | null>(
-    "claim_tab_transfer",
-    { windowLabel: label }
-  );
-  if (!data) return false;
-
+async function applyTabTransferData(label: string, data: TabTransferPayload): Promise<void> {
   // Set up workspace: prefer transferred root, fall back to file's parent
   const workspaceRoot = data.workspaceRoot
     ?? (data.filePath ? resolveWorkspaceRootForExternalFile(data.filePath) : null);
@@ -53,7 +30,12 @@ async function handleTabTransfer(label: string): Promise<boolean> {
     }
   }
 
-  const tabId = useTabStore.getState().createTab(label, data.filePath);
+  const tabId = useTabStore.getState().createTransferredTab(label, {
+    id: data.tabId,
+    filePath: data.filePath,
+    title: data.title,
+    isPinned: false,
+  });
   useTabStore.getState().updateTabTitle(tabId, data.title);
   useDocumentStore.getState().initDocument(
     tabId,
@@ -64,6 +46,33 @@ async function handleTabTransfer(label: string): Promise<boolean> {
   if (data.filePath) {
     useRecentFilesStore.getState().addFile(data.filePath);
   }
+}
+
+async function removeTransferredTabData(label: string, tabId: string): Promise<void> {
+  useTabStore.getState().detachTab(label, tabId);
+  useDocumentStore.getState().removeDocument(tabId);
+
+  const remaining = useTabStore.getState().getTabsByWindow(label);
+  if (remaining.length === 0 && label !== "main") {
+    const win = getCurrentWebviewWindow();
+    await invoke("close_window", { label: win.label }).catch(() => {});
+  }
+}
+
+/**
+ * Claim transfer data from Rust and create the tab + document.
+ * Returns true if a transfer was handled (caller should skip normal init).
+ */
+async function handleTabTransfer(label: string): Promise<boolean> {
+  const urlParams = new URLSearchParams(globalThis.location?.search || "");
+  if (!urlParams.has("transfer")) return false;
+
+  const data = await invoke<TabTransferPayload | null>(
+    "claim_tab_transfer",
+    { windowLabel: label }
+  );
+  if (!data) return false;
+  await applyTabTransferData(label, data);
 
   return true;
 }
@@ -258,6 +267,57 @@ export function WindowProvider({ children }: WindowProviderProps) {
       setTimeout(() => errorWindow.emit("ready", errorWindow.label), READY_EVENT_DELAY_MS);
     });
   }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (windowLabel !== "main" && !windowLabel.startsWith("doc-")) return;
+
+    const currentWindow = getCurrentWebviewWindow();
+    let cancelled = false;
+    let unlisten: (() => void) | null = null;
+
+    currentWindow.listen<TabTransferPayload>("tab:transfer", async (event) => {
+      if (cancelled) return;
+      try {
+        await applyTabTransferData(windowLabel, event.payload);
+      } catch (error) {
+        console.error("[WindowContext] Failed to apply runtime tab transfer:", error);
+      }
+    }).then((fn) => {
+      if (cancelled) {
+        fn();
+      } else {
+        unlisten = fn;
+      }
+    }).catch((error) => {
+      console.error("[WindowContext] Failed to setup tab transfer listener:", error);
+    });
+
+    let unlistenRemove: (() => void) | null = null;
+    currentWindow.listen<{ tabId: string }>("tab:remove-by-id", (event) => {
+      if (cancelled) return;
+      const { tabId } = event.payload;
+      void removeTransferredTabData(windowLabel, tabId);
+    }).then((fn) => {
+      if (cancelled) {
+        fn();
+      } else {
+        unlistenRemove = fn;
+      }
+    }).catch((error) => {
+      console.error("[WindowContext] Failed to setup tab removal listener:", error);
+    });
+
+    return () => {
+      cancelled = true;
+      if (unlisten) {
+        unlisten();
+      }
+      if (unlistenRemove) {
+        unlistenRemove();
+      }
+    };
+  }, [isReady, windowLabel]);
 
   const isDocumentWindow = windowLabel === "main" || windowLabel.startsWith("doc-");
 
